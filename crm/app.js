@@ -29,7 +29,7 @@
   }
   function linkFicha(c) { return new URL('ficha.html?t=' + c.token, location.href).href; }
   function waLink(c, texto) { var n = String(c.celular || '').replace(/\D/g, ''); if (n.length <= 11) n = '55' + n; return 'https://wa.me/' + n + '?text=' + encodeURIComponent(texto); }
-  function textoLink(c) { var d = N.carregar(); return 'Oi, ' + N.primeiroNome(c.nome) + '! Aqui é da ' + d.clinica + '. Antes do seu exame admissional, preencha a ficha neste link (leva uns 10 minutos): ' + linkFicha(c); }
+  function textoLink(c) { var d = N.carregar(); return 'Oi, ' + N.primeiroNome(c.nome) + '! Aqui é da ' + d.clinica + '. Antes do seu exame ' + N.nomeTipo(c.tipoExame).toLowerCase() + ', preencha a ficha neste link (leva uns 10 minutos): ' + linkFicha(c); }
   function etapaNome(id) { for (var i = 0; i < N.ETAPAS.length; i++) if (N.ETAPAS[i].id === id) return N.ETAPAS[i].nome; return id; }
   function registrar(c, txt) { c.historico.push({ em: new Date().toISOString(), txt: txt }); }
 
@@ -62,8 +62,8 @@
         (itens.length ? itens.map(cardHtml).join('') : '<p class="coluna__vazia">Nenhum candidato</p>') + '</section>';
     }).join('');
     vista.innerHTML =
-      '<div class="cab"><div><h1>Candidatos</h1><p>Do link da ficha até o ASO. Clique num cartão para abrir.</p></div>' +
-      '<div class="cab__acoes"><button class="botao" type="button" data-novo>+ Novo candidato</button></div></div>' +
+      '<div class="cab"><div><h1>Atendimentos</h1><p>Do link da ficha até o ASO. Clique num cartão para abrir.</p></div>' +
+      '<div class="cab__acoes"><button class="botao" type="button" data-novo>+ Novo atendimento</button></div></div>' +
       '<div class="filtros"><select class="entrada" data-filtro-empresa aria-label="Filtrar por empresa">' + opts + '</select>' +
       '<input class="entrada" type="search" placeholder="Buscar por nome ou CPF" value="' + esc(filtro.busca) + '" data-filtro-busca aria-label="Buscar"></div>' +
       '<div class="quadro">' + colunas + '</div>';
@@ -73,6 +73,7 @@
     var f = N.funcao(c.funcaoId), e = N.empresa(c.empresaId);
     var al = N.alertas(c.ficha, f);
     var meta = [];
+    if (c.tipoExame && c.tipoExame !== 'admissional') meta.push('<span class="selo selo--azul">' + esc(N.nomeTipo(c.tipoExame)) + '</span>');
     if (c.etapa === 'enviado') meta.push('<span class="selo">Enviado ' + ha(c.criadoEm) + '</span>');
     if (c.etapa === 'preenchendo') meta.push('<span class="selo selo--azul">Rascunho salvo</span>');
     if (c.etapa === 'agendado' && c.agendadoPara) meta.push('<span class="selo selo--azul">' + data(c.agendadoPara, true) + '</span>');
@@ -112,7 +113,7 @@
     var f = N.funcao(c.funcaoId), e = N.empresa(c.empresaId);
     var medico = verComo === 'medico';
     var h = '';
-    h += '<div class="painel__cab"><div class="painel__linha"><div><h2>' + esc(c.nome) + '</h2><p>' + esc(f.nome) + ' · ' + esc(e.nome) + '</p></div>' +
+    h += '<div class="painel__cab"><div class="painel__linha"><div><h2>' + esc(c.nome) + '</h2><p>' + esc(N.nomeTipo(c.tipoExame)) + ' · ' + esc(f.nome) + ' · ' + esc(e.nome) + '</p></div>' +
       '<button class="fechar" type="button" data-fechar aria-label="Fechar"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M6 6l12 12M18 6 6 18"/></svg></button></div>' +
       '<div class="painel__linha" style="align-items:center;flex-wrap:wrap"><span class="selo selo--verde">' + esc(etapaNome(c.etapa)) + '</span>' +
       '<div class="segmento" role="group" aria-label="Ver como"><button type="button" data-ver="medico" aria-pressed="' + medico + '">Equipe médica</button><button type="button" data-ver="empresa" aria-pressed="' + !medico + '">Empresa cliente</button></div></div></div>';
@@ -120,13 +121,16 @@
     h += '<div class="painel__corpo">';
 
     if (medico) h += acoesHtml(c, f);
-    else if (c.aso) h += '<div class="bloco"><h3>ASO</h3><p>Resultado: <b style="color:var(--tinta)">' + esc(c.aso.resultado) + '</b> em ' + data(c.aso.data) + '.</p><div class="acoes-linha" style="margin-top:10px"><button class="botao botao--pequeno" type="button" data-ver-aso>Ver ASO</button></div></div>';
+    else if (c.aso) h += '<div class="bloco"><h3>ASO</h3><p>Aptidão: <b style="color:var(--tinta)">' + esc(c.aso.resultado) + '</b> em ' + data(c.aso.data) + '.' + (c.aso.restricoes ? ' Restrições: ' + esc(c.aso.restricoes) + '.' : '') + (c.aso.validade ? ' Próximo periódico até ' + new Date(c.aso.validade).toLocaleDateString('pt-BR') + '.' : '') + '</p><div class="acoes-linha" style="margin-top:10px"><button class="botao botao--pequeno" type="button" data-ver-aso>Ver ASO</button></div></div>';
 
     h += '<div class="bloco"><h3>Cadastro</h3><dl class="dl"><dt>CPF</dt><dd>' + esc(c.cpf) + '</dd><dt>Celular</dt><dd>' + esc(c.celular) + '</dd><dt>Empresa</dt><dd>' + esc(e.nome) + '</dd><dt>Função</dt><dd>' + esc(f.nome) + ' (' + esc(f.setor) + ')</dd>' +
       (c.agendadoPara ? '<dt>Exame</dt><dd>' + data(c.agendadoPara, true) + '</dd>' : '') + '</dl></div>';
 
-    h += '<div class="bloco"><h3>Riscos e exames da função</h3><p class="sub">Riscos</p><div class="chips">' + f.riscos.map(function (r) { return '<span class="selo selo--ambar">' + esc(N.RISCOS[r]) + '</span>'; }).join('') + '</div>' +
-      '<p class="sub">Exames a fazer</p><div class="chips">' + f.exames.map(function (x) { return '<span class="selo">' + esc(N.EXAMES[x]) + '</span>'; }).join('') + '</div></div>';
+    var pc = N.carregar().pcmso, prep = N.preparos(f);
+    h += '<div class="bloco"><h3>Riscos e protocolo do PCMSO</h3><p class="sub">Riscos da função (PGR)</p><div class="chips">' + f.riscos.map(function (r) { return '<span class="selo selo--ambar">' + esc(N.RISCO_GRUPO[r]) + ': ' + esc(N.RISCOS[r]) + '</span>'; }).join('') + '</div>' +
+      '<p class="sub">Exames do protocolo · ' + esc(N.nomeTipo(c.tipoExame).toLowerCase()) + '</p><div class="chips">' + f.exames.map(function (x) { return '<span class="selo"><b style="font-weight:700">' + esc(N.CATALOGO[x].codigo) + '</b> ' + esc(N.EXAMES[x]) + '</span>'; }).join('') + '</div>' +
+      (prep.length ? '<p class="sub">Preparo (vai na confirmação)</p><p style="font-size:14px">' + esc(prep.join('; ').replace(/^./, function (x) { return x.toUpperCase(); })) + '.</p>' : '') +
+      '<p style="font-size:13px;margin-top:12px">Protocolo aprovado por ' + esc(pc.coordenador) + ', médico coordenador do PCMSO, em ' + new Date(pc.aprovadoEm).toLocaleDateString('pt-BR') + '. Periódico a cada ' + f.periodicidade + ' meses.</p></div>';
 
     if (medico) {
       if (c.ficha) {
@@ -159,13 +163,14 @@
     } else if (c.etapa === 'agendado') {
       h += '<p style="margin-bottom:10px">Exame em ' + data(c.agendadoPara, true) + '. Quando o candidato for atendido, marque aqui.</p><div class="acoes-linha"><button class="botao" type="button" data-atendido>Marcar como atendido</button></div>';
     } else if (c.etapa === 'atendido') {
-      h += '<p style="margin-bottom:10px">Emitir o ASO. O RH da empresa recebe só o resultado.</p>' +
-        '<div class="acoes-linha"><label class="campo">Resultado<select class="entrada" data-aso-resultado><option>Apto</option><option>Apto com restrição</option><option>Inapto</option></select></label>' +
-        '<label class="campo">Médico(a)<input class="entrada" value="Dra. Camila Rocha" data-aso-medico></label></div>' +
-        '<label class="campo" style="margin-top:10px">Observação (sai no ASO)<input class="entrada" data-aso-obs placeholder="Opcional"></label>' +
+      h += '<p style="margin-bottom:10px">Emitir o ASO. O RH da empresa recebe só a aptidão, sem diagnóstico.</p>' +
+        '<div class="acoes-linha"><label class="campo">Aptidão<select class="entrada" data-aso-resultado><option>Apto</option><option>Apto com restrição</option><option>Inapto</option></select></label>' +
+        '<label class="campo">Médico(a) examinador(a)<input class="entrada" value="Dra. Camila Rocha" data-aso-medico></label></div>' +
+        '<label class="campo" style="margin-top:10px">Restrições <small>Só se for apto com restrição</small><input class="entrada" data-aso-restricoes placeholder="Ex.: não trabalhar em altura por 90 dias"></label>' +
+        '<label class="campo" style="margin-top:10px">Observação pública (sai no ASO)<input class="entrada" data-aso-obs placeholder="Opcional"></label>' +
         '<div class="acoes-linha" style="margin-top:12px"><button class="botao" type="button" data-emitir>Emitir ASO</button></div>';
     } else if (c.etapa === 'aso') {
-      h += '<p style="margin-bottom:10px">ASO emitido em ' + data(c.aso.data) + ': <b style="color:var(--tinta)">' + esc(c.aso.resultado) + '</b>.</p><div class="acoes-linha"><button class="botao" type="button" data-ver-aso>Ver ASO</button></div>';
+      h += '<p style="margin-bottom:10px">ASO emitido em ' + data(c.aso.data) + ': <b style="color:var(--tinta)">' + esc(c.aso.resultado) + '</b>.' + (c.aso.validade ? ' Próximo periódico até ' + new Date(c.aso.validade).toLocaleDateString('pt-BR') + '.' : '') + '</p><div class="acoes-linha"><button class="botao" type="button" data-ver-aso>Ver ASO</button></div>';
     }
     return h + '</div>';
   }
@@ -199,14 +204,17 @@
   /* ---------- ASO ---------- */
   function asoHtml(c) {
     var d = N.carregar(), f = N.funcao(c.funcaoId), e = N.empresa(c.empresaId);
-    return '<div class="aso"><div class="aso__cab"><div><h2>Atestado de Saúde Ocupacional</h2><p>' + esc(d.clinica) + ' · modelo de demonstração</p></div><div style="text-align:right"><p>Tipo de exame</p><b>Admissional</b></div></div>' +
+    return '<div class="aso"><div class="aso__cab"><div><h2>Atestado de Saúde Ocupacional</h2><p>' + esc(d.clinica) + ' · modelo de demonstração</p></div><div style="text-align:right"><p>Tipo de exame</p><b>' + esc(N.nomeTipo(c.tipoExame)) + '</b></div></div>' +
       '<table><tr><th>Empresa</th><td>' + esc(e.nome) + '<br>CNPJ ' + esc(e.cnpj) + '</td></tr><tr><th>Trabalhador</th><td>' + esc(c.nome) + '<br>CPF ' + esc(c.cpf) + '</td></tr><tr><th>Função e setor</th><td>' + esc(f.nome) + ' · ' + esc(f.setor) + '</td></tr>' +
-      '<tr><th>Riscos ocupacionais</th><td>' + f.riscos.map(function (r) { return esc(N.RISCOS[r]); }).join(', ') + '</td></tr>' +
-      '<tr><th>Exames realizados</th><td>' + f.exames.map(function (x) { return esc(N.EXAMES[x]) + ' (' + data(c.agendadoPara || c.aso.data) + ')'; }).join('<br>') + '</td></tr>' +
-      (c.aso.obs ? '<tr><th>Observação</th><td>' + esc(c.aso.obs) + '</td></tr>' : '') + '</table>' +
+      '<tr><th>Riscos ocupacionais (PGR)</th><td>' + f.riscos.map(function (r) { return esc(N.RISCO_GRUPO[r]) + ': ' + esc(N.RISCOS[r]); }).join('<br>') + '</td></tr>' +
+      '<tr><th>Exames realizados</th><td>' + f.exames.map(function (x) { return esc(N.CATALOGO[x].codigo) + ' · ' + esc(N.EXAMES[x]) + ' (' + data(c.agendadoPara || c.aso.data) + ')'; }).join('<br>') + '</td></tr>' +
+      (c.aso.restricoes ? '<tr><th>Restrições</th><td>' + esc(c.aso.restricoes) + '</td></tr>' : '') +
+      (c.aso.obs ? '<tr><th>Observação</th><td>' + esc(c.aso.obs) + '</td></tr>' : '') +
+      (c.aso.validade ? '<tr><th>Validade</th><td>Próximo exame periódico até ' + new Date(c.aso.validade).toLocaleDateString('pt-BR') + '</td></tr>' : '') + '</table>' +
       '<p>Conclusão: o trabalhador está</p><div class="aso__resultado">' + esc(c.aso.resultado.toUpperCase()) + ' para a função</div>' +
       '<p style="font-size:12.5px;color:#444">Emitido em ' + new Date(c.aso.data).toLocaleDateString('pt-BR') + '. Médico(a) responsável pelo exame: ' + esc(c.aso.medico) + ', ' + esc(c.aso.crm || 'CRM-SP 123456') + '.</p>' +
-      '<div class="aso__assin"><div>' + esc(c.aso.medico) + '<br>Médico(a) examinador(a)</div><div>' + esc(c.nome) + '<br>Trabalhador(a): recebi a 2ª via</div></div></div>';
+      '<div class="aso__assin"><div>' + esc(c.aso.medico) + '<br>Médico(a) examinador(a)</div><div>' + esc(c.nome) + '<br>Trabalhador(a): recebi a 2ª via</div></div>' +
+      '<p class="aso__ns"><svg class="ns" viewBox="18 18 64 64" aria-hidden="true"><path d="M24 76V24L46.5 76H60C69.5 76 76 71 76 63C76 55.5 70.5 52 61 50.2C51.5 48.4 46 45 46 37.2C46 29.5 52 24 61 24C67 24 72 26.6 75 31"/></svg>Emitido com Nexus Safe</p></div>';
   }
   function abrirAso(c) { $('[data-aso-conteudo]').innerHTML = asoHtml(c); $('[data-modal-aso]').showModal(); }
 
@@ -216,9 +224,9 @@
     var h = '<div class="cab"><div><h1>Empresas e funções</h1><p>Cada função diz quais riscos tem e quais exames pede. É isso que monta a ficha e o ASO.</p></div></div>';
     h += '<div class="rolagem"><table class="tabela"><thead><tr><th>Empresa cliente</th><th>CNPJ</th><th>Contato</th><th>Candidatos</th></tr></thead><tbody>' +
       d.empresas.map(function (e) { var n = d.candidatos.filter(function (c) { return c.empresaId === e.id; }).length; return '<tr><td><b>' + esc(e.nome) + '</b></td><td>' + esc(e.cnpj) + '</td><td>' + esc(e.contato) + '<br><span style="color:var(--apoio)">' + esc(e.tel) + '</span></td><td>' + n + '</td></tr>'; }).join('') + '</tbody></table></div>';
-    h += '<h2 class="titulo-secao">Funções</h2><div class="rolagem"><table class="tabela"><thead><tr><th>Função</th><th>Empresa</th><th>Riscos</th><th>Exames</th></tr></thead><tbody>' +
-      d.funcoes.map(function (f) { var e = N.empresa(f.empresaId); return '<tr><td><b>' + esc(f.nome) + '</b><br><span style="color:var(--apoio)">' + esc(f.setor) + '</span></td><td>' + esc(e.nome) + '</td><td><div class="chips">' + f.riscos.map(function (r) { return '<span class="selo selo--ambar">' + esc(N.RISCOS[r]) + '</span>'; }).join('') + '</div></td><td><div class="chips">' + f.exames.map(function (x) { return '<span class="selo">' + esc(N.EXAMES[x]) + '</span>'; }).join('') + '</div></td></tr>'; }).join('') + '</tbody></table></div>';
-    h += '<p class="aviso-demo" style="margin-top:16px">Na versão real, a clínica cadastra e edita empresas e funções aqui. No modelo, a lista é fixa.</p>';
+    h += '<h2 class="titulo-secao">Funções</h2><div class="rolagem"><table class="tabela"><thead><tr><th>Função</th><th>Empresa</th><th>Riscos (PGR)</th><th>Protocolo do PCMSO</th></tr></thead><tbody>' +
+      d.funcoes.map(function (f) { var e = N.empresa(f.empresaId); return '<tr><td><b>' + esc(f.nome) + '</b><br><span style="color:var(--apoio)">' + esc(f.setor) + '</span></td><td>' + esc(e.nome) + '</td><td><div class="chips">' + f.riscos.map(function (r) { return '<span class="selo selo--ambar">' + esc(N.RISCO_GRUPO[r]) + ': ' + esc(N.RISCOS[r]) + '</span>'; }).join('') + '</div></td><td><div class="chips">' + f.exames.map(function (x) { return '<span class="selo">' + esc(N.EXAMES[x]) + '</span>'; }).join('') + '</div><span style="font-size:13px;color:var(--apoio)">Periódico a cada ' + f.periodicidade + ' meses</span></td></tr>'; }).join('') + '</tbody></table></div>';
+    h += '<p class="aviso-demo" style="margin-top:16px">Como no SST: o exame não sai direto do risco. Ele vem do protocolo do PCMSO, aprovado pelo médico coordenador (' + esc(d.pcmso.coordenador) + '). Na versão real, a clínica cadastra e edita empresas, funções e protocolos aqui; no modelo, a lista é fixa.</p>';
     vista.innerHTML = h;
   }
 
@@ -240,6 +248,7 @@
   /* ---------- novo candidato ---------- */
   function preencherSelects() {
     var d = N.carregar();
+    $('[data-sel-tipo]').innerHTML = N.TIPOS_EXAME.map(function (t) { return '<option value="' + t[0] + '">' + esc(t[1]) + '</option>'; }).join('');
     var se = $('[data-sel-empresa]');
     se.innerHTML = d.empresas.map(function (e) { return '<option value="' + e.id + '">' + esc(e.nome) + '</option>'; }).join('');
     if (filtro.empresa) se.value = filtro.empresa;
@@ -277,11 +286,8 @@
       var v = $('[data-agenda]').value; if (!v) return;
       c.agendadoPara = new Date(v).toISOString(); c.etapa = 'agendado';
       registrar(c, 'Exame agendado para ' + data(c.agendadoPara, true) + '.');
-      var f = N.funcao(c.funcaoId), ori = [];
-      if (f.exames.some(function (x) { return x === 'glicemia' || x === 'hemograma'; })) ori.push('venha em jejum de 8 horas');
-      if (f.riscos.indexOf('ruido') >= 0) ori.push('fique 14 horas sem barulho alto antes da audiometria');
-      if (f.exames.indexOf('acuidade') >= 0) ori.push('traga seus óculos, se usa');
-      if (N.enfileirar('agenda', c.nome, 'Oi, ' + N.primeiroNome(c.nome) + '! Seu exame admissional está marcado para ' + data(c.agendadoPara, true) + ' na ' + d.clinica + '. Leve RG e carteira de trabalho' + (ori.length ? '; ' + ori.join('; ') : '') + '.')) registrar(c, 'Confirmação enviada pelo WhatsApp.');
+      var f = N.funcao(c.funcaoId), ori = N.preparos(f).map(function (x) { return x.charAt(0).toLowerCase() + x.slice(1); });
+      if (N.enfileirar('agenda', c.nome, 'Oi, ' + N.primeiroNome(c.nome) + '! Seu exame ' + N.nomeTipo(c.tipoExame).toLowerCase() + ' está marcado para ' + data(c.agendadoPara, true) + ' na ' + d.clinica + '. Leve RG e carteira de trabalho' + (ori.length ? '; ' + ori.join('; ') : '') + '.')) registrar(c, 'Confirmação enviada pelo WhatsApp.');
       N.salvar(); renderPainel(c); renderQuadro(); toast('Exame agendado');
     }
     else if (t.matches('[data-atendido]') && c) {
@@ -289,10 +295,11 @@
     }
     else if (t.matches('[data-emitir]') && c) {
       var res = $('[data-aso-resultado]').value, med = $('[data-aso-medico]').value || 'Dra. Camila Rocha';
-      c.aso = { resultado: res, medico: med, crm: 'CRM-SP 123456', data: new Date().toISOString(), obs: $('[data-aso-obs]').value };
+      var agora = new Date().toISOString(), fa = N.funcao(c.funcaoId);
+      c.aso = { resultado: res, restricoes: res === 'Apto com restrição' ? $('[data-aso-restricoes]').value.trim() : '', medico: med, crm: 'CRM-SP 123456', data: agora, validade: c.tipoExame === 'demissional' ? '' : N.somarMeses(agora, fa.periodicidade), obs: $('[data-aso-obs]').value.trim() };
       c.etapa = 'aso'; registrar(c, 'ASO emitido: ' + res + '.');
       var e = N.empresa(c.empresaId), fu = N.funcao(c.funcaoId);
-      if (N.enfileirar('aso', e.contato + ' · ' + e.nome.replace(/ \(fict[íi]ci[ao]\)/, ''), 'Olá, ' + N.primeiroNome(e.contato) + '. O ASO admissional de ' + c.nome + ' (' + fu.nome + ') está pronto: ' + res.toUpperCase() + '. O PDF segue anexo. ' + d.clinica + '.')) registrar(c, 'Aviso enviado ao RH da empresa.');
+      if (N.enfileirar('aso', e.contato + ' · ' + e.nome.replace(/ \(fict[íi]ci[ao]\)/, ''), 'Olá, ' + N.primeiroNome(e.contato) + '. O ASO ' + N.nomeTipo(c.tipoExame).toLowerCase() + ' de ' + c.nome + ' (' + fu.nome + ') está pronto: ' + res.toUpperCase() + '. O PDF segue anexo. ' + d.clinica + '.')) registrar(c, 'Aviso enviado ao RH da empresa.');
       N.salvar(); renderPainel(c); renderQuadro(); abrirAso(c);
     }
     else if (t.matches('[data-ver-aso]') && c) abrirAso(c);
@@ -324,12 +331,12 @@
     if (ev.submitter && ev.submitter.value === 'cancelar') return;
     var fd = new FormData(ev.target);
     var d = N.carregar();
-    var c = { id: N.uid(), token: N.token(), nome: fd.get('nome').trim(), cpf: fd.get('cpf'), celular: fd.get('celular'), empresaId: fd.get('empresaId'), funcaoId: fd.get('funcaoId'), etapa: 'enviado', criadoEm: new Date().toISOString(), agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] };
+    var c = { id: N.uid(), token: N.token(), tipoExame: fd.get('tipoExame') || 'admissional', nome: fd.get('nome').trim(), cpf: fd.get('cpf'), celular: fd.get('celular'), empresaId: fd.get('empresaId'), funcaoId: fd.get('funcaoId'), etapa: 'enviado', criadoEm: new Date().toISOString(), agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] };
     registrar(c, 'Cadastrado(a) pela recepção.');
     if (N.enfileirar('link', c.nome, textoLink(c))) registrar(c, 'Link da ficha enviado pelo WhatsApp.');
     d.candidatos.unshift(c); N.salvar();
     location.hash = '#/c/' + c.id;
-    toast('Candidato cadastrado. Link gerado.');
+    toast('Atendimento cadastrado. Link gerado.');
   });
 
   document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && !painel.hidden && !document.querySelector('dialog[open]')) fecharPainel(); });

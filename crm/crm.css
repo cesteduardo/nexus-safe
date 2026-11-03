@@ -116,6 +116,8 @@ textarea.entrada { min-height: 80px; resize: vertical; }
 .aso__resultado { font-size: 16px; font-weight: 700; padding: 10px 12px; border: 2px solid #111; display: inline-block; margin: 6px 0 18px; }
 .aso__assin { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 40px; text-align: center; font-size: 12.5px; }
 .aso__assin div { border-top: 1px solid #111; padding-top: 6px; }
+.aso__ns { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 26px; font-size: 11.5px; color: #777; }
+.aso__ns .ns { width: 14px; height: 14px; color: #0A7A5C; }
 
 /* cadastros e automações */
 .tabela { width: 100%; border-collapse: collapse; background: var(--branco); border-radius: 13px; overflow: hidden; box-shadow: inset 0 0 0 1px var(--linha); font-size: 14.5px; }

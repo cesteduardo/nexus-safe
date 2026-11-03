@@ -3,7 +3,7 @@
 (function () {
   'use strict';
 
-  var CHAVE = 'nexus-safe-demo-v1';
+  var CHAVE = 'nexus-safe-demo-v2';
 
   var ETAPAS = [
     { id: 'enviado', nome: 'Link enviado' },
@@ -27,19 +27,32 @@
     ergonomico: 'Ergonômico'
   };
 
-  var EXAMES = {
-    clinico: 'Exame clínico',
-    audiometria: 'Audiometria',
-    acuidade: 'Acuidade visual',
-    ecg: 'Eletrocardiograma',
-    eeg: 'Eletroencefalograma',
-    glicemia: 'Glicemia',
-    hemograma: 'Hemograma',
-    espirometria: 'Espirometria',
-    raiox: 'Raio-X de tórax',
-    parasitologico: 'Parasitológico de fezes',
-    toxicologico: 'Toxicológico'
+  /* Grupos de risco (como no inventário do SST e no ASO da NR-7) */
+  var RISCO_GRUPO = { ruido: 'Físico', calor: 'Físico', quimico: 'Químico', poeira: 'Químico', alimentos: 'Biológico', ergonomico: 'Ergonômico', eletricidade: 'Acidente', altura: 'Acidente', motorista: 'Acidente', confinado: 'Acidente' };
+
+  /* Catálogo de exames: o mesmo vocabulário do SST (routes/exames.js, CATALOGO_BASICO).
+     Só nome, código e preparo. Quem diz qual exame cada função faz é o protocolo do PCMSO. */
+  var CATALOGO = {
+    clinico: { codigo: 'CLI', nome: 'Avaliação clínica ocupacional', preparo: '' },
+    audiometria: { codigo: 'AUD', nome: 'Audiometria tonal e vocal', preparo: 'repouso acústico de 14 horas (sem barulho alto antes do exame)' },
+    acuidade: { codigo: 'ACV', nome: 'Acuidade visual', preparo: 'traga seus óculos ou lentes, se usa' },
+    ecg: { codigo: 'ECG', nome: 'Eletrocardiograma', preparo: '' },
+    eeg: { codigo: 'EEG', nome: 'Eletroencefalograma', preparo: 'cabelo limpo e seco, sem creme ou gel' },
+    glicemia: { codigo: 'GLI', nome: 'Glicemia de jejum', preparo: 'jejum de 8 horas' },
+    hemograma: { codigo: 'HEM', nome: 'Hemograma completo', preparo: '' },
+    espirometria: { codigo: 'ESP', nome: 'Espirometria', preparo: 'não fumar 2 horas antes' },
+    raiox: { codigo: 'RXT', nome: 'Raio X de tórax', preparo: '' },
+    parasitologico: { codigo: 'EPF', nome: 'Parasitológico de fezes', preparo: 'trazer a amostra no frasco entregue pela clínica' },
+    toxicologico: { codigo: 'TOX', nome: 'Exame toxicológico de larga janela', preparo: 'coleta de cabelo ou pelo' }
   };
+  var EXAMES = {};
+  Object.keys(CATALOGO).forEach(function (k) { EXAMES[k] = CATALOGO[k].nome; });
+
+  /* Tipos de exame do PCMSO (routes/pcmso.js do SST) */
+  var TIPOS_EXAME = [['admissional', 'Admissional'], ['periodico', 'Periódico'], ['retorno_trabalho', 'Retorno ao trabalho'], ['mudanca_riscos', 'Mudança de riscos'], ['demissional', 'Demissional']];
+  function nomeTipo(id) { for (var i = 0; i < TIPOS_EXAME.length; i++) if (TIPOS_EXAME[i][0] === id) return TIPOS_EXAME[i][1]; return 'Admissional'; }
+  function preparos(funcao) { var out = []; (funcao.exames || []).forEach(function (x) { var p = CATALOGO[x] && CATALOGO[x].preparo; if (p && out.indexOf(p) < 0) out.push(p); }); return out; }
+  function somarMeses(iso, meses) { var d = new Date(iso); d.setMonth(d.getMonth() + (meses || 12)); return d.toISOString(); }
 
   var SAUDE = [
     ['pressao', 'Pressão alta'],
@@ -148,16 +161,16 @@
       { id: 'e4', nome: 'Transportes Rota Certa (fictícia)', cnpj: '45.678.901/0001-23', contato: 'Marcos (frota)', tel: '(17) 99200-4444' }
     ];
     var funcoes = [
-      { id: 'f1', empresaId: 'e1', nome: 'Soldador', setor: 'Caldeiraria', riscos: ['ruido', 'quimico', 'calor'], exames: ['clinico', 'audiometria', 'espirometria', 'raiox'] },
-      { id: 'f2', empresaId: 'e1', nome: 'Eletricista de manutenção', setor: 'Manutenção', riscos: ['eletricidade', 'altura', 'ruido'], exames: ['clinico', 'audiometria', 'acuidade', 'ecg', 'eeg', 'glicemia'] },
-      { id: 'f3', empresaId: 'e2', nome: 'Servente de obras', setor: 'Obra', riscos: ['ruido', 'poeira', 'altura'], exames: ['clinico', 'audiometria', 'acuidade', 'ecg', 'eeg', 'glicemia'] },
-      { id: 'f4', empresaId: 'e3', nome: 'Auxiliar de padaria', setor: 'Padaria', riscos: ['calor', 'alimentos'], exames: ['clinico', 'hemograma', 'parasitologico'] },
-      { id: 'f5', empresaId: 'e3', nome: 'Operador(a) de caixa', setor: 'Frente de loja', riscos: ['ergonomico'], exames: ['clinico'] },
-      { id: 'f6', empresaId: 'e4', nome: 'Motorista de caminhão', setor: 'Frota', riscos: ['motorista', 'ruido'], exames: ['clinico', 'audiometria', 'acuidade', 'glicemia', 'toxicologico'] }
+      { id: 'f1', empresaId: 'e1', nome: 'Soldador', setor: 'Caldeiraria', riscos: ['ruido', 'quimico', 'calor'], exames: ['clinico', 'audiometria', 'espirometria', 'raiox'], periodicidade: 6 },
+      { id: 'f2', empresaId: 'e1', nome: 'Eletricista de manutenção', setor: 'Manutenção', riscos: ['eletricidade', 'altura', 'ruido'], exames: ['clinico', 'audiometria', 'acuidade', 'ecg', 'eeg', 'glicemia'], periodicidade: 12 },
+      { id: 'f3', empresaId: 'e2', nome: 'Servente de obras', setor: 'Obra', riscos: ['ruido', 'poeira', 'altura'], exames: ['clinico', 'audiometria', 'acuidade', 'ecg', 'eeg', 'glicemia'], periodicidade: 12 },
+      { id: 'f4', empresaId: 'e3', nome: 'Auxiliar de padaria', setor: 'Padaria', riscos: ['calor', 'alimentos'], exames: ['clinico', 'hemograma', 'parasitologico'], periodicidade: 12 },
+      { id: 'f5', empresaId: 'e3', nome: 'Operador(a) de caixa', setor: 'Frente de loja', riscos: ['ergonomico'], exames: ['clinico'], periodicidade: 24 },
+      { id: 'f6', empresaId: 'e4', nome: 'Motorista de caminhão', setor: 'Frota', riscos: ['motorista', 'ruido'], exames: ['clinico', 'audiometria', 'acuidade', 'glicemia', 'toxicologico'], periodicidade: 12 }
     ];
 
     function cand(o) {
-      return Object.assign({ id: uid(), token: token(), criadoEm: agoraMenos(3), agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] }, o);
+      return Object.assign({ id: uid(), token: token(), tipoExame: 'admissional', criadoEm: agoraMenos(3), agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] }, o);
     }
 
     var saudeLucas = fichaBase().saude; saudeLucas.labirintite = { sim: true, detalhe: 'Crise em 2023, tomou remédio por 1 mês' };
@@ -166,6 +179,7 @@
 
     var candidatos = [
       cand({ nome: 'Ana Beatriz Moreira', cpf: '123.456.789-09', celular: '(17) 99123-4567', empresaId: 'e3', funcaoId: 'f5', etapa: 'enviado', criadoEm: agoraMenos(0, 8), historico: [{ em: agoraMenos(0, 8), txt: 'Cadastrada pela recepção. Link enviado pelo WhatsApp.' }] }),
+      cand({ nome: 'Marcos Vinícius Teixeira', tipoExame: 'periodico', cpf: '890.123.456-78', celular: '(17) 99890-1234', empresaId: 'e2', funcaoId: 'f3', etapa: 'enviado', criadoEm: agoraMenos(1, 15), historico: [{ em: agoraMenos(30, 9), txt: 'Aviso automático ao RH: periódico vence em 30 dias.' }, { em: agoraMenos(1, 15), txt: 'Periódico solicitado pelo RH. Link enviado.' }] }),
       cand({ nome: 'Carlos Eduardo Lima', cpf: '234.567.890-12', celular: '(17) 99234-5678', empresaId: 'e2', funcaoId: 'f3', etapa: 'enviado', criadoEm: agoraMenos(2, 10), historico: [{ em: agoraMenos(2, 10), txt: 'Cadastrado pelo RH da empresa. Link enviado.' }, { em: agoraMenos(1, 10), txt: 'Lembrete automático: falta preencher a ficha.' }] }),
       cand({ nome: 'Diego Santos Pereira', cpf: '345.678.901-23', celular: '(17) 99345-6789', empresaId: 'e1', funcaoId: 'f1', etapa: 'preenchendo', criadoEm: agoraMenos(1, 9), rascunho: { passo: 3 }, historico: [{ em: agoraMenos(1, 9), txt: 'Link enviado.' }, { em: agoraMenos(0, 7), txt: 'Abriu a ficha e começou a preencher.' }] }),
       cand({ nome: 'Lucas Henrique Souza', cpf: '456.789.012-34', celular: '(17) 99456-7890', empresaId: 'e1', funcaoId: 'f2', etapa: 'recebida', criadoEm: agoraMenos(3, 9),
@@ -179,7 +193,7 @@
         historico: [{ em: agoraMenos(6, 9), txt: 'Link enviado.' }, { em: agoraMenos(5, 19), txt: 'Ficha enviada pelo candidato.' }, { em: agoraMenos(4, 10), txt: 'Exame agendado. Confirmação enviada.' }, { em: agoraMenos(0, 9), txt: 'Atendido pela Dra. Camila Rocha.' }] }),
       cand({ nome: 'Patrícia Gomes Ribeiro', cpf: '789.012.345-67', celular: '(17) 99789-0123', empresaId: 'e1', funcaoId: 'f1', etapa: 'aso', criadoEm: agoraMenos(9, 9), agendadoPara: agoraMenos(5, 8),
         ficha: fichaBase({ pessoais: Object.assign(fichaBase().pessoais, { sexo: 'Feminino' }), especificas: { ruido_14h: { sim: false }, zumbido: { sim: false }, ouvido: { sim: false }, alergia_quim: { sim: false }, rinite: { sim: false }, passou_mal_calor: { sim: false } } }),
-        aso: { resultado: 'Apto', medico: 'Dra. Camila Rocha', crm: 'CRM-SP 123456', data: agoraMenos(5, 11), obs: '' },
+        aso: { resultado: 'Apto', restricoes: '', medico: 'Dra. Camila Rocha', crm: 'CRM-SP 123456', data: agoraMenos(5, 11), validade: somarMeses(agoraMenos(5, 11), 6), obs: '' },
         historico: [{ em: agoraMenos(9, 9), txt: 'Link enviado.' }, { em: agoraMenos(8, 18), txt: 'Ficha enviada.' }, { em: agoraMenos(7, 10), txt: 'Exame agendado.' }, { em: agoraMenos(5, 9), txt: 'Atendida.' }, { em: agoraMenos(5, 11), txt: 'ASO emitido: Apto. Aviso enviado ao RH.' }] })
     ];
 
@@ -199,7 +213,7 @@
       { em: agoraMenos(0, 8), automacao: 'link', para: 'Ana Beatriz Moreira', texto: 'Oi, Ana! Aqui é da Clínica Vida Ocupacional. Antes do seu exame admissional, preencha a ficha neste link (leva uns 10 minutos).' }
     ];
 
-    return { versao: 1, clinica: 'Clínica Vida Ocupacional', empresas: empresas, funcoes: funcoes, candidatos: candidatos, automacoes: automacoes, mensagens: mensagens };
+    return { versao: 2, clinica: 'Clínica Vida Ocupacional', pcmso: { coordenador: 'Dr. Ricardo Alves', crm: 'CRM-SP 654321', aprovadoEm: agoraMenos(60, 10) }, empresas: empresas, funcoes: funcoes, candidatos: candidatos, automacoes: automacoes, mensagens: mensagens };
   }
 
   /* ---------- armazenamento ---------- */
@@ -207,7 +221,7 @@
   function carregar() {
     if (memoria) return memoria;
     try { var t = localStorage.getItem(CHAVE); if (t) memoria = JSON.parse(t); } catch (e) { memoria = null; }
-    if (!memoria || memoria.versao !== 1) { memoria = seed(); salvar(); }
+    if (!memoria || memoria.versao !== 2) { memoria = seed(); salvar(); }
     return memoria;
   }
   function salvar() { try { localStorage.setItem(CHAVE, JSON.stringify(memoria)); } catch (e) { /* segue só em memória */ } }
@@ -229,7 +243,7 @@
   function primeiroNome(n) { return String(n || '').split(' ')[0]; }
 
   window.Nexus = {
-    ETAPAS: ETAPAS, RISCOS: RISCOS, EXAMES: EXAMES, SAUDE: SAUDE, ESPECIFICAS: ESPECIFICAS, EXPOSICOES: EXPOSICOES, FAMILIA: FAMILIA,
+    ETAPAS: ETAPAS, RISCOS: RISCOS, RISCO_GRUPO: RISCO_GRUPO, EXAMES: EXAMES, CATALOGO: CATALOGO, TIPOS_EXAME: TIPOS_EXAME, nomeTipo: nomeTipo, preparos: preparos, somarMeses: somarMeses, SAUDE: SAUDE, ESPECIFICAS: ESPECIFICAS, EXPOSICOES: EXPOSICOES, FAMILIA: FAMILIA,
     carregar: carregar, recarregar: recarregar, salvar: salvar, restaurar: restaurar, empresa: empresa, funcao: funcao,
     alertas: alertas, nomeSaude: nomeSaude, nomeEspecifica: nomeEspecifica, enfileirar: enfileirar,
     token: token, uid: uid, primeiroNome: primeiroNome

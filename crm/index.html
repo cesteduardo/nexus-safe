@@ -8,6 +8,7 @@
 <meta name="robots" content="noindex">
 <meta name="theme-color" content="#0A7A5C">
 <link rel="icon" href="../assets/marca.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
@@ -19,10 +20,10 @@
 
 <div class="app">
   <aside class="lateral">
-    <a class="marca" href="#/quadro"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#0A7A5C"/><path d="M10.5 22V10l11 12V10" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>Nexus Safe</a>
+    <a class="marca" href="#/quadro"><svg class="ns" viewBox="18 18 64 64" aria-hidden="true"><path d="M24 76V24L46.5 76H60C69.5 76 76 71 76 63C76 55.5 70.5 52 61 50.2C51.5 48.4 46 45 46 37.2C46 29.5 52 24 61 24C67 24 72 26.6 75 31"/></svg><span>Nexus <i>Safe</i></span></a>
     <div class="lateral__clinica">Agência<b data-clinica></b></div>
     <nav class="menu" aria-label="Seções">
-      <a href="#/quadro" data-rota="quadro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>Candidatos</a>
+      <a href="#/quadro" data-rota="quadro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>Atendimentos</a>
       <a href="#/cadastros" data-rota="cadastros"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V7l8-4 8 4v14"/><path d="M9 21v-6h6v6M9 10h.01M15 10h.01"/></svg>Empresas e funções</a>
       <a href="#/automacoes" data-rota="automacoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg>Automações</a>
     </nav>
@@ -40,13 +41,14 @@
 
 <dialog class="modal" data-modal-novo>
   <form method="dialog" data-form-novo>
-    <h2>Novo candidato</h2>
+    <h2>Novo atendimento</h2>
     <p style="color:var(--apoio);font-size:14px;margin-top:-6px">Ao salvar, o sistema gera o link da ficha e prepara a mensagem de WhatsApp.</p>
     <label class="campo">Nome completo<input class="entrada" name="nome" required autocomplete="off"></label>
     <div class="acoes-linha">
       <label class="campo">CPF<input class="entrada" name="cpf" inputmode="numeric" placeholder="000.000.000-00" required></label>
       <label class="campo">Celular (WhatsApp)<input class="entrada" name="celular" inputmode="tel" placeholder="(17) 99999-9999" required></label>
     </div>
+    <label class="campo">Tipo de exame<select class="entrada" name="tipoExame" data-sel-tipo></select></label>
     <label class="campo">Empresa<select class="entrada" name="empresaId" required data-sel-empresa></select></label>
     <label class="campo">Função<select class="entrada" name="funcaoId" required data-sel-funcao></select><small data-riscos-funcao></small></label>
     <div class="modal__acoes">

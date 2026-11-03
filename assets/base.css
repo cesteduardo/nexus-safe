@@ -33,7 +33,11 @@ button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--verde); outline-offset: 2px; }
 
 .marca { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--tinta); font-family: var(--fonte-titulo); font-weight: 700; font-size: 18px; letter-spacing: -.02em; }
-.marca svg { width: 30px; height: 30px; flex: none; }
+.marca .ns { width: 30px; height: 30px; }
+.marca span { white-space: nowrap; }
+.marca i { font-style: normal; font-weight: 500; }
+.ns { flex: none; display: block; color: var(--verde); }
+.ns path { fill: none; stroke: currentColor; stroke-width: 7; stroke-linecap: round; stroke-linejoin: round; }
 .marca small { font-family: var(--fonte); font-weight: 500; font-size: 12px; color: var(--apoio); letter-spacing: 0; }
 
 .botao { display: inline-flex; align-items: center; justify-content: center; gap: 8px; min-height: 44px; padding: 0 18px; border-radius: 10px; border: 0; background: var(--verde); color: #fff; font-weight: 600; font-size: 15px; text-decoration: none; cursor: pointer; transition: background-color 160ms ease, box-shadow 160ms ease, transform 120ms ease; white-space: nowrap; }

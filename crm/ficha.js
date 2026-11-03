@@ -14,6 +14,7 @@
   }
 
   var empresa = N.empresa(c.empresaId), funcao = N.funcao(c.funcaoId);
+  var SELO = '<p class="selo-ns">Ficha protegida por <svg class="ns" viewBox="18 18 64 64" aria-hidden="true"><path d="M24 76V24L46.5 76H60C69.5 76 76 71 76 63C76 55.5 70.5 52 61 50.2C51.5 48.4 46 45 46 37.2C46 29.5 52 24 61 24C67 24 72 26.6 75 31"/></svg><b>Nexus Safe</b></p>';
   var primeiro = N.primeiroNome(c.nome);
 
   if (c.ficha) { telaFinal(true); return; }
@@ -58,10 +59,10 @@
   var TELAS = {
     inicio: function () {
       return '<h1>Olá, ' + esc(primeiro) + '!</h1>' +
-        '<p>Esta é a ficha do seu exame admissional para <b>' + esc(funcao.nome) + '</b> na <b>' + esc(empresa.nome.replace(/ \(fict[íi]ci[ao]\)/, '')) + '</b>. Leva uns 10 minutos.</p>' +
+        '<p>Esta é a ficha do seu exame ' + esc(N.nomeTipo(c.tipoExame).toLowerCase()) + ' para <b>' + esc(funcao.nome) + '</b> na <b>' + esc(empresa.nome.replace(/ \(fict[íi]ci[ao]\)/, '')) + '</b>. Leva uns 10 minutos.</p>' +
         '<div class="info"><b>Suas respostas de saúde ficam só com a equipe médica</b> da ' + esc(d.clinica) + '. A empresa recebe apenas o resultado do exame (apto ou inapto).</div>' +
         '<div class="caixa"><h3>Tenha à mão</h3><p style="font-size:15px;color:var(--apoio)">Seus documentos, o nome das últimas empresas em que trabalhou e o nome dos remédios que usa.</p></div>' +
-        '<p style="font-size:14px">Se precisar parar, suas respostas ficam salvas neste celular. É só abrir o mesmo link depois.</p>';
+        '<p style="font-size:14px">Se precisar parar, suas respostas ficam salvas neste celular. É só abrir o mesmo link depois.</p>' + SELO;
     },
     dados: function () {
       var p = st.pessoais;
@@ -130,7 +131,8 @@
         (N.ESPECIFICAS[r] || []).forEach(function (q) { if (vistos.indexOf(q[0]) >= 0) return; vistos.push(q[0]); h += sn('e_' + q[0], q[1], st.especificas[q[0]]); });
       });
       h += '</div>';
-      if (funcao.riscos.indexOf('ruido') >= 0) h += '<div class="info"><b>Para a audiometria:</b> fique 14 horas sem barulho alto antes do exame (sem fone de ouvido alto, sem máquina, sem show).</div>';
+      var prep = N.preparos(funcao);
+      if (prep.length) h += '<div class="info"><b>Para o dia do exame:</b> ' + prep.map(esc).join('; ') + '.</div>';
       return h;
     },
     fim: function () {
@@ -217,7 +219,7 @@
       '<h1>' + (jaEnviada ? 'Ficha já enviada' : 'Ficha enviada!') + '</h1>' +
       '<p style="color:var(--apoio);max-width:24em">Obrigado, ' + esc(primeiro) + '. A ' + esc(d.clinica) + ' vai chamar você pelo WhatsApp para marcar o exame.</p>' +
       '<div class="info" style="text-align:left;margin-top:12px"><b>Demonstração:</b> volte ao CRM para ver a ficha chegando na coluna "Ficha recebida", com os pontos de atenção para o médico.</div>' +
-      '<a class="botao" href="index.html#/c/' + c.id + '">Ver no CRM</a></div>';
+      '<a class="botao" href="index.html#/c/' + c.id + '">Ver no CRM</a>' + SELO + '</div>';
   }
 
   /* ---------- assinatura ---------- */

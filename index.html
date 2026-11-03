@@ -9,7 +9,14 @@
 <meta property="og:title" content="Nexus Safe: plano">
 <meta property="og:description" content="TI, automação e ficha admissional para agências de SST.">
 <meta name="theme-color" content="#0A7A5C">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://cesteduardo.github.io/nexus-safe/">
+<meta property="og:image" content="https://cesteduardo.github.io/nexus-safe/assets/og.png">
+<meta property="og:image:width" content="1200">
+<meta property="og:image:height" content="630">
+<meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="assets/marca.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="assets/apple-touch-icon.png">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
@@ -20,7 +27,7 @@
 
 <header class="topo">
   <div class="topo__in">
-    <a class="marca" href="./"><svg viewBox="0 0 32 32" aria-hidden="true"><rect width="32" height="32" rx="9" fill="#0A7A5C"/><path d="M10.5 22V10l11 12V10" fill="none" stroke="#fff" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/></svg>Nexus Safe</a>
+    <a class="marca" href="./"><svg class="ns" viewBox="18 18 64 64" aria-hidden="true"><path d="M24 76V24L46.5 76H60C69.5 76 76 71 76 63C76 55.5 70.5 52 61 50.2C51.5 48.4 46 45 46 37.2C46 29.5 52 24 61 24C67 24 72 26.6 75 31"/></svg><span>Nexus <i>Safe</i></span></a>
     <nav>
       <a href="#servicos">Serviços</a>
       <a href="#plataforma">Plataforma</a>
@@ -304,18 +311,23 @@
     <div class="secao__cab">
       <p class="secao__num">08 · Técnica</p>
       <h2>Feito sobre o que já existe</h2>
-      <p>O WKSF (o ERP de SST que já está pronto) é grande demais para uma clínica pequena. A Nexus Safe é um projeto novo e enxuto que copia as peças certas dele.</p>
+      <p>O SST (WKSF, o ERP que já está pronto) é grande demais para uma clínica pequena. A Nexus Safe é um projeto novo e enxuto que reaproveita as peças certas dele. O que já está no modelo do CRM aparece marcado.</p>
     </div>
     <div class="tabela-wrap">
       <table>
-        <thead><tr><th>Peça do WKSF</th><th>Uso na Nexus Safe</th></tr></thead>
+        <thead><tr><th>Peça do SST (WKSF)</th><th>Uso na Nexus Safe</th><th>No modelo</th></tr></thead>
         <tbody>
-          <tr><td>auth, tenant, permissões</td><td>Login, uma agência por conta, quem vê o quê</td></tr>
-          <tr><td>Express + SQLite, helmet, rate limit</td><td>A mesma base, já conhecida e testada</td></tr>
-          <tr><td>Link público com token (pesquisa psicossocial e portal)</td><td>O link da ficha</td></tr>
-          <tr><td>Geração de PDF</td><td>PDF da ficha e do ASO</td></tr>
-          <tr><td>Catálogo de exames</td><td>Exames complementares por função</td></tr>
-          <tr><td>Log e auditoria</td><td>Trilha de quem abriu cada ficha</td></tr>
+          <tr><td>Catálogo de exames (código, nome, preparo)</td><td>Lista de exames e as orientações que vão na confirmação do horário</td><td>Já usado</td></tr>
+          <tr><td>Protocolo do PCMSO</td><td>O exame vem do protocolo aprovado pelo médico coordenador, nunca direto do risco</td><td>Já usado</td></tr>
+          <tr><td>Tipos de exame</td><td>Admissional, periódico, retorno ao trabalho, mudança de riscos e demissional com a mesma ficha</td><td>Já usado</td></tr>
+          <tr><td>Campos do ASO</td><td>Aptidão, restrições, observação pública, validade e médico examinador</td><td>Já usado</td></tr>
+          <tr><td>Regra de documentos médicos (seção 48)</td><td>RH vê o ASO; prontuário e respostas de saúde só com a equipe médica</td><td>Já usado</td></tr>
+          <tr><td>Grupos de risco do inventário</td><td>Riscos no ASO por grupo: físico, químico, biológico, ergonômico, acidente</td><td>Já usado</td></tr>
+          <tr><td>auth, tenant, permissões</td><td>Login, uma agência por conta, quem vê o quê</td><td>Versão real</td></tr>
+          <tr><td>Express + SQLite, helmet, rate limit</td><td>A mesma base, já conhecida e testada</td><td>Versão real</td></tr>
+          <tr><td>Link público com token (psicossocial e portal)</td><td>O link da ficha, com validade e trava depois do envio</td><td>Versão real</td></tr>
+          <tr><td>PDF, log e auditoria</td><td>PDF da ficha e do ASO, trilha de quem abriu cada ficha</td><td>Versão real</td></tr>
+          <tr><td>Fila de eventos e eSocial</td><td>Automações disparadas por evento e, depois, o S-2220</td><td>Fase 4</td></tr>
         </tbody>
       </table>
     </div>
