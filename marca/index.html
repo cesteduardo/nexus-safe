@@ -1,0 +1,66 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexus Safe: opções de logo</title>
+<meta name="robots" content="noindex">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@500;600;700;800&family=Playfair+Display:wght@600;700&family=Cormorant+Garamond:wght@600&family=Sora:wght@700&display=swap" rel="stylesheet">
+<style>
+  :root { --verde: #0A7A5C; --tinta: #0F1F1B; --apoio: #5A6964; --linha: #DCE3E0; --fundo: #F4F6F5; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--fundo); color: var(--tinta); font: 15px/1.5 Inter, system-ui, sans-serif; }
+  header { max-width: 1120px; margin: 0 auto; padding: 40px 16px 8px; }
+  h1 { font: 700 32px/1.1 "Inter Tight"; letter-spacing: -.02em; margin: 0 0 8px; }
+  header p { color: var(--apoio); margin: 0; max-width: 40em; }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 60px; display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+  .op { background: #fff; border-radius: 18px; box-shadow: inset 0 0 0 1px var(--linha); padding: 22px; display: grid; gap: 18px; }
+  .op__cab { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
+  .op h2 { margin: 0; font: 600 18px "Inter Tight"; }
+  .op__num { font-weight: 700; color: var(--verde); font-size: 14px; }
+  .op p { margin: -10px 0 0; color: var(--apoio); font-size: 14px; }
+  .palco { display: grid; place-items: center; height: 190px; border-radius: 12px; background: #FAFBFA; }
+  .tamanhos { display: flex; align-items: center; gap: 14px; }
+  .escuro { background: var(--tinta); border-radius: 14px; padding: 8px; }
+  .wm { display: flex; align-items: center; gap: 10px; padding-top: 14px; border-top: 1px solid var(--linha); }
+  .wm span { font: 700 21px "Inter Tight"; letter-spacing: -.02em; }
+  .wm span i { font-style: normal; font-weight: 500; }
+  svg { display: block; }
+</style>
+</head>
+<body>
+<header>
+  <h1>Opções de logo</h1>
+  <p>Seis direções para a Nexus Safe, cada uma em tamanho grande, no fundo escuro, nos tamanhos de ícone (32 e 18 px) e ao lado do nome. Me diga o número da que você gostou, ou o que juntar de uma e de outra.</p>
+</header>
+<main id="opcoes"></main>
+<script>
+  var V = '#0A7A5C', T = '#0F1F1B';
+  var OPCOES = [
+    { nome: 'Escudo', txt: 'Contorno de escudo com NS dentro. Fala de proteção sem ser óbvio demais.',
+      svg: function (c, bg) { return '<svg viewBox="0 0 100 100"><path d="M50 8 L83 19.5 V47 C83 68.5 69.5 83.5 50 92 C30.5 83.5 17 68.5 17 47 V19.5 Z" fill="none" stroke="' + c + '" stroke-width="3.6" stroke-linejoin="round"/><text x="50" y="61.5" text-anchor="middle" font-family="Inter Tight" font-weight="700" font-size="30" letter-spacing="-1.2" fill="' + c + '">NS</text></svg>'; } },
+    { nome: 'Escudo sólido', txt: 'O mesmo escudo preenchido, com NS vazado. Mais forte em ícone pequeno.',
+      svg: function (c, bg) { return '<svg viewBox="0 0 100 100"><path d="M50 8 L83 19.5 V47 C83 68.5 69.5 83.5 50 92 C30.5 83.5 17 68.5 17 47 V19.5 Z" fill="' + c + '" stroke="' + c + '" stroke-width="2" stroke-linejoin="round"/><text x="50" y="61.5" text-anchor="middle" font-family="Inter Tight" font-weight="700" font-size="30" letter-spacing="-1.2" fill="' + bg + '">NS</text></svg>'; } },
+    { nome: 'Bloco', txt: 'NS pesado num quadrado de cantos suaves. Cara de aplicativo, direto.',
+      svg: function (c, bg) { return '<svg viewBox="0 0 100 100"><rect x="7" y="7" width="86" height="86" rx="22" fill="' + c + '"/><text x="50" y="65" text-anchor="middle" font-family="Inter Tight" font-weight="800" font-size="42" letter-spacing="-2.5" fill="' + bg + '">NS</text></svg>'; } },
+    { nome: 'Fino', txt: 'N e S com serifa, separados por um filete. O mais elegante e sóbrio.',
+      svg: function (c, bg) { return '<svg viewBox="0 0 100 100"><text x="30" y="66" text-anchor="middle" font-family="Cormorant Garamond" font-weight="600" font-size="54" fill="' + c + '">N</text><path d="M50.5 27 V73" stroke="' + c + '" stroke-width="1.8"/><text x="70.5" y="66" text-anchor="middle" font-family="Cormorant Garamond" font-weight="600" font-size="54" fill="' + c + '">S</text></svg>'; } },
+    { nome: 'Serifa moderna', txt: 'NS em serifa de alto contraste, letras encostadas. Editorial, de consultoria.',
+      svg: function (c, bg) { return '<svg viewBox="0 0 100 100"><text x="50" y="68" text-anchor="middle" font-family="Playfair Display" font-weight="700" font-size="54" letter-spacing="-5" fill="' + c + '">NS</text></svg>'; } },
+    { nome: 'Geométrico', txt: 'NS sem serifa com o S cortando a perna do N. Moderno, de tecnologia.',
+      svg: function (c, bg) { return '<svg viewBox="0 0 100 100"><text x="50" y="68" text-anchor="middle" font-family="Sora" font-weight="700" font-size="52" letter-spacing="-8.5" fill="' + c + '"><tspan>N</tspan><tspan paint-order="stroke" stroke="' + bg + '" stroke-width="5.5">S</tspan></text></svg>'; } }
+  ];
+  function tam(svg, px) { return svg.replace('<svg ', '<svg width="' + px + '" height="' + px + '" '); }
+  var h = '';
+  OPCOES.forEach(function (o, i) {
+    h += '<section class="op"><div class="op__cab"><h2>' + o.nome + '</h2><span class="op__num">' + (i + 1) + '</span></div><p>' + o.txt + '</p>' +
+      '<div class="palco">' + tam(o.svg(V, '#FAFBFA'), 160) + '</div>' +
+      '<div class="tamanhos"><div class="escuro">' + tam(o.svg('#FFFFFF', T), 64) + '</div>' + tam(o.svg(V, '#fff'), 32) + tam(o.svg(V, '#fff'), 18) + '</div>' +
+      '<div class="wm">' + tam(o.svg(V, '#fff'), 40) + '<span>Nexus <i>Safe</i></span></div></section>';
+  });
+  document.getElementById('opcoes').innerHTML = h;
+</script>
+</body>
+</html>
