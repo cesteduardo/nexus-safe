@@ -1,0 +1,12 @@
+{
+  "name": "nexus-safe",
+  "private": true,
+  "type": "module",
+  "description": "Plano e modelo do CRM da Nexus Safe (site estático no GitHub Pages)",
+  "scripts": {
+    "test": "node testes/fluxo.mjs"
+  },
+  "devDependencies": {
+    "playwright": "1.48.2"
+  }
+}
