@@ -135,6 +135,7 @@
   /* ---------- painel do candidato ---------- */
   function candidato(id) { var d = N.carregar(); for (var i = 0; i < d.candidatos.length; i++) if (d.candidatos[i].id === id) return d.candidatos[i]; return null; }
 
+  var painelOrigem = null;
   function abrirPainel(id) {
     var c = candidato(id);
     if (!c) { location.hash = '#/quadro'; return; }
@@ -145,6 +146,8 @@
       requestAnimationFrame(function () { painel.classList.add('aberto'); veu.classList.add('aberto'); });
       document.body.style.overflow = 'hidden';
       painel.setAttribute('tabindex', '-1');
+      painel.setAttribute('role', 'dialog'); painel.setAttribute('aria-modal', 'true');
+      painelOrigem = id;
       setTimeout(function () { painel.focus(); }, 30);
     }
   }
@@ -154,7 +157,25 @@
     document.body.style.overflow = '';
     setTimeout(function () { painel.hidden = true; veu.hidden = true; }, 330);
     if (!semHash) location.hash = '#/quadro';
+    var volta = painelOrigem; painelOrigem = null;
+    if (!volta) return;
+    setTimeout(function () {
+      var cartao = document.querySelector('a.card[href="#/c/' + volta + '"]');
+      if (cartao) cartao.focus(); else { var v = $('#vista'); if (v) v.focus(); }
+    }, 60);
   }
+  /* Tab fica dentro do painel enquanto ele está aberto */
+  function focaveis() {
+    return Array.prototype.filter.call(painel.querySelectorAll('a[href],button,input,select,textarea,summary,[tabindex]:not([tabindex="-1"])'), function (n) { return !n.disabled && n.offsetParent !== null; });
+  }
+  document.addEventListener('keydown', function (ev) {
+    if (ev.key !== 'Tab' || painel.hidden || document.querySelector('dialog[open]')) return;
+    var l = focaveis(); if (!l.length) { ev.preventDefault(); painel.focus(); return; }
+    var a = document.activeElement, dentro = painel.contains(a) && a !== painel;
+    if (!dentro) { ev.preventDefault(); (ev.shiftKey ? l[l.length - 1] : l[0]).focus(); }
+    else if (ev.shiftKey && a === l[0]) { ev.preventDefault(); l[l.length - 1].focus(); }
+    else if (!ev.shiftKey && a === l[l.length - 1]) { ev.preventDefault(); l[0].focus(); }
+  });
 
   function renderPainel(c) {
     var f = N.funcao(c.funcaoId), e = N.empresa(c.empresaId);

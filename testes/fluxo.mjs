@@ -70,6 +70,13 @@ try {
   await page.click('.agora__filtro [data-tarefa=""]'); await page.waitForTimeout(150);
   await page.click('.card:has-text("Valter Gomes Silva") >> nth=0'); await page.waitForTimeout(350);
   ok(/Pode ser dispensado/.test(await page.locator('[data-painel]').innerText()), 'demissional dispensável pela NR-7 (grau de risco 2, ASO de 80 dias)');
+  for (let i = 0; i < 40; i++) await page.keyboard.press('Tab');
+  ok(await page.evaluate(() => document.querySelector('[data-painel]').contains(document.activeElement)), 'Tab fica preso dentro do painel aberto');
+  for (let i = 0; i < 40; i++) await page.keyboard.press('Shift+Tab');
+  ok(await page.evaluate(() => document.querySelector('[data-painel]').contains(document.activeElement)), 'Shift+Tab também fica dentro do painel');
+  await page.keyboard.press('Escape'); await page.waitForTimeout(450);
+  ok(await page.evaluate(() => document.activeElement.matches('a.card') && /Valter Gomes Silva/.test(document.activeElement.innerText)), 'ao fechar, o foco volta ao cartão do atendimento');
+  await page.click('.card:has-text("Valter Gomes Silva") >> nth=0'); await page.waitForTimeout(350);
   const caixa = await page.locator('[data-painel]').boundingBox();
   ok(caixa && Math.abs(caixa.x + caixa.width / 2 - 683) < 4 && caixa.y > 0, 'atendimento abre em pop-up no centro');
   await page.click('[data-guia]'); await page.waitForTimeout(200);

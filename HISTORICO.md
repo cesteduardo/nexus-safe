@@ -2,6 +2,7 @@
 
 Uma linha por rodada, a mais recente em cima: data e hora (America/Sao_Paulo), o que mudou, resultado do `npm test`.
 
+- 05/11/2026 16:41 · Painel do atendimento: Tab e Shift+Tab ficam presos dentro do painel aberto (role=dialog) e, ao fechar, o foco volta ao cartão. Só `crm/app.js`. Teste: 98 verificações ok.
 - 05/11/2026 15:41 · Plano (index.html): seção "Três perfis, três telas" com o que cada perfil vê e ligação para crm/entrar.html; tirado o aviso antigo do botão "Ver como". Teste: 95 verificações ok.
 - 05/11/2026 14:48 · Administração: botão "Nova agência" com formulário (nome, cidade, contato e telefone no padrão, serviços, situação), recusa nome repetido; `Contas.criarAgencia` em `crm/contas.js`. No servidor o botão some (agências reais entram por `servidor/conta.mjs`). Teste: 94 verificações ok. O teste do servidor não rodou inteiro neste ambiente: o `wrangler dev` cai no meio (48 ok e depois "fetch failed", igual sem a mudança), a mudança não toca o servidor.
 - 05/11/2026 13:40 · Administração no celular: a tabela de agências vira lista de cartões até 600 px (só CSS, com rótulos por campo). Teste: 91 verificações ok.
