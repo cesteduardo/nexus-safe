@@ -32,19 +32,7 @@
 
   /* Catálogo de exames: o mesmo vocabulário do SST (routes/exames.js, CATALOGO_BASICO).
      Só nome, código e preparo. Quem diz qual exame cada função faz é o protocolo do PCMSO. */
-  var CATALOGO = {
-    clinico: { codigo: 'CLI', nome: 'Avaliação clínica ocupacional', preparo: '' },
-    audiometria: { codigo: 'AUD', nome: 'Audiometria tonal e vocal', preparo: 'repouso acústico de 14 horas (sem barulho alto antes do exame)' },
-    acuidade: { codigo: 'ACV', nome: 'Acuidade visual', preparo: 'traga seus óculos ou lentes, se usa' },
-    ecg: { codigo: 'ECG', nome: 'Eletrocardiograma', preparo: '' },
-    eeg: { codigo: 'EEG', nome: 'Eletroencefalograma', preparo: 'cabelo limpo e seco, sem creme ou gel' },
-    glicemia: { codigo: 'GLI', nome: 'Glicemia de jejum', preparo: 'jejum de 8 horas' },
-    hemograma: { codigo: 'HEM', nome: 'Hemograma completo', preparo: '' },
-    espirometria: { codigo: 'ESP', nome: 'Espirometria', preparo: 'não fumar 2 horas antes' },
-    raiox: { codigo: 'RXT', nome: 'Raio X de tórax', preparo: '' },
-    parasitologico: { codigo: 'EPF', nome: 'Parasitológico de fezes', preparo: 'trazer a amostra no frasco entregue pela clínica' },
-    toxicologico: { codigo: 'TOX', nome: 'Exame toxicológico de larga janela', preparo: 'coleta de cabelo ou pelo' }
-  };
+  var CATALOGO = window.NexusRegras.CATALOGO;
   var EXAMES = {};
   Object.keys(CATALOGO).forEach(function (k) { EXAMES[k] = CATALOGO[k].nome; });
 
@@ -233,23 +221,95 @@
 
   /* ---------- armazenamento ---------- */
   var memoria = null;
+  /* Modo servidor: a página foi entregue pelo Worker da Cloudflare (crm/modo.js diz isso).
+     Os dados vêm da API, já filtrados pelo perfil de quem entrou. Na demonstração (GitHub Pages),
+     tudo continua no localStorage. */
+  var SERVIDOR = typeof window !== 'undefined' && !!window.NEXUS_SERVIDOR;
+  /* a Cloudflare tira o .html do endereço (/crm/ficha.html vira /crm/ficha) */
+  var NA_FICHA = SERVIDOR && /\/ficha(\.html)?$/.test(location.pathname);
+  var TOKEN_FICHA = NA_FICHA ? new URLSearchParams(location.search).get('t') || '' : '';
   function carregar() {
+    if (SERVIDOR) return memoria || { candidatos: [], empresas: [], funcoes: [], automacoes: [], mensagens: [], pcmso: {}, clinica: '' };
     if (memoria) return memoria;
     try { var t = localStorage.getItem(CHAVE); if (t) memoria = JSON.parse(t); } catch (e) { memoria = null; }
     if (!memoria || memoria.versao !== 4) { memoria = seed(); salvar(); }
     return memoria;
   }
-  function salvar() { try { localStorage.setItem(CHAVE, JSON.stringify(memoria)); } catch (e) { /* segue só em memória */ } }
+  function salvar() {
+    if (NA_FICHA) { guardarRascunhoServidor(); return; }
+    if (SERVIDOR) return; /* no servidor, quem grava é N.acao */
+    try { localStorage.setItem(CHAVE, JSON.stringify(memoria)); } catch (e) { /* segue só em memória */ }
+  }
+
+  /* ---------- API ---------- */
+  function api(caminho, corpo) {
+    return fetch('/api/' + caminho, { method: corpo ? 'POST' : 'GET', credentials: 'same-origin', headers: corpo ? { 'content-type': 'application/json' } : {}, body: corpo ? JSON.stringify(corpo) : undefined })
+      .then(function (r) {
+        return r.json().catch(function () { return {}; }).then(function (j) {
+          if (r.status === 401 && !NA_FICHA) { try { localStorage.removeItem('nexus-safe-perfil'); } catch (e) { /* nada */ } location.replace('entrar.html'); throw new Error('Sessão expirada.'); }
+          if (!r.ok) { var e = new Error(j.erro || 'Erro ' + r.status); e.status = r.status; throw e; }
+          return j;
+        });
+      });
+  }
+  /* A tela só monta depois que os dados chegam. Na demonstração, monta na hora. */
+  function pronto(fn) {
+    if (!SERVIDOR) { fn(); return; }
+    var pedido = NA_FICHA ? api('ficha/' + encodeURIComponent(TOKEN_FICHA)).catch(function () { return { estado: null }; }) : api('estado');
+    pedido.then(function (j) { memoria = j.estado || null; if (j.estado && j.estado.contas && window.Contas) window.Contas.usar(j.estado.contas); fn(); }, function (e) {
+      document.body.insertAdjacentHTML('afterbegin', '<p class="aviso-demo" role="alert" style="margin:16px">Não foi possível carregar os dados (' + String(e.message).replace(/[<>&]/g, '') + '). Tente de novo em instantes.</p>');
+    });
+  }
+  var rascunhoTimer = 0;
+  function guardarRascunhoServidor() {
+    clearTimeout(rascunhoTimer);
+    rascunhoTimer = setTimeout(function () {
+      var c = memoria && memoria.candidatos[0]; if (!c || !c.rascunho) return;
+      api('ficha/' + encodeURIComponent(TOKEN_FICHA) + '/rascunho', { rascunho: c.rascunho }).catch(function () { /* tenta de novo no próximo campo */ });
+    }, 700);
+  }
+  /* Envio da ficha: no servidor, só mostra "enviada" depois que o banco confirmou. */
+  function enviarFicha(c) {
+    if (!SERVIDOR) { salvar(); return Promise.resolve(); }
+    clearTimeout(rascunhoTimer);
+    return api('ficha/' + encodeURIComponent(TOKEN_FICHA) + '/enviar', { ficha: c.ficha });
+  }
+
+  /* Ações do atendimento (regras.js). Devolve uma promessa nos dois modos. */
+  function contexto(d) {
+    var p = (window.Contas && window.Contas.lerPerfil()) || {};
+    return {
+      agora: new Date().toISOString(), clinica: d.clinica, empresa: empresa, funcao: funcao, novoId: uid,
+      usuario: { tipo: p.tipo || '', papel: p.papel || '', empresaId: p.empresaId || '', nome: p.nome || '' },
+      prepararLink: function (c) { c.token = token(); },
+      linkFicha: function (c) { return new URL('ficha.html?t=' + c.token, location.href).href; }
+    };
+  }
+  function acao(nome, alvoId, dados) {
+    if (SERVIDOR) return api('acao', { acao: nome, alvo: alvoId || '', dados: dados || {} }).then(function (j) { memoria = j.estado; if (j.estado && j.estado.contas && window.Contas) window.Contas.usar(j.estado.contas); return { novoId: j.novoId || '' }; });
+    try {
+      var R = window.NexusRegras, d = carregar();
+      if (nome === 'automacao') { d.automacoes.forEach(function (a) { if (a.id === dados.id) a.ativo = !!dados.ativo; }); salvar(); return Promise.resolve({}); }
+      var alvo = alvoId ? d.candidatos.filter(function (x) { return x.id === alvoId; })[0] : null;
+      if (!R.SEM_ALVO[nome] && !alvo) throw R.Erro('Atendimento não encontrado.', 404);
+      var ctx = contexto(d), r = R.ACOES[nome](ctx, alvo, dados || {});
+      if (r.novo) d.candidatos.unshift(r.novo);
+      r.mensagens.forEach(function (m) { if (enfileirar(m.automacao, m.para, m.texto, m.sempre) && m.aoEnviar) m.alvo.historico.push({ em: ctx.agora, txt: m.aoEnviar }); });
+      salvar();
+      return Promise.resolve({ novoId: r.novo ? r.novo.id : '' });
+    } catch (e) { return Promise.reject(e); }
+  }
   function recarregar() { memoria = null; return carregar(); }
   function restaurar() { memoria = seed(); salvar(); return memoria; }
 
   function empresa(id) { var d = carregar(); for (var i = 0; i < d.empresas.length; i++) if (d.empresas[i].id === id) return d.empresas[i]; return null; }
   function funcao(id) { var d = carregar(); for (var i = 0; i < d.funcoes.length; i++) if (d.funcoes[i].id === id) return d.funcoes[i]; return null; }
 
-  function enfileirar(automacaoId, para, texto) {
+  /* forcar: aviso pedido à mão (botão), sai mesmo com a automação desligada */
+  function enfileirar(automacaoId, para, texto, forcar) {
     var d = carregar();
     var a = d.automacoes.filter(function (x) { return x.id === automacaoId; })[0];
-    if (a && !a.ativo) return false;
+    if (a && !a.ativo && !forcar) return false;
     d.mensagens.unshift({ em: new Date().toISOString(), automacao: automacaoId, para: para, texto: texto });
     salvar();
     return true;
@@ -339,6 +399,6 @@
     ETAPAS: ETAPAS, RISCOS: RISCOS, RISCO_GRUPO: RISCO_GRUPO, EXAMES: EXAMES, CATALOGO: CATALOGO, TIPOS_EXAME: TIPOS_EXAME, nomeTipo: nomeTipo, preparos: preparos, somarMeses: somarMeses, SAUDE: SAUDE, ESPECIFICAS: ESPECIFICAS, EXPOSICOES: EXPOSICOES, FAMILIA: FAMILIA,
     carregar: carregar, recarregar: recarregar, salvar: salvar, restaurar: restaurar, empresa: empresa, funcao: funcao,
     alertas: alertas, nomeSaude: nomeSaude, nomeEspecifica: nomeEspecifica, enfileirar: enfileirar,
-    token: token, uid: uid, primeiroNome: primeiroNome, asoHtml: asoHtml, guiaHtml: guiaHtml, s2220Xml: s2220Xml, baixar: baixar, nomeArquivo: nomeArquivo, prazoS2220: prazoS2220, limiteDispensa: limiteDispensa
+    token: token, uid: uid, primeiroNome: primeiroNome, SERVIDOR: SERVIDOR, api: api, pronto: pronto, acao: acao, enviarFicha: enviarFicha, asoHtml: asoHtml, guiaHtml: guiaHtml, s2220Xml: s2220Xml, baixar: baixar, nomeArquivo: nomeArquivo, prazoS2220: prazoS2220, limiteDispensa: limiteDispensa
   };
 })();

@@ -3,10 +3,15 @@
 Site estático publicado no GitHub Pages a partir da branch `main`
 (https://cesteduardo.github.io/nexus-safe/). Cada push na `main` vai direto para o ar.
 
+O mesmo site também roda como servidor (Cloudflare Worker + D1, ainda não publicado): `servidor/index.js`,
+`servidor/esquema.sql`, `servidor/semente.mjs` e `wrangler.jsonc`. O `crm/modo.js` diz em qual modo a página está.
+Detalhes, passo a passo e o que falta em `SEGURANCA.md`.
+
 ## O que é
 - `index.html`: o plano (serviços de TI, automações de WhatsApp e a plataforma) para agências de SST.
 - `crm/`: modelo funcional do CRM. Tudo em `localStorage`, dados fictícios.
-  - `dados.js`: catálogos, perguntas, dados de demonstração, regras de alerta. Se mudar o formato dos dados salvos, suba a versão em `CHAVE` e em `versao`.
+  - `regras.js`: as ações do atendimento (criar, agendar, emitir ASO...) com validação. As mesmas no navegador e no servidor: mudança de regra entra aqui, nunca só na tela.
+  - `dados.js`: catálogos, perguntas, dados de demonstração, regras de alerta. Toda mudança passa por `Nexus.acao()`, que grava no navegador ou chama a API. Se mudar o formato dos dados salvos, suba a versão em `CHAVE` e em `versao`.
   - `app.js`: quadro, painel do atendimento (visão médica x empresa), ASO, cadastros, automações.
   - `ficha.html` + `ficha.js`: ficha que o candidato preenche no celular.
   - `entrar.html`: login do modelo (senha 123 para todas as contas; lista em `contas.js`, USUARIOS). Cada página protegida confere o perfil no `<head>` e em JS. Três perfis:
@@ -39,9 +44,13 @@ npx playwright install --with-deps chromium   # se o navegador não estiver inst
 npm test
 ```
 Se o Chromium do Playwright não instalar, use um que já exista: `CHROME=/caminho/do/chrome npm test`.
+
 O teste sobe um servidor próprio, percorre plano, quadro, visão médica e da empresa, ASO,
 ficha completa no celular e confere a rolagem lateral. Se acrescentar uma função nova, acrescente
 uma verificação em `testes/fluxo.mjs`.
+
+Mexeu em `crm/regras.js`, `crm/dados.js`, `crm/contas.js`, `crm/ficha.js` ou `servidor/`? Rode também o teste do servidor
+(passo a passo em `SEGURANCA.md`): `npx wrangler dev --port 8790 --ip 127.0.0.1` num terminal e `npm run test:servidor` no outro.
 
 ## Commits
 Mensagem curta em português dizendo o que mudou. Terminar com:

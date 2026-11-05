@@ -90,6 +90,7 @@ try {
   await page.click('text=Lucas Henrique Souza'); await page.waitForTimeout(350);
   ok(await page.locator('.atencao .forte').count() > 0, 'visão médica mostra pontos de atenção');
   ok(/Ficha aberta por Dra\. Camila Rocha/.test(await page.locator('[data-painel]').innerText()), 'abrir a ficha fica registrado no histórico');
+  ok(await page.evaluate(() => { const p = document.querySelector('[data-painel]'), c = p.querySelector('.painel__corpo'); return getComputedStyle(p).overflowY === 'hidden' && getComputedStyle(c).overflowY === 'auto' && parseFloat(getComputedStyle(c).borderBottomWidth) >= 18; }), 'pop-up rola só o corpo: a barra de rolagem não passa pelos cantos');
   await page.click('[data-fechar]'); await page.waitForTimeout(350);
   await logar(page, 'clinica');
   await page.click('text=Lucas Henrique Souza'); await page.waitForTimeout(350);

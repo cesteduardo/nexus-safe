@@ -4,9 +4,11 @@
   "type": "module",
   "description": "Plano e modelo do CRM da Nexus Safe (site estático no GitHub Pages)",
   "scripts": {
-    "test": "node testes/fluxo.mjs"
+    "test": "node testes/fluxo.mjs",
+    "test:servidor": "node testes/servidor.mjs"
   },
   "devDependencies": {
-    "playwright": "1.48.2"
+    "playwright": "1.48.2",
+    "wrangler": "^4.157.0"
   }
 }

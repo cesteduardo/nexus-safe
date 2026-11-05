@@ -92,8 +92,11 @@
   }
 
   var memoria = null;
+  var SERVIDOR = typeof window !== 'undefined' && !!window.NEXUS_SERVIDOR;
+  function usar(d) { memoria = d; }
   function carregar() {
     if (memoria) return memoria;
+    if (SERVIDOR || typeof window === 'undefined') return { versao: 3, agencias: [], chamados: [] };
     try { var t = localStorage.getItem(CHAVE); if (t) memoria = JSON.parse(t); } catch (e) { memoria = null; }
     if (!memoria || memoria.versao !== 3) { memoria = seed(); salvar(); }
     return memoria;
@@ -107,7 +110,7 @@
 
   /* Uso do mês: a agência ao vivo conta o que está no quadro; as outras têm números fixos. */
   function uso(a) {
-    if (!a.aoVivo || !window.Nexus) return a.uso || { fichas: 0, asos: 0, mensagens: 0 };
+    if (!a.aoVivo || typeof window === 'undefined' || !window.Nexus) return a.uso || { fichas: 0, asos: 0, mensagens: 0 };
     var d = window.Nexus.carregar(), ini = new Date(); ini.setDate(1); ini.setHours(0, 0, 0, 0);
     var noMes = function (iso) { return iso && new Date(iso) >= ini; };
     return {
@@ -239,11 +242,28 @@
     return h + '</article>';
   }
 
-  window.Contas = {
+  (typeof window !== 'undefined' ? window : globalThis).Contas = {
     PERFIS: PERFIS, SERVICOS: SERVICOS, CATEGORIAS: CATEGORIAS, SITUACOES: SITUACOES, PRIORIDADES: PRIORIDADES, CANAIS: CANAIS, EQUIPE: EQUIPE,
     lerPerfil: lerPerfil, gravarPerfil: gravarPerfil, USUARIOS: USUARIOS, entrar: entrar, sair: sair, exigir: exigir, destino: destino,
     carregar: carregar, salvar: salvar, restaurar: restaurar, recarregar: recarregar, agencia: agencia, chamado: chamado, uso: uso,
     abrirChamado: abrirChamado, registrar: registrar, escalonar: escalonar, atribuir: atribuir, NIVEL2: NIVEL2, avaliar: avaliar, prazo: prazo, duracao: duracao, indicadores: indicadores,
-    chamadoHtml: chamadoHtml, esc: esc, dataHora: dataHora
+    chamadoHtml: chamadoHtml, esc: esc, dataHora: dataHora, usar: usar
   };
+
+  /* No servidor, cada mudança de chamado aparece na hora (otimista) e vai para a API;
+     quando a resposta chega, a tela redesenha com o que o banco gravou. */
+  if (SERVIDOR) {
+    var C = window.Contas;
+    ['abrirChamado', 'registrar', 'escalonar', 'atribuir', 'avaliar'].forEach(function (nome) {
+      var local = C[nome];
+      C[nome] = function () {
+        var args = Array.prototype.slice.call(arguments), r = local.apply(null, args);
+        window.Nexus.acao('chamado.' + nome, '', { args: args }).then(function () { window.dispatchEvent(new Event('nexus:atualizado')); }, function (e) {
+          window.dispatchEvent(new CustomEvent('nexus:erro', { detail: e.message })); window.dispatchEvent(new Event('nexus:atualizado'));
+        });
+        return r;
+      };
+    });
+    C.restaurar = function () { return carregar(); };
+  }
 })();

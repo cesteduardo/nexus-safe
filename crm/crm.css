@@ -2,6 +2,8 @@ body { min-height: 100vh; }
 
 .demo-faixa { background: var(--tinta); color: #CFE0DA; font-size: 13px; text-align: center; padding: 8px 16px; }
 .demo-faixa a { color: #fff; }
+/* No servidor (Worker da Cloudflare) some o que só vale para a demonstração. */
+.modo-servidor .demo-faixa, .modo-servidor [data-so-demo], .modo-servidor [data-restaurar] { display: none !important; }
 
 .app { display: grid; grid-template-columns: 232px minmax(0, 1fr); min-height: calc(100vh - 37px); }
 .lateral { background: var(--branco); border-right: 1px solid var(--linha); padding: 18px 14px; display: flex; flex-direction: column; gap: 18px; position: sticky; top: 0; height: calc(100vh - 37px); }
@@ -76,6 +78,11 @@ button.agora__item:active:not(:disabled) { transform: scale(.98); }
 .painel { position: fixed; top: 50%; left: 50%; width: min(760px, calc(100% - 48px)); max-height: calc(100vh - 48px); max-height: calc(100dvh - 48px); background: var(--fundo); z-index: 41; overflow-y: auto; overscroll-behavior: contain; border-radius: 18px; box-shadow: 0 30px 80px -24px rgba(15, 31, 27, .55), 0 0 0 1px rgba(15, 31, 27, .06); opacity: 0; transform: translate(-50%, -47%) scale(.97); transition: opacity var(--t) var(--ease), transform var(--t) var(--saida); }
 .painel.aberto { opacity: 1; transform: translate(-50%, -50%); }
 .painel__cab { border-radius: 18px 18px 0 0; }
+/* A barra de rolagem fica dentro do pop-up: o cabeçalho não rola, só o corpo,
+   e a borda transparente de baixo segura a barra longe do canto arredondado. */
+.painel:not([hidden]) { display: flex; flex-direction: column; overflow: hidden; }
+.painel > .painel__cab { flex: none; }
+.painel > .painel__corpo { flex: 1 1 auto; min-height: 0; overflow-y: auto; overscroll-behavior: contain; border-bottom: 18px solid transparent; padding-bottom: 22px; }
 @media (max-width: 600px) {
   .painel { top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-height: 92vh; max-height: 92dvh; border-radius: 18px 18px 0 0; opacity: 1; transform: translateY(100%); }
   .painel.aberto { transform: none; }
@@ -131,9 +138,9 @@ button.agora__item:active:not(:disabled) { transform: scale(.98); }
 .linha-tempo time { color: var(--apoio); }
 
 /* modais */
-.modal { border: 0; border-radius: 16px; padding: 0; width: min(520px, calc(100% - 32px)); box-shadow: 0 30px 80px -20px rgba(15, 31, 27, .5); color: var(--texto); }
+.modal { border: 0; border-top: 16px solid transparent; border-bottom: 16px solid transparent; border-radius: 16px; padding: 0; width: min(520px, calc(100% - 32px)); box-shadow: 0 30px 80px -20px rgba(15, 31, 27, .5); color: var(--texto); }
 .modal::backdrop { background: rgba(15, 31, 27, .4); }
-.modal form, .modal .modal__corpo { padding: 22px; display: grid; gap: 14px; }
+.modal form, .modal .modal__corpo { padding: 6px 22px; display: grid; gap: 14px; }
 .modal h2 { font-size: 21px; }
 .modal__acoes { display: flex; justify-content: flex-end; gap: 10px; margin-top: 4px; }
 .modal--aso { width: min(780px, calc(100% - 32px)); }
@@ -252,6 +259,6 @@ button.agora__item:active:not(:disabled) { transform: scale(.98); }
 @media print {
   body * { visibility: hidden !important; }
   .modal--aso, .modal--aso * { visibility: visible !important; }
-  .modal--aso { position: absolute; inset: 0; width: 100%; box-shadow: none; }
+  .modal--aso { position: absolute; inset: 0; width: 100%; box-shadow: none; border: 0; }
   .modal--aso .modal__acoes { display: none; }
 }

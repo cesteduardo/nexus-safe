@@ -1,0 +1,16 @@
+.git
+.wrangler
+.dev.vars
+.impeccable
+.gitignore
+.assetsignore
+node_modules
+servidor
+testes
+marca/*.md
+*.md
+*.sql
+*.mjs
+*.jsonc
+package.json
+package-lock.json

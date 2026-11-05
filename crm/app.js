@@ -29,9 +29,22 @@
   function linkFicha(c) { return new URL('ficha.html?t=' + c.token, location.href).href; }
   function waLink(c, texto) { var n = String(c.celular || '').replace(/\D/g, ''); if (n.length <= 11) n = '55' + n; return 'https://wa.me/' + n + '?text=' + encodeURIComponent(texto); }
   function textoLink(c) { var d = N.carregar(); return 'Oi, ' + N.primeiroNome(c.nome) + '! Aqui é da ' + d.clinica + '. Antes do seu exame ' + N.nomeTipo(c.tipoExame).toLowerCase() + ', preencha a ficha neste link (leva uns 10 minutos): ' + linkFicha(c); }
+  /* Toda mudança passa por N.acao (regras.js): na demonstração grava no navegador, no servidor vai à API. */
+  function falhou(e) { toast(e && e.message ? e.message : 'Não foi possível concluir.'); }
+  function fazer(nome, id, dados, msg, depois, quieto) {
+    return N.acao(nome, id, dados).then(function () {
+      if (!quieto) redesenhar();
+      if (msg) toast(msg);
+      if (depois) depois();
+    }, falhou);
+  }
+  function redesenhar() {
+    var id = (location.hash.match(/^#\/c\/(\w+)/) || [])[1];
+    rota();
+    var c = id && candidato(id); if (c && !painel.hidden) renderPainel(c);
+  }
   function ehMedico() { return !!(sessao && sessao.papel === 'medico'); }
   function etapaNome(id) { for (var i = 0; i < N.ETAPAS.length; i++) if (N.ETAPAS[i].id === id) return N.ETAPAS[i].nome; return id; }
-  function registrar(c, txt) { c.historico.push({ em: new Date().toISOString(), txt: txt }); }
 
   /* ---------- rotas ---------- */
   function rota() {
@@ -125,7 +138,7 @@
   function abrirPainel(id) {
     var c = candidato(id);
     if (!c) { location.hash = '#/quadro'; return; }
-    if (painel.hidden && ehMedico() && c.ficha) { registrar(c, 'Ficha aberta por ' + sessao.nome + '.'); N.salvar(); }
+    if (painel.hidden && ehMedico() && c.ficha) fazer('abrirFicha', c.id, {}, '', null, true);
     renderPainel(c);
     if (painel.hidden) {
       painel.hidden = false; veu.hidden = false;
@@ -397,48 +410,21 @@
     }
     else if (t.matches('[data-agendar]') && c) {
       var v = $('[data-agenda]').value; if (!v) return;
-      c.agendadoPara = new Date(v).toISOString(); c.etapa = 'agendado'; c.agendadoModo = $('[data-agenda-modo]').value;
-      registrar(c, 'Exame agendado para ' + quandoExame(c) + '.');
-      var f = N.funcao(c.funcaoId), ori = N.preparos(f).map(function (x) { return x.charAt(0).toLowerCase() + x.slice(1); });
-      if (N.enfileirar('agenda', c.nome, 'Oi, ' + N.primeiroNome(c.nome) + '! Seu exame ' + N.nomeTipo(c.tipoExame).toLowerCase() + ' está marcado para ' + quandoExame(c) + ' na ' + d.clinica + '. Leve RG e carteira de trabalho' + (ori.length ? '; ' + ori.join('; ') : '') + '.')) registrar(c, 'Confirmação enviada pelo WhatsApp.');
-      N.salvar(); renderPainel(c); renderQuadro(); toast('Exame agendado');
+      fazer('agendar', c.id, { quando: new Date(v).toISOString(), modo: $('[data-agenda-modo]').value }, 'Exame agendado');
     }
-    else if (t.matches('[data-atendido]') && c) {
-      c.etapa = 'atendido'; registrar(c, 'Atendido(a) pela equipe médica.'); N.salvar(); renderPainel(c); renderQuadro(); toast('Marcado como atendido');
-    }
+    else if (t.matches('[data-atendido]') && c) fazer('atendido', c.id, {}, 'Marcado como atendido');
     else if (t.matches('[data-emitir]') && c) {
-      var res = $('[data-aso-resultado]').value, med = $('[data-aso-medico]').value || 'Dra. Camila Rocha';
-      var agora = new Date().toISOString(), fa = N.funcao(c.funcaoId);
-      c.aso = { resultado: res, restricoes: res === 'Apto com restrição' ? $('[data-aso-restricoes]').value.trim() : '', medico: med, crm: 'CRM-SP 123456', data: agora, validade: c.tipoExame === 'demissional' ? '' : N.somarMeses(agora, fa.periodicidade), obs: $('[data-aso-obs]').value.trim() };
-      c.etapa = 'aso'; c.esocial = { status: 'pendente', prazo: N.prazoS2220(agora) }; registrar(c, 'ASO emitido: ' + res + '. S-2220 pendente até ' + new Date(c.esocial.prazo).toLocaleDateString('pt-BR') + '.');
-      var e = N.empresa(c.empresaId), fu = N.funcao(c.funcaoId);
-      if (N.enfileirar('aso', e.contato + ' · ' + e.nome.replace(/ \(fict[íi]ci[ao]\)/, ''), 'Olá, ' + N.primeiroNome(e.contato) + '. O ASO ' + N.nomeTipo(c.tipoExame).toLowerCase() + ' de ' + c.nome + ' (' + fu.nome + ') está pronto: ' + res.toUpperCase() + '. O PDF segue anexo. ' + d.clinica + '.')) registrar(c, 'Aviso enviado ao RH da empresa.');
-      N.salvar(); renderPainel(c); renderQuadro(); abrirAso(c);
+      fazer('emitirAso', c.id, { resultado: $('[data-aso-resultado]').value, restricoes: $('[data-aso-restricoes]').value, obs: $('[data-aso-obs]').value }, '', function () { abrirAso(candidato(c.id)); });
     }
-    else if (t.matches('[data-esocial]') && c) {
-      c.esocial.status = 'enviado'; c.esocial.enviadoEm = new Date().toISOString(); c.esocial.recibo = '1.2.' + String(Date.now()).slice(-10);
-      registrar(c, 'S-2220 enviado ao eSocial.'); N.salvar(); renderPainel(c); renderQuadro(); toast('S-2220 marcado como enviado');
-    }
+    else if (t.matches('[data-esocial]') && c) fazer('esocialEnviado', c.id, {}, 'S-2220 marcado como enviado');
     else if (t.matches('[data-ver-aso]') && c) abrirAso(c);
-    else if (t.matches('[data-guia]') && c) { $('[data-aso-conteudo]').innerHTML = N.guiaHtml(c); $('[data-modal-aso]').showModal(); registrar(c, 'Guia de encaminhamento emitida.'); N.salvar(); }
+    else if (t.matches('[data-guia]') && c) { $('[data-aso-conteudo]').innerHTML = N.guiaHtml(c); $('[data-modal-aso]').showModal(); fazer('guia', c.id, {}, '', null, true); }
     else if (t.matches('[data-xml]') && c) { N.baixar(N.nomeArquivo(c), N.s2220Xml(c)); toast('XML do S-2220 baixado'); }
-    else if (t.matches('[data-avisar-rh]')) {
-      var cv = candidato(t.dataset.avisarRh), ev2 = N.empresa(cv.empresaId), fv = N.funcao(cv.funcaoId);
-      cv.avisoRhEm = new Date().toISOString();
-      N.enfileirar('periodico', ev2.contato + ' · ' + ev2.nome.replace(/ \(fict[íi]ci[ao]\)/, ''), 'Olá, ' + N.primeiroNome(ev2.contato) + '. O ASO de ' + cv.nome + ' (' + fv.nome + ') vence em ' + new Date(cv.aso.validade).toLocaleDateString('pt-BR') + '. Podemos convocar o periódico? ' + d.clinica + '.');
-      registrar(cv, 'RH avisado do vencimento do ASO.'); N.salvar(); renderPeriodicos(); toast('Aviso enviado ao RH');
-    }
-    else if (t.matches('[data-convocar]')) {
-      var base = candidato(t.dataset.convocar), agora2 = new Date().toISOString();
-      var novo = { id: N.uid(), token: N.token(), tipoExame: 'periodico', nome: base.nome, cpf: base.cpf, celular: base.celular, empresaId: base.empresaId, funcaoId: base.funcaoId, etapa: 'enviado', criadoEm: agora2, agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] };
-      registrar(novo, 'Periódico convocado pela clínica (ASO anterior vence em ' + new Date(base.aso.validade).toLocaleDateString('pt-BR') + ').');
-      if (N.enfileirar('link', novo.nome, textoLink(novo))) registrar(novo, 'Link da ficha enviado pelo WhatsApp.');
-      base.convocadoEm = agora2; registrar(base, 'Periódico convocado.');
-      d.candidatos.unshift(novo); N.salvar(); renderPeriodicos(); toast('Periódico convocado. Link enviado.');
-    }
+    else if (t.matches('[data-avisar-rh]')) fazer('avisarRh', t.dataset.avisarRh, {}, 'Aviso enviado ao RH');
+    else if (t.matches('[data-convocar]')) fazer('convocar', t.dataset.convocar, {}, 'Periódico convocado. Link enviado.');
     else if (t.matches('[data-fechar-aso]')) $('[data-modal-aso]').close();
     else if (t.matches('[data-imprimir]')) window.print();
-    else if (t.matches('[data-restaurar]')) { if (confirm('Voltar a demonstração ao estado inicial? O que você fez aqui será apagado.')) { N.restaurar(); if (window.Contas) window.Contas.restaurar(); filtro = { empresa: '', busca: '', tarefa: '' }; location.hash = '#/quadro'; rota(); toast('Demonstração restaurada'); } }
+    else if (t.matches('[data-restaurar]') && !N.SERVIDOR) { if (confirm('Voltar a demonstração ao estado inicial? O que você fez aqui será apagado.')) { N.restaurar(); if (window.Contas) window.Contas.restaurar(); filtro = { empresa: '', busca: '', tarefa: '' }; location.hash = '#/quadro'; rota(); toast('Demonstração restaurada'); } }
   });
 
   document.addEventListener('change', function (ev) {
@@ -447,7 +433,7 @@
     else if (t.matches('[data-sel-tipo]')) mostrarAdmissao();
     else if (t.matches('[data-sel-empresa]')) atualizarFuncoes();
     else if (t.matches('[data-sel-funcao]')) mostrarRiscos();
-    else if (t.matches('[data-auto]')) { var d = N.carregar(); d.automacoes.forEach(function (a) { if (a.id === t.dataset.auto) a.ativo = t.checked; }); N.salvar(); toast(t.checked ? 'Automação ligada' : 'Automação desligada'); }
+    else if (t.matches('[data-auto]')) fazer('automacao', '', { id: t.dataset.auto, ativo: t.checked }, t.checked ? 'Automação ligada' : 'Automação desligada');
   });
 
   document.addEventListener('input', function (ev) {
@@ -463,13 +449,10 @@
     if (ev.submitter && ev.submitter.value === 'cancelar') return;
     if (window.Campos.validar(ev.target).length) { ev.preventDefault(); return; }
     var fd = new FormData(ev.target);
-    var d = N.carregar();
-    var c = { id: N.uid(), token: N.token(), tipoExame: fd.get('tipoExame') || 'admissional', nome: fd.get('nome').trim().replace(/ +/g, ' '), cpf: fd.get('cpf'), celular: fd.get('celular'), empresaId: fd.get('empresaId'), funcaoId: fd.get('funcaoId'), admissaoEm: fd.get('admissaoEm') ? new Date(fd.get('admissaoEm') + 'T08:00:00').toISOString() : '', afastadoDesde: fd.get('afastadoDesde') ? new Date(fd.get('afastadoDesde') + 'T08:00:00').toISOString() : '', etapa: 'enviado', criadoEm: new Date().toISOString(), agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] };
-    registrar(c, 'Cadastrado(a) pela recepção.');
-    if (N.enfileirar('link', c.nome, textoLink(c))) registrar(c, 'Link da ficha enviado pelo WhatsApp.');
-    d.candidatos.unshift(c); N.salvar();
-    location.hash = '#/c/' + c.id;
-    toast('Atendimento cadastrado. Link gerado.');
+    N.acao('criar', '', {
+      tipoExame: fd.get('tipoExame') || 'admissional', nome: fd.get('nome'), cpf: fd.get('cpf'), celular: fd.get('celular'), empresaId: fd.get('empresaId'), funcaoId: fd.get('funcaoId'),
+      admissaoEm: fd.get('admissaoEm') ? new Date(fd.get('admissaoEm') + 'T08:00:00').toISOString() : '', afastadoDesde: fd.get('afastadoDesde') ? new Date(fd.get('afastadoDesde') + 'T08:00:00').toISOString() : ''
+    }).then(function (r) { location.hash = '#/c/' + r.novoId; rota(); toast('Atendimento cadastrado. Link gerado.'); }, falhou);
   });
 
   document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && !painel.hidden && !document.querySelector('dialog[open]')) fecharPainel(); });
@@ -477,10 +460,14 @@
   /* volta da ficha em outra aba: atualiza a tela */
   window.addEventListener('storage', function () { N.recarregar(); if (window.Contas) window.Contas.recarregar(); rota(); });
   window.addEventListener('hashchange', rota);
+  window.addEventListener('nexus:atualizado', function () { if (/suporte/.test(location.hash)) renderSuporte(); });
+  window.addEventListener('nexus:erro', function (e) { toast(e.detail || 'Não foi possível concluir.'); });
 
   var sessao = window.Contas.exigir('clinica'); if (!sessao) return;
-  $('[data-clinica]').textContent = N.carregar().clinica;
-  var papelEl = document.querySelector('.lateral__clinica');
-  if (papelEl) papelEl.insertAdjacentHTML('beforeend', '<span style="display:block;margin-top:4px">' + (ehMedico() ? 'Equipe médica' : 'Recepção') + '</span>');
-  rota();
+  N.pronto(function () {
+    $('[data-clinica]').textContent = N.carregar().clinica;
+    var papelEl = document.querySelector('.lateral__clinica');
+    if (papelEl) papelEl.insertAdjacentHTML('beforeend', '<span style="display:block;margin-top:4px">' + (ehMedico() ? 'Equipe médica' : 'Recepção') + '</span>');
+    rota();
+  });
 })();

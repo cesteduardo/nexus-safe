@@ -10,7 +10,6 @@
   /* A empresa vem do login, nunca do endereço: o RH de uma empresa não vê a outra. */
   var sessao = C.exigir('rh'); if (!sessao) return;
   var empresaId = sessao.empresaId;
-  if (!N.empresa(empresaId)) { C.sair(); location.replace('entrar.html'); return; }
 
   function toast(msg) { var t = $('[data-toast]'); t.textContent = msg; t.classList.add('visivel'); clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove('visivel'); }, 2600); }
   function dia(iso, hora) { if (!iso) return ''; var d = new Date(iso), t = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }); return hora ? t + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : t; }
@@ -66,12 +65,11 @@
   $('[data-form-pedido]').addEventListener('submit', function (ev) {
     if (ev.submitter && ev.submitter.value === 'cancelar') return;
     if (window.Campos.validar(ev.target).length) { ev.preventDefault(); return; }
-    var fd = new FormData(ev.target), d = N.carregar(), e = N.empresa(empresaId);
-    var c = { id: N.uid(), token: N.token(), tipoExame: fd.get('tipoExame'), nome: fd.get('nome').trim().replace(/ +/g, ' '), cpf: fd.get('cpf'), celular: fd.get('celular'), empresaId: empresaId, funcaoId: fd.get('funcaoId'), admissaoEm: fd.get('admissaoEm') ? new Date(fd.get('admissaoEm') + 'T08:00:00').toISOString() : '', afastadoDesde: fd.get('afastadoDesde') ? new Date(fd.get('afastadoDesde') + 'T08:00:00').toISOString() : '', etapa: 'enviado', criadoEm: new Date().toISOString(), agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] };
-    c.historico.push({ em: c.criadoEm, txt: 'Pedido pelo RH da empresa (' + e.contato + ').' });
-    var link = new URL('ficha.html?t=' + c.token, location.href).href;
-    if (N.enfileirar('link', c.nome, 'Oi, ' + N.primeiroNome(c.nome) + '! Aqui é da ' + d.clinica + '. Antes do seu exame ' + N.nomeTipo(c.tipoExame).toLowerCase() + ', preencha a ficha neste link (leva uns 10 minutos): ' + link)) c.historico.push({ em: c.criadoEm, txt: 'Link da ficha enviado pelo WhatsApp.' });
-    d.candidatos.unshift(c); N.salvar(); render(); toast('Pedido enviado à clínica');
+    var fd = new FormData(ev.target);
+    N.acao('criar', '', {
+      tipoExame: fd.get('tipoExame'), nome: fd.get('nome'), cpf: fd.get('cpf'), celular: fd.get('celular'), empresaId: empresaId, funcaoId: fd.get('funcaoId'),
+      admissaoEm: fd.get('admissaoEm') ? new Date(fd.get('admissaoEm') + 'T08:00:00').toISOString() : '', afastadoDesde: fd.get('afastadoDesde') ? new Date(fd.get('afastadoDesde') + 'T08:00:00').toISOString() : ''
+    }).then(function () { render(); toast('Pedido enviado à clínica'); }, function (e) { toast(e.message || 'Não foi possível enviar o pedido.'); });
   });
 
   document.addEventListener('click', function (ev) {
@@ -91,5 +89,8 @@
   });
 
   window.addEventListener('storage', function () { N.recarregar(); render(); });
-  render();
+  N.pronto(function () {
+    if (!N.empresa(empresaId)) { C.sair(); location.replace('entrar.html'); return; }
+    render();
+  });
 })();

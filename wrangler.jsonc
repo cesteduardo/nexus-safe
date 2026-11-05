@@ -1,0 +1,21 @@
+// Nexus Safe · Worker da Cloudflare (site + API). Passo a passo em SEGURANCA.md.
+{
+  "name": "nexus-safe",
+  "main": "servidor/index.js",
+  "compatibility_date": "2026-09-01",
+  "assets": {
+    "directory": ".",
+    "binding": "ASSETS",
+    // o Worker atende primeiro: entrega o crm/modo.js do servidor e barra arquivos internos
+    "run_worker_first": true
+  },
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "nexus-safe",
+      // trocar pelo id que o "npx wrangler d1 create nexus-safe" devolver
+      "database_id": "00000000-0000-0000-0000-000000000000"
+    }
+  ],
+  "observability": { "enabled": true }
+}

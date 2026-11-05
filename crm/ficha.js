@@ -1,4 +1,4 @@
-(function () {
+window.Nexus.pronto(function () {
   'use strict';
   var N = window.Nexus;
   var raiz = document.querySelector('[data-ficha]');
@@ -258,7 +258,12 @@
       st.aceite = true; st.assinatura = raiz.querySelector('[data-assinatura]').toDataURL('image/png'); st.enviadoEm = new Date().toISOString();
       c.ficha = st; c.rascunho = null; c.etapa = 'recebida';
       c.historico.push({ em: st.enviadoEm, txt: 'Ficha enviada pelo candidato.' });
-      N.salvar(); telaFinal(false); window.scrollTo(0, 0);
+      var botao = f.querySelector('button[type=submit]'); if (botao) { botao.disabled = true; botao.textContent = 'Enviando...'; }
+      N.enviarFicha(c).then(function () { telaFinal(false); window.scrollTo(0, 0); }, function (e) {
+        c.ficha = null; c.etapa = 'preenchendo';
+        if (botao) { botao.disabled = false; botao.textContent = 'Enviar ficha'; }
+        erro.textContent = 'Não foi possível enviar agora (' + (e && e.message ? e.message : 'sem conexão') + '). Suas respostas continuam salvas; tente de novo.'; erro.hidden = false;
+      });
       return;
     }
     passo++; guardarRascunho(); render();
@@ -297,4 +302,4 @@
   raiz.addEventListener('change', guardarCampo);
 
   render();
-})();
+});

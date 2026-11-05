@@ -54,17 +54,19 @@
       <button class="botao" type="submit">Entrar</button>
     </form>
 
-    <section class="contas" aria-label="Contas de demonstração">
+    <section class="contas" aria-label="Contas de demonstração" data-so-demo>
       <h2>Contas de demonstração</h2>
       <p>Senha de todas: <b style="color:var(--tinta)">123</b>. Toque em "Usar" para preencher.</p>
       <div data-contas></div>
     </section>
   </div>
 
-  <p class="aviso-demo">No modelo, a conta fica guardada neste navegador. Na versão real, a senha é guardada com criptografia no servidor, a sessão expira e cada pedido confere a permissão do perfil.</p>
+  <p class="aviso-demo" data-so-demo>No modelo, a conta fica guardada neste navegador. Na versão real, a senha é guardada com criptografia no servidor, a sessão expira e cada pedido confere a permissão do perfil.</p>
 </main>
 
 <script src="campos.js"></script>
+<script src="modo.js"></script>
+<script src="regras.js"></script>
 <script src="dados.js"></script>
 <script src="contas.js"></script>
 <script>
@@ -84,8 +86,12 @@
       }).join('');
     }).join('');
 
+    var SERVIDOR = !!(window.Nexus && window.Nexus.SERVIDOR);
     var p = C.lerPerfil();
-    if (p && p.usuario) {
+    /* No servidor, quem diz se a sessão vale é o cookie: pergunta antes de oferecer "Continuar". */
+    if (SERVIDOR && p && p.usuario) fetch('/api/eu', { credentials: 'same-origin' }).then(function (r) { if (!r.ok) { C.sair(); return; } mostrarSessao(p); }, function () {});
+    else if (p && p.usuario) mostrarSessao(p);
+    function mostrarSessao(p) {
       var s = document.querySelector('[data-sessao]');
       s.innerHTML = '<span>Você já entrou como <b>' + esc(p.usuario) + '</b>.</span><a class="botao botao--pequeno" href="' + C.destino(p) + '">Continuar</a>';
       s.hidden = false;
@@ -102,10 +108,22 @@
       ev.preventDefault();
       erro.hidden = true;
       if (window.Campos.validar(form).length) return;
+      if (SERVIDOR) { entrarNoServidor(); return; }
       var sessao = C.entrar(form.usuario.value, form.senha.value);
       if (!sessao) { erro.textContent = 'Usuário ou senha incorretos.'; erro.hidden = false; form.senha.value = ''; form.senha.focus(); return; }
       location.href = C.destino(sessao);
     });
+
+    function entrarNoServidor() {
+      var botao = form.querySelector('[type=submit]'); botao.disabled = true;
+      fetch('/api/entrar', { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ usuario: form.usuario.value, senha: form.senha.value }) })
+        .then(function (r) { return r.json().catch(function () { return {}; }).then(function (j) { return { ok: r.ok, j: j }; }); })
+        .then(function (r) {
+          botao.disabled = false;
+          if (!r.ok || !r.j.perfil) { erro.textContent = r.j.erro || 'Não foi possível entrar.'; erro.hidden = false; form.senha.value = ''; form.senha.focus(); return; }
+          C.gravarPerfil(r.j.perfil); location.href = C.destino(r.j.perfil);
+        }, function () { botao.disabled = false; erro.textContent = 'Sem conexão. Tente de novo.'; erro.hidden = false; });
+    }
   })();
 </script>
 </body>

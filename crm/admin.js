@@ -137,7 +137,7 @@
       toast(acao === 'resolver' ? 'Chamado resolvido' : acao === 'pedir' ? 'Pedido enviado à clínica. Prazo pausado.' : 'Resposta enviada');
       redesenhar();
     }
-    else if (t.matches('[data-restaurar]')) { if (confirm('Voltar a demonstração ao estado inicial? O que você fez aqui será apagado.')) { C.restaurar(); N.restaurar(); location.hash = '#/agencias'; rota(); toast('Demonstração restaurada'); } }
+    else if (t.matches('[data-restaurar]') && !N.SERVIDOR) { if (confirm('Voltar a demonstração ao estado inicial? O que você fez aqui será apagado.')) { C.restaurar(); N.restaurar(); location.hash = '#/agencias'; rota(); toast('Demonstração restaurada'); } }
   });
 
   document.addEventListener('change', function (ev) {
@@ -155,5 +155,7 @@
   document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && !painel.hidden && !document.querySelector('dialog[open]')) fecharPainel(); });
   window.addEventListener('storage', function () { C.recarregar(); N.recarregar(); redesenhar(); });
   window.addEventListener('hashchange', rota);
-  rota();
+  window.addEventListener('nexus:atualizado', redesenhar);
+  window.addEventListener('nexus:erro', function (e) { toast(e.detail || 'Não foi possível concluir.'); });
+  N.pronto(rota);
 })();
