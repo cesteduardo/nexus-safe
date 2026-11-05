@@ -5,7 +5,7 @@
   var vista = $('#vista');
   var painel = $('[data-painel]');
   var veu = $('[data-veu]');
-  var filtro = { empresa: '', busca: '' };
+  var filtro = { empresa: '', busca: '', tarefa: '' };
   var verComo = 'medico';
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
@@ -48,13 +48,29 @@
   }
 
   /* ---------- quadro ---------- */
+  /* O que a recepção precisa fazer agora. Cada tarefa é um filtro do quadro. */
+  var TAREFAS = [
+    { id: 'cobrar', nome: 'Cobrar a ficha', dica: 'Link enviado há mais de 24 h', teste: function (c) { return (c.etapa === 'enviado' || c.etapa === 'preenchendo') && Date.now() - new Date(c.criadoEm).getTime() > 864e5; } },
+    { id: 'agendar', nome: 'Agendar exame', dica: 'Ficha recebida, sem horário', teste: function (c) { return c.etapa === 'recebida'; } },
+    { id: 'proximos', nome: 'Exames até amanhã', dica: 'Confirmar presença e preparo', teste: function (c) { if (c.etapa !== 'agendado' || !c.agendadoPara) return false; var fim = new Date(); fim.setDate(fim.getDate() + 1); fim.setHours(23, 59, 59, 999); return new Date(c.agendadoPara) <= fim; } },
+    { id: 'aso', nome: 'Emitir ASO', dica: 'Atendido, falta o atestado', teste: function (c) { return c.etapa === 'atendido'; } }
+  ];
+  function tarefa(id) { for (var i = 0; i < TAREFAS.length; i++) if (TAREFAS[i].id === id) return TAREFAS[i]; return null; }
+
   function renderQuadro() {
     var d = N.carregar();
-    var lista = d.candidatos.filter(function (c) {
-      if (filtro.empresa && c.empresaId !== filtro.empresa) return false;
+    var daEmpresa = d.candidatos.filter(function (c) { return !filtro.empresa || c.empresaId === filtro.empresa; });
+    var ativa = tarefa(filtro.tarefa);
+    var lista = daEmpresa.filter(function (c) {
+      if (ativa && !ativa.teste(c)) return false;
       if (filtro.busca) { var b = filtro.busca.toLowerCase(); if ((c.nome + ' ' + c.cpf).toLowerCase().indexOf(b) < 0) return false; }
       return true;
     });
+    var agora = '<div class="agora" role="group" aria-label="Para fazer agora">' + TAREFAS.map(function (t) {
+      var n = daEmpresa.filter(t.teste).length;
+      return '<button type="button" class="agora__item" data-tarefa="' + t.id + '" aria-pressed="' + (filtro.tarefa === t.id) + '"' + (n || filtro.tarefa === t.id ? '' : ' disabled') + '>' +
+        '<b>' + n + '</b><span>' + esc(t.nome) + '<small>' + esc(n ? t.dica : 'Nada pendente') + '</small></span></button>';
+    }).join('') + '</div>';
     var opts = '<option value="">Todas as empresas</option>' + d.empresas.map(function (e) { return '<option value="' + e.id + '"' + (filtro.empresa === e.id ? ' selected' : '') + '>' + esc(e.nome) + '</option>'; }).join('');
     var colunas = N.ETAPAS.map(function (et) {
       var itens = lista.filter(function (c) { return c.etapa === et.id; });
@@ -64,6 +80,8 @@
     vista.innerHTML =
       '<div class="cab"><div><h1>Atendimentos</h1><p>Do link da ficha até o ASO. Clique num cartão para abrir.</p></div>' +
       '<div class="cab__acoes"><button class="botao" type="button" data-novo>+ Novo atendimento</button></div></div>' +
+      agora +
+      (ativa ? '<p class="agora__filtro">Mostrando só: <b>' + esc(ativa.nome) + '</b> <button type="button" class="link" data-tarefa="">Ver todos</button></p>' : '') +
       '<div class="filtros"><select class="entrada" data-filtro-empresa aria-label="Filtrar por empresa">' + opts + '</select>' +
       '<input class="entrada" type="search" placeholder="Buscar por nome ou CPF" value="' + esc(filtro.busca) + '" data-filtro-busca aria-label="Buscar"></div>' +
       '<div class="quadro">' + colunas + '</div>';
@@ -275,7 +293,8 @@
     var c = id ? candidato(id) : null;
     var d = N.carregar();
 
-    if (t.matches('[data-novo]')) { $('[data-form-novo]').reset(); preencherSelects(); $('[data-modal-novo]').showModal(); }
+    if (t.matches('[data-tarefa]')) { filtro.tarefa = t.dataset.tarefa === filtro.tarefa ? '' : t.dataset.tarefa; renderQuadro(); }
+    else if (t.matches('[data-novo]')) { $('[data-form-novo]').reset(); preencherSelects(); $('[data-modal-novo]').showModal(); }
     else if (t.matches('[data-fechar], [data-veu]')) fecharPainel();
     else if (t.matches('[data-ver]')) { verComo = t.dataset.ver; renderPainel(c); }
     else if (t.matches('[data-copiar]')) {
@@ -305,7 +324,7 @@
     else if (t.matches('[data-ver-aso]') && c) abrirAso(c);
     else if (t.matches('[data-fechar-aso]')) $('[data-modal-aso]').close();
     else if (t.matches('[data-imprimir]')) window.print();
-    else if (t.matches('[data-restaurar]')) { if (confirm('Voltar a demonstração ao estado inicial? O que você fez aqui será apagado.')) { N.restaurar(); filtro = { empresa: '', busca: '' }; location.hash = '#/quadro'; rota(); toast('Demonstração restaurada'); } }
+    else if (t.matches('[data-restaurar]')) { if (confirm('Voltar a demonstração ao estado inicial? O que você fez aqui será apagado.')) { N.restaurar(); filtro = { empresa: '', busca: '', tarefa: '' }; location.hash = '#/quadro'; rota(); toast('Demonstração restaurada'); } }
   });
 
   document.addEventListener('change', function (ev) {

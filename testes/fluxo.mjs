@@ -39,6 +39,14 @@ try {
 
   await page.goto(B + 'crm/'); await page.waitForTimeout(300);
   ok(await page.locator('.coluna').count() === 6, 'quadro tem 6 colunas');
+  const ultima = await page.locator('.coluna').last().boundingBox();
+  ok(ultima && ultima.x + ultima.width <= 1366, 'as 6 colunas cabem na tela de 1366 px');
+  ok(await page.locator('.agora__item').count() === 4, 'faixa "para fazer agora" tem 4 tarefas');
+  await page.click('[data-tarefa="cobrar"]'); await page.waitForTimeout(150);
+  const cobrar = await page.locator('.card b').allInnerTexts();
+  ok(cobrar.length === 3 && !cobrar.includes('Ana Beatriz Moreira') && cobrar.includes('Carlos Eduardo Lima'), 'tarefa "cobrar a ficha" filtra só os links parados');
+  await page.click('.agora__filtro [data-tarefa=""]'); await page.waitForTimeout(150);
+  ok(await page.locator('.card').count() >= 8, 'ver todos devolve o quadro inteiro');
 
   // atendimento com ficha: visão médica x empresa
   await page.click('text=Lucas Henrique Souza'); await page.waitForTimeout(350);
