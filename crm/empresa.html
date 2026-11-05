@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/base.css">
 <link rel="stylesheet" href="crm.css">
+<script>try{var p=JSON.parse(localStorage.getItem('nexus-safe-perfil'));if(!p||!p.usuario||p.tipo!=='rh')location.replace('entrar.html')}catch(e){location.replace('entrar.html')}</script>
 </head>
 <body>
 <div class="demo-faixa">Modelo de demonstração. Dados fictícios, salvos só neste navegador. <a href="../">Voltar ao plano</a></div>
@@ -26,7 +27,8 @@
       <a href="#" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c1.8.8 3 2.7 3 5"/></svg>Funcionários</a>
     </nav>
     <div class="lateral__pe">
-      <a href="entrar.html">Trocar de perfil</a>
+      <span class="lateral__usuario" data-usuario></span>
+      <button type="button" data-sair>Sair</button>
     </div>
   </aside>
 
@@ -46,7 +48,8 @@
       <label class="campo">Tipo de exame<select class="entrada" name="tipoExame" required data-sel-tipo></select></label>
       <label class="campo">Função<select class="entrada" name="funcaoId" required data-sel-funcao></select></label>
     </div>
-    <label class="campo" data-campo-admissao>Admissão prevista <small>A clínica usa esta data para não atrasar a contratação.</small><input class="entrada" type="date" name="admissaoEm" required data-futuro></label>
+    <label class="campo" data-so-tipo="retorno_trabalho">Afastado desde <small>Início do afastamento por doença ou acidente</small><input class="entrada" type="date" name="afastadoDesde" required data-passado></label>
+    <label class="campo" data-so-tipo="admissional">Admissão prevista <small>A clínica usa esta data para não atrasar a contratação.</small><input class="entrada" type="date" name="admissaoEm" required data-futuro></label>
     <div class="modal__acoes">
       <button class="botao botao--claro" value="cancelar" formnovalidate>Cancelar</button>
       <button class="botao" value="salvar">Enviar pedido</button>
@@ -69,6 +72,7 @@
 <script src="campos.js"></script>
 <script src="dados.js"></script>
 <script src="contas.js"></script>
+<script src="sessao.js"></script>
 <script src="empresa.js"></script>
 </body>
 </html>

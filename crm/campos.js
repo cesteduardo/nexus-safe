@@ -101,6 +101,7 @@
       else if (t === 'tel' && !telValido(v)) msg = 'Telefone com DDD, como (17) 99999-9999.';
       else if (t === 'cpf' && !cpfValido(v)) msg = 'CPF inválido. Confira os números.';
       else if (el.dataset.nascimento != null) msg = erroNascimento(v);
+      else if (el.dataset.passado != null) { var hj2 = new Date(); hj2.setHours(23, 59, 59, 999); if (new Date(v + 'T12:00:00') > hj2) msg = 'A data não pode ser no futuro.'; }
       else if (el.dataset.futuro != null) { var hj = new Date(); hj.setHours(0, 0, 0, 0); if (new Date(v + 'T12:00:00') < hj) msg = 'A data não pode ser no passado.'; }
       if (msg) {
         var m = document.createElement('span'); m.className = 'campo__erro'; m.textContent = msg;
@@ -122,5 +123,13 @@
     return '';
   }
 
-  window.Campos = { limparNome: limparNome, nomeValido: nomeValido, semPais: semPais, mascaraTel: mascaraTel, telValido: telValido, mascaraCpf: mascaraCpf, cpfValido: cpfValido, validar: validar, erroNascimento: erroNascimento, digitos: digitos };
+  /* Campos que só valem para um tipo de exame (data-so-tipo="admissional"): somem e saem da validação nos outros. */
+  function porTipo(form, tipo) {
+    form.querySelectorAll('[data-so-tipo]').forEach(function (cx) {
+      var vale = cx.dataset.soTipo.split(' ').indexOf(tipo) >= 0;
+      cx.hidden = !vale; cx.querySelectorAll('input, select').forEach(function (el) { el.disabled = !vale; });
+    });
+  }
+
+  window.Campos = { porTipo: porTipo, limparNome: limparNome, nomeValido: nomeValido, semPais: semPais, mascaraTel: mascaraTel, telValido: telValido, mascaraCpf: mascaraCpf, cpfValido: cpfValido, validar: validar, erroNascimento: erroNascimento, digitos: digitos };
 })();

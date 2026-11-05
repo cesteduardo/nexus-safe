@@ -7,11 +7,10 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var vista = $('#vista');
 
-  var pedida = new URLSearchParams(location.search).get('e');
-  var perfil = C.lerPerfil();
-  var empresaId = pedida || (perfil && perfil.empresaId) || N.carregar().empresas[0].id;
-  if (!N.empresa(empresaId)) empresaId = N.carregar().empresas[0].id;
-  C.gravarPerfil({ tipo: 'rh', empresaId: empresaId });
+  /* A empresa vem do login, nunca do endereço: o RH de uma empresa não vê a outra. */
+  var sessao = C.exigir('rh'); if (!sessao) return;
+  var empresaId = sessao.empresaId;
+  if (!N.empresa(empresaId)) { C.sair(); location.replace('entrar.html'); return; }
 
   function toast(msg) { var t = $('[data-toast]'); t.textContent = msg; t.classList.add('visivel'); clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove('visivel'); }, 2600); }
   function dia(iso, hora) { if (!iso) return ''; var d = new Date(iso), t = d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric' }); return hora ? t + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : t; }
@@ -46,7 +45,7 @@
       return '<tr data-cand="' + c.id + '"><td><span class="agencia__nome">' + esc(c.nome) + '<small>' + esc(f ? f.nome : '') + '</small></span></td>' +
         '<td>' + esc(N.nomeTipo(c.tipoExame)) + (c.agendadoPara && (c.etapa === 'agendado') ? '<br><span style="color:var(--apoio)">' + (c.agendadoModo === 'chegada' ? dia(c.agendadoPara) + ', ordem de chegada' : dia(c.agendadoPara, true)) + '</span>' : '') + (c.admissaoEm && c.etapa !== 'aso' ? '<br><span style="font-size:13px;color:var(--apoio)">Admissão ' + dia(c.admissaoEm) + '</span>' : '') + '</td>' +
         '<td>' + esc(LEITURA[c.etapa]) + '<br><span style="color:var(--apoio);font-size:13px">Passo ' + passo + ' de ' + N.ETAPAS.length + '</span></td>' +
-        '<td>' + (c.aso ? '<button class="botao botao--claro botao--pequeno" type="button" data-ver-aso="' + c.id + '">Ver ASO</button><br><span style="font-size:13px;color:var(--apoio)">' + esc(c.aso.resultado) + (c.aso.validade ? ' · vence ' + dia(c.aso.validade) : '') + '</span>' + (c.esocial ? '<br><span class="selo ' + (c.esocial.status === 'enviado' ? 'selo--verde' : 'selo--ambar') + '" style="margin-top:4px">S-2220 ' + (c.esocial.status === 'enviado' ? 'enviado' : 'pendente') + '</span>' : '') : '<span style="color:var(--apoio)">Ainda não</span>') + '</td></tr>';
+        '<td>' + (c.aso ? '<div class="acoes-linha"><button class="botao botao--claro botao--pequeno" type="button" data-ver-aso="' + c.id + '">Ver ASO</button><button class="botao botao--claro botao--pequeno" type="button" data-xml="' + c.id + '">XML S-2220</button></div><br><span style="font-size:13px;color:var(--apoio)">' + esc(c.aso.resultado) + (c.aso.validade ? ' · vence ' + dia(c.aso.validade) : '') + '</span>' + (c.esocial ? '<br><span class="selo ' + (c.esocial.status === 'enviado' ? 'selo--verde' : 'selo--ambar') + '" style="margin-top:4px">S-2220 ' + (c.esocial.status === 'enviado' ? 'enviado' : 'pendente') + '</span>' : '') : '<span style="color:var(--apoio)">Ainda não</span><br><button class="botao botao--claro botao--pequeno" type="button" data-guia="' + c.id + '" style="margin-top:6px">Guia de encaminhamento</button>') + '</td></tr>';
     }).join('') + '</tbody></table></div>';
 
     h += '<div class="bloco bloco--trava" style="margin-top:16px"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><b>As respostas de saúde ficam só com a equipe médica</b><p>O RH acompanha a etapa e recebe o ASO com a aptidão, sem diagnóstico (LGPD, art. 11).</p></div>';
@@ -61,14 +60,14 @@
     mostrarAdmissao();
     $('[data-modal-pedido]').showModal();
   }
-  function mostrarAdmissao() { var adm = $('[data-sel-tipo]').value === 'admissional', cx = $('[data-campo-admissao]'); cx.hidden = !adm; cx.querySelector('input').disabled = !adm; }
+  function mostrarAdmissao() { window.Campos.porTipo($('[data-form-pedido]'), $('[data-sel-tipo]').value); }
   document.addEventListener('change', function (ev) { if (ev.target.matches('[data-sel-tipo]')) mostrarAdmissao(); });
 
   $('[data-form-pedido]').addEventListener('submit', function (ev) {
     if (ev.submitter && ev.submitter.value === 'cancelar') return;
     if (window.Campos.validar(ev.target).length) { ev.preventDefault(); return; }
     var fd = new FormData(ev.target), d = N.carregar(), e = N.empresa(empresaId);
-    var c = { id: N.uid(), token: N.token(), tipoExame: fd.get('tipoExame'), nome: fd.get('nome').trim().replace(/ +/g, ' '), cpf: fd.get('cpf'), celular: fd.get('celular'), empresaId: empresaId, funcaoId: fd.get('funcaoId'), admissaoEm: fd.get('admissaoEm') ? new Date(fd.get('admissaoEm') + 'T08:00:00').toISOString() : '', etapa: 'enviado', criadoEm: new Date().toISOString(), agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] };
+    var c = { id: N.uid(), token: N.token(), tipoExame: fd.get('tipoExame'), nome: fd.get('nome').trim().replace(/ +/g, ' '), cpf: fd.get('cpf'), celular: fd.get('celular'), empresaId: empresaId, funcaoId: fd.get('funcaoId'), admissaoEm: fd.get('admissaoEm') ? new Date(fd.get('admissaoEm') + 'T08:00:00').toISOString() : '', afastadoDesde: fd.get('afastadoDesde') ? new Date(fd.get('afastadoDesde') + 'T08:00:00').toISOString() : '', etapa: 'enviado', criadoEm: new Date().toISOString(), agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] };
     c.historico.push({ em: c.criadoEm, txt: 'Pedido pelo RH da empresa (' + e.contato + ').' });
     var link = new URL('ficha.html?t=' + c.token, location.href).href;
     if (N.enfileirar('link', c.nome, 'Oi, ' + N.primeiroNome(c.nome) + '! Aqui é da ' + d.clinica + '. Antes do seu exame ' + N.nomeTipo(c.tipoExame).toLowerCase() + ', preencha a ficha neste link (leva uns 10 minutos): ' + link)) c.historico.push({ em: c.criadoEm, txt: 'Link da ficha enviado pelo WhatsApp.' });
@@ -81,6 +80,11 @@
     else if (t.matches('[data-ver-aso]')) {
       var c = N.carregar().candidatos.filter(function (x) { return x.id === t.dataset.verAso && x.empresaId === empresaId; })[0];
       if (c && c.aso) { $('[data-aso-conteudo]').innerHTML = N.asoHtml(c); $('[data-modal-aso]').showModal(); }
+    }
+    else if (t.matches('[data-guia]') || t.matches('[data-xml]')) {
+      var g = N.carregar().candidatos.filter(function (x) { return x.id === (t.dataset.guia || t.dataset.xml) && x.empresaId === empresaId; })[0];
+      if (g && t.matches('[data-guia]')) { $('[data-aso-conteudo]').innerHTML = N.guiaHtml(g); $('[data-modal-aso]').showModal(); }
+      else if (g && g.aso) { N.baixar(N.nomeArquivo(g), N.s2220Xml(g)); toast('XML do S-2220 baixado'); }
     }
     else if (t.matches('[data-fechar-aso]')) $('[data-modal-aso]').close();
     else if (t.matches('[data-imprimir]')) window.print();

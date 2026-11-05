@@ -9,9 +9,9 @@ Site estático publicado no GitHub Pages a partir da branch `main`
   - `dados.js`: catálogos, perguntas, dados de demonstração, regras de alerta. Se mudar o formato dos dados salvos, suba a versão em `CHAVE` e em `versao`.
   - `app.js`: quadro, painel do atendimento (visão médica x empresa), ASO, cadastros, automações.
   - `ficha.html` + `ficha.js`: ficha que o candidato preenche no celular.
-  - `entrar.html`: escolha do perfil. Três perfis:
+  - `entrar.html`: login do modelo (senha 123 para todas as contas; lista em `contas.js`, USUARIOS). Cada página protegida confere o perfil no `<head>` e em JS. Três perfis:
     - **Administração** (`admin.html` + `admin.js`): a Nexus Safe, quem oferece o serviço. Agências clientes, contrato, uso do mês e chamados de TI.
-    - **Clínica** (`index.html` + `app.js`): a agência de SST, cliente da Nexus Safe. Quadro, ficha, ASO, automações e aba de suporte.
+    - **Clínica** (`index.html` + `app.js`): a agência de SST, cliente da Nexus Safe. Quadro, ficha, ASO, automações e aba de suporte. Conta `clinica` é a recepção (sem dado de saúde); conta `medico` vê a ficha e emite o ASO.
     - **RH da empresa** (`empresa.html?e=ID` + `empresa.js`): cliente da agência. Só os próprios funcionários, etapa, pedido de exame e ASO.
   - `contas.js`: perfis, agências e chamados com metas de prazo (chave própria no localStorage). `campos.js`: regras dos formulários. `movimento.js`: pílula que desliza nas abas.
 - `PESQUISA.md`: o que o mercado pede, com fontes, e o que já entrou no modelo.

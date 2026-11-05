@@ -16,6 +16,7 @@ body { min-height: 100vh; }
 .menu a[aria-current="page"] svg { color: var(--verde); }
 .lateral__pe { margin-top: auto; display: grid; gap: 8px; font-size: 13px; }
 .lateral__pe a, .lateral__pe button { color: var(--apoio); background: none; border: 0; padding: 6px 10px; text-align: left; cursor: pointer; text-decoration: none; border-radius: 8px; }
+.lateral__usuario { font-size: 12.5px; color: var(--apoio-claro); padding: 0 10px; overflow-wrap: anywhere; }
 .lateral__pe a:hover, .lateral__pe button:hover { background: var(--fundo); color: var(--tinta); }
 
 .principal { min-width: 0; padding: 22px 24px 40px; }
@@ -69,10 +70,17 @@ button.agora__item:active:not(:disabled) { transform: scale(.98); }
 .selo--azul { background: var(--azul-claro); color: var(--azul); }
 
 /* painel lateral do candidato */
-.veu { position: fixed; inset: 0; background: rgba(15, 31, 27, .35); z-index: 40; opacity: 0; transition: opacity 200ms ease; }
+/* atendimento e agência abrem em pop-up no centro; no celular, folha que sobe de baixo */
+.veu { position: fixed; inset: 0; background: rgba(15, 31, 27, .4); z-index: 40; opacity: 0; transition: opacity var(--t) var(--ease); }
 .veu.aberto { opacity: 1; }
-.painel { position: fixed; top: 0; right: 0; bottom: 0; width: min(640px, 100%); background: var(--fundo); z-index: 41; overflow-y: auto; overscroll-behavior: contain; transform: translateX(100%); transition: transform 260ms cubic-bezier(.2, .8, .2, 1); box-shadow: -12px 0 40px -20px rgba(15, 31, 27, .4); }
-.painel.aberto { transform: none; }
+.painel { position: fixed; top: 50%; left: 50%; width: min(760px, calc(100% - 48px)); max-height: calc(100vh - 48px); max-height: calc(100dvh - 48px); background: var(--fundo); z-index: 41; overflow-y: auto; overscroll-behavior: contain; border-radius: 18px; box-shadow: 0 30px 80px -24px rgba(15, 31, 27, .55), 0 0 0 1px rgba(15, 31, 27, .06); opacity: 0; transform: translate(-50%, -47%) scale(.97); transition: opacity var(--t) var(--ease), transform var(--t) var(--saida); }
+.painel.aberto { opacity: 1; transform: translate(-50%, -50%); }
+.painel__cab { border-radius: 18px 18px 0 0; }
+@media (max-width: 600px) {
+  .painel { top: auto; left: 0; right: 0; bottom: 0; width: 100%; max-height: 92vh; max-height: 92dvh; border-radius: 18px 18px 0 0; opacity: 1; transform: translateY(100%); }
+  .painel.aberto { transform: none; }
+}
+@media (prefers-reduced-motion: reduce) { .painel, .veu { transition: none; } }
 .painel__cab { position: sticky; top: 0; z-index: 2; background: var(--branco); border-bottom: 1px solid var(--linha); padding: 16px 20px; display: grid; gap: 12px; }
 .painel__linha { display: flex; justify-content: space-between; gap: 12px; align-items: start; }
 .painel__cab h2 { font-size: 22px; }

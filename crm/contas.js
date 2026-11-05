@@ -12,7 +12,7 @@
   'use strict';
 
   var CHAVE_PERFIL = 'nexus-safe-perfil';
-  var CHAVE = 'nexus-safe-contas-v2';
+  var CHAVE = 'nexus-safe-contas-v3';
 
   var PERFIS = {
     admin: { nome: 'Nexus Safe', papel: 'Administração', usuario: 'Equipe Nexus Safe', inicio: 'admin.html' },
@@ -23,6 +23,33 @@
   function lerPerfil() { try { return JSON.parse(localStorage.getItem(CHAVE_PERFIL)) || null; } catch (e) { return null; } }
   function gravarPerfil(p) { try { localStorage.setItem(CHAVE_PERFIL, JSON.stringify(p)); } catch (e) { /* segue sem lembrar */ } }
 
+  /* Contas do modelo. Senha única de demonstração: 123.
+     Na versão real: senha com hash no servidor, sessão com cookie seguro e permissão checada em cada pedido. */
+  var SENHA_DEMO = '123';
+  var USUARIOS = {
+    'admin': { tipo: 'admin', nome: 'Equipe Nexus Safe' },
+    'clinica': { tipo: 'clinica', papel: 'recepcao', nome: 'Recepção' },
+    'medico': { tipo: 'clinica', papel: 'medico', nome: 'Dra. Camila Rocha' },
+    'rh.metalurgica': { tipo: 'rh', empresaId: 'e1', nome: 'Fernanda (RH)' },
+    'rh.construtora': { tipo: 'rh', empresaId: 'e2', nome: 'Paulo (DP)' },
+    'rh.mercado': { tipo: 'rh', empresaId: 'e3', nome: 'Juliana (RH)' },
+    'rh.transportes': { tipo: 'rh', empresaId: 'e4', nome: 'Marcos (frota)' }
+  };
+  function entrar(usuario, senha) {
+    var u = USUARIOS[String(usuario || '').trim().toLowerCase()];
+    if (!u || senha !== SENHA_DEMO) return null;
+    var p = { tipo: u.tipo, papel: u.papel || '', empresaId: u.empresaId || '', usuario: String(usuario).trim().toLowerCase(), nome: u.nome, desde: new Date().toISOString() };
+    gravarPerfil(p); return p;
+  }
+  function sair() { try { localStorage.removeItem(CHAVE_PERFIL); } catch (e) { /* nada a apagar */ } }
+  function destino(p) { return p.tipo === 'admin' ? 'admin.html' : p.tipo === 'rh' ? 'empresa.html' : './'; }
+  /* Página protegida: sem login do perfil certo, volta para a tela de entrada. */
+  function exigir(tipo) {
+    var p = lerPerfil();
+    if (p && p.usuario && p.tipo === tipo) return p;
+    location.replace('entrar.html'); return null;
+  }
+
   var MIN = 6e4, HORA = 36e5;
   function ha(min) { return new Date(Date.now() - min * MIN).toISOString(); }
   function diasAtras(d) { return ha(d * 1440); }
@@ -32,6 +59,7 @@
   var SITUACOES = { aberto: 'Aberto', atendimento: 'Em atendimento', aguardando: 'Aguardando a clínica', resolvido: 'Resolvido' };
   var CANAIS = ['Portal', 'WhatsApp', 'Telefone'];
   var EQUIPE = ['Bruno (suporte)', 'Lívia (suporte)'];
+  var NIVEL2 = 'Rafael (nível 2)';
 
   /* Metas de atendimento sugeridas para o plano mensal. Valores de exemplo: o dono ajusta. */
   var PRIORIDADES = {
@@ -44,7 +72,7 @@
 
   function seed() {
     return {
-      versao: 2,
+      versao: 3,
       agencias: [
         /* a única com CRM de verdade no modelo: os números saem do quadro */
         { id: 'a1', nome: 'Clínica Vida Ocupacional', cidade: 'São José do Rio Preto, SP', contato: 'Dra. Camila Rocha', tel: '(17) 99300-1010', desde: diasAtras(40), situacao: 'ativa', servicos: ['suporte', 'automacoes', 'plataforma'], usuarios: 4, aoVivo: true },
@@ -53,12 +81,12 @@
       ],
       chamados: [
         { id: 'k1', agenciaId: 'a1', assunto: 'Impressora de etiquetas não puxa o papel', descricao: 'A Zebra da recepção liga, mas a etiqueta sai em branco e o papel trava. Já trocamos o rolo.', categoria: 'Impressora', prioridade: 'urgente', canal: 'Portal', situacao: 'aberto', abertoEm: ha(18), por: 'Recepção', responsavel: '', primeiraRespostaEm: '', resolvidoEm: '', mensagens: [], avaliacao: null },
-        { id: 'k2', agenciaId: 'a2', assunto: 'Configurar o modelo de ASO no sistema da clínica', descricao: 'Queremos o ASO com o logo da clínica e o campo de riscos por grupo.', categoria: 'Sistema da clínica', prioridade: 'normal', canal: 'WhatsApp', situacao: 'aguardando', abertoEm: ha(26 * 60), por: 'Rogério Lima', responsavel: 'Lívia (suporte)', primeiraRespostaEm: ha(25 * 60), resolvidoEm: '', avaliacao: null,
+        { id: 'k2', agenciaId: 'a2', assunto: 'Configurar o modelo de ASO no sistema da clínica', descricao: 'Queremos o ASO com o logo da clínica e o campo de riscos por grupo.', categoria: 'Sistema da clínica', prioridade: 'normal', canal: 'WhatsApp', situacao: 'aguardando', pausadoEm: ha(3 * 60), pausaMin: 0, abertoEm: ha(26 * 60), por: 'Rogério Lima', responsavel: 'Lívia (suporte)', primeiraRespostaEm: ha(25 * 60), resolvidoEm: '', avaliacao: null,
           mensagens: [msg(25 * 60, 'nexus', 'Lívia (suporte)', 'Recebi. Vou montar o modelo e mando para aprovação.'), msg(3 * 60, 'nexus', 'Lívia (suporte)', 'Modelo montado. Falta o médico coordenador aprovar o texto do rodapé. Pode me mandar o CRM dele?')] },
         { id: 'k3', agenciaId: 'a1', assunto: 'Backup da noite de terça falhou', descricao: 'Alerta automático do monitoramento: a cópia noturna não terminou.', categoria: 'Backup', prioridade: 'urgente', canal: 'Portal', situacao: 'resolvido', abertoEm: diasAtras(6), por: 'Nexus Safe (alerta automático)', responsavel: 'Bruno (suporte)', primeiraRespostaEm: ha(6 * 1440 - 12), resolvidoEm: ha(6 * 1440 - 170), avaliacao: { boa: true, em: ha(5 * 1440) },
           mensagens: [msg(6 * 1440 - 12, 'nexus', 'Bruno (suporte)', 'Vi o alerta. Estou entrando remoto agora.'), msg(6 * 1440 - 170, 'nexus', 'Bruno (suporte)', 'Disco externo estava cheio. Ajustei a rotação para guardar 30 dias e refiz o backup. Testei a restauração de um arquivo.')] },
-        { id: 'k4', agenciaId: 'a3', assunto: 'Wi-Fi da recepção cai à tarde', descricao: 'Por volta das 15h a internet some por uns minutos, todo dia.', categoria: 'Rede e Wi-Fi', prioridade: 'normal', canal: 'Telefone', situacao: 'atendimento', abertoEm: ha(7 * 60), por: 'Aline Prado', responsavel: 'Bruno (suporte)', primeiraRespostaEm: ha(6 * 60), resolvidoEm: '', avaliacao: null,
-          mensagens: [msg(6 * 60, 'nexus', 'Bruno (suporte)', 'Pode ser o roteador esquentando ou interferência. Vou olhar o registro dele hoje à tarde, no horário da queda.')] }
+        { id: 'k4', agenciaId: 'a3', assunto: 'Wi-Fi da recepção cai à tarde', descricao: 'Por volta das 15h a internet some por uns minutos, todo dia.', categoria: 'Rede e Wi-Fi', prioridade: 'normal', canal: 'Telefone', situacao: 'atendimento', abertoEm: ha(7 * 60), por: 'Aline Prado', responsavel: 'Rafael (nível 2)', nivel: 2, escalonadoEm: ha(2 * 60), primeiraRespostaEm: ha(6 * 60), resolvidoEm: '', avaliacao: null,
+          mensagens: [msg(6 * 60, 'nexus', 'Bruno (suporte)', 'Pode ser o roteador esquentando ou interferência. Vou olhar o registro dele hoje à tarde, no horário da queda.'), msg(2 * 60, 'nexus', 'Bruno (suporte)', 'Passei para o nível 2: o roteador reinicia sozinho e o registro mostra falha de hardware. Precisa de visita e talvez troca.')] }
       ]
     };
   }
@@ -67,7 +95,7 @@
   function carregar() {
     if (memoria) return memoria;
     try { var t = localStorage.getItem(CHAVE); if (t) memoria = JSON.parse(t); } catch (e) { memoria = null; }
-    if (!memoria || memoria.versao !== 2) { memoria = seed(); salvar(); }
+    if (!memoria || memoria.versao !== 3) { memoria = seed(); salvar(); }
     return memoria;
   }
   function salvar() { try { localStorage.setItem(CHAVE, JSON.stringify(memoria)); } catch (e) { /* segue só em memória */ } }
@@ -98,8 +126,14 @@
     return Math.round(h / 24) + ' dias';
   }
   /* Situação do prazo: o que vale agora é a resposta (se ninguém respondeu) ou a solução. */
+  /* Minutos em que o chamado esperou a clínica: não contam no prazo de solução. */
+  function pausa(k) { return (k.pausaMin || 0) + (k.situacao === 'aguardando' && k.pausadoEm ? (Date.now() - new Date(k.pausadoEm)) / MIN : 0); }
   function prazo(k) {
-    var p = PRIORIDADES[k.prioridade] || PRIORIDADES.normal, ab = new Date(k.abertoEm).getTime(), agora = Date.now();
+    var p = PRIORIDADES[k.prioridade] || PRIORIDADES.normal, ab = new Date(k.abertoEm).getTime() + pausa(k) * MIN, agora = Date.now();
+    if (k.situacao === 'aguardando') {
+      var resta = (ab + p.solucao * MIN - agora) / MIN;
+      return { tipo: 'pausa', fora: resta < 0, texto: resta >= 0 ? 'Prazo pausado, restam ' + duracao(resta) : 'Prazo pausado, já estava atrasado' };
+    }
     if (k.situacao === 'resolvido') {
       var levou = (new Date(k.resolvidoEm).getTime() - ab) / MIN;
       return { tipo: 'feito', fora: levou > p.solucao, texto: 'Resolvido em ' + duracao(levou) + (levou > p.solucao ? ', fora do prazo' : ', no prazo') };
@@ -123,6 +157,7 @@
     var k = chamado(id); if (!k) return null;
     var agora = new Date().toISOString();
     if (txt) k.mensagens.push({ em: agora, lado: lado, autor: autor, txt: txt });
+    var estavaPausado = k.situacao === 'aguardando';
     if (lado === 'nexus') {
       if (!k.primeiraRespostaEm) k.primeiraRespostaEm = agora;
       if (!k.responsavel) k.responsavel = autor;
@@ -132,6 +167,19 @@
       if (acao === 'reabrir') { k.situacao = 'atendimento'; k.resolvidoEm = ''; k.avaliacao = null; }
       else if (k.situacao === 'aguardando') k.situacao = 'atendimento';
     }
+    if (estavaPausado && k.situacao !== 'aguardando') { k.pausaMin = (k.pausaMin || 0) + (Date.now() - new Date(k.pausadoEm)) / MIN; k.pausadoEm = ''; }
+    if (!estavaPausado && k.situacao === 'aguardando') k.pausadoEm = agora;
+    salvar(); return k;
+  }
+  /* Segundo nível: o que o primeiro atendimento não resolve sobe com o motivo escrito. */
+  function escalonar(id, autor, motivo) {
+    var k = chamado(id); if (!k) return null;
+    var agora = new Date().toISOString();
+    k.nivel = 2; k.escalonadoEm = agora; k.responsavel = NIVEL2;
+    if (!k.primeiraRespostaEm) k.primeiraRespostaEm = agora;
+    if (k.situacao === 'aguardando') { k.pausaMin = (k.pausaMin || 0) + (Date.now() - new Date(k.pausadoEm)) / MIN; k.pausadoEm = ''; }
+    if (k.situacao !== 'resolvido') k.situacao = 'atendimento';
+    k.mensagens.push({ em: agora, lado: 'nexus', autor: autor, txt: 'Passei para o nível 2: ' + motivo });
     salvar(); return k;
   }
   function atribuir(id, nome) { var k = chamado(id); if (!k) return; k.responsavel = nome; salvar(); }
@@ -147,7 +195,8 @@
       abertos: abertos.length, fora: fora,
       urgentes: abertos.filter(function (k) { return k.prioridade === 'urgente'; }).length,
       respostaMedia: resp.length ? duracao(resp.reduce(function (a, b) { return a + b; }, 0) / resp.length) : 'sem dados',
-      boas: aval.filter(function (k) { return k.avaliacao.boa; }).length, avaliados: aval.length
+      boas: aval.filter(function (k) { return k.avaliacao.boa; }).length, avaliados: aval.length,
+      escalonados: abertos.filter(function (k) { return k.nivel === 2; }).length
     };
   }
 
@@ -159,13 +208,14 @@
   /* Cartão de chamado. lado 'nexus' atende; lado 'clinica' acompanha, responde e avalia. */
   function chamadoHtml(k, lado) {
     var a = agencia(k.agenciaId), pz = prazo(k), nexus = lado === 'nexus';
-    var corPrazo = pz.tipo === 'feito' ? (pz.fora ? 'selo--ambar' : 'selo--verde') : pz.fora ? 'selo--vermelho' : pz.perto ? 'selo--ambar' : 'selo';
+    var corPrazo = pz.tipo === 'feito' ? (pz.fora ? 'selo--ambar' : 'selo--verde') : pz.tipo === 'pausa' ? 'selo' : pz.fora ? 'selo--vermelho' : pz.perto ? 'selo--ambar' : 'selo';
     var h = '<article class="chamado" data-chamado="' + k.id + '"' + (pz.fora && k.situacao !== 'resolvido' ? ' data-fora' : '') + '>' +
       '<div class="msg__cab"><span>' + (nexus ? '<b>' + esc(a ? a.nome : '') + '</b> · ' : '') + esc(k.categoria) + ' · ' + esc(k.canal) + ' · ' + esc(k.por) + '</span><span>' + dataHora(k.abertoEm) + '</span></div>' +
       '<p class="chamado__assunto">' + esc(k.assunto) + '</p>' + (k.descricao ? '<p class="chamado__desc">' + esc(k.descricao) + '</p>' : '') +
       '<div class="chips" style="margin-top:10px"><span class="selo ' + COR_SITUACAO[k.situacao] + '">' + esc(SITUACOES[k.situacao]) + '</span>' +
       (k.prioridade !== 'normal' ? '<span class="selo ' + (k.prioridade === 'urgente' ? 'selo--vermelho' : '') + '">' + esc(PRIORIDADES[k.prioridade].nome) + '</span>' : '') +
       '<span class="selo ' + corPrazo + '">' + esc(pz.texto) + '</span>' +
+      (k.nivel === 2 ? '<span class="selo selo--azul">Nível 2</span>' : '') +
       (k.responsavel ? '<span class="selo">Com ' + esc(k.responsavel) + '</span>' : '') +
       (k.avaliacao ? '<span class="selo ' + (k.avaliacao.boa ? 'selo--verde' : 'selo--ambar') + '">' + (k.avaliacao.boa ? 'Avaliado: resolveu' : 'Avaliado: não resolveu') + '</span>' : '') + '</div>';
 
@@ -173,7 +223,8 @@
 
     if (nexus && k.situacao !== 'resolvido') {
       h += '<div class="chamado__acoes"><textarea class="entrada" data-resposta rows="2" placeholder="Responder à clínica" aria-label="Resposta para a clínica"></textarea>' +
-        '<div class="chamado__botoes"><select class="entrada" data-responsavel aria-label="Responsável">' + EQUIPE.map(function (n) { return '<option' + (n === k.responsavel ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '</select>' +
+        '<div class="chamado__botoes"><select class="entrada" data-responsavel aria-label="Responsável">' + EQUIPE.concat(k.nivel === 2 ? [NIVEL2] : []).map(function (n) { return '<option' + (n === k.responsavel ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '</select>' +
+        (k.nivel === 2 ? '' : '<button class="botao botao--claro botao--pequeno" type="button" data-acao="escalonar">Escalonar</button>') +
         '<button class="botao botao--claro botao--pequeno" type="button" data-acao="responder">Responder</button>' +
         '<button class="botao botao--claro botao--pequeno" type="button" data-acao="pedir">Pedir informação</button>' +
         '<button class="botao botao--pequeno" type="button" data-acao="resolver">Resolver</button></div></div>';
@@ -190,9 +241,9 @@
 
   window.Contas = {
     PERFIS: PERFIS, SERVICOS: SERVICOS, CATEGORIAS: CATEGORIAS, SITUACOES: SITUACOES, PRIORIDADES: PRIORIDADES, CANAIS: CANAIS, EQUIPE: EQUIPE,
-    lerPerfil: lerPerfil, gravarPerfil: gravarPerfil,
+    lerPerfil: lerPerfil, gravarPerfil: gravarPerfil, USUARIOS: USUARIOS, entrar: entrar, sair: sair, exigir: exigir, destino: destino,
     carregar: carregar, salvar: salvar, restaurar: restaurar, recarregar: recarregar, agencia: agencia, chamado: chamado, uso: uso,
-    abrirChamado: abrirChamado, registrar: registrar, atribuir: atribuir, avaliar: avaliar, prazo: prazo, duracao: duracao, indicadores: indicadores,
+    abrirChamado: abrirChamado, registrar: registrar, escalonar: escalonar, atribuir: atribuir, NIVEL2: NIVEL2, avaliar: avaliar, prazo: prazo, duracao: duracao, indicadores: indicadores,
     chamadoHtml: chamadoHtml, esc: esc, dataHora: dataHora
   };
 })();

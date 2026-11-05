@@ -37,7 +37,20 @@ try {
   await page.goto(B); await page.waitForTimeout(300);
   ok(await page.locator('h1').count() > 0, 'plano abre com título');
 
+  // login: sem conta não entra; senha errada avisa; cada usuário cai no próprio perfil
+  const logar = async (pg, usuario, senha = '123') => {
+    await pg.goto(B + 'crm/entrar.html'); await pg.waitForTimeout(150);
+    await pg.fill('[name=usuario]', usuario); await pg.fill('[name=senha]', senha);
+    await pg.click('[data-form-login] button[type=submit]'); await pg.waitForTimeout(350);
+  };
   await page.goto(B + 'crm/'); await page.waitForTimeout(300);
+  ok(/entrar\.html/.test(page.url()), 'sem login, o CRM manda para a tela de entrada');
+  await page.goto(B + 'crm/admin.html'); await page.waitForTimeout(200);
+  ok(/entrar\.html/.test(page.url()), 'sem login, a administração também não abre');
+  await logar(page, 'admin', '999');
+  ok(/incorretos/.test(await page.locator('[data-erro-login]').innerText()), 'senha errada mostra erro');
+  await logar(page, 'medico');
+  ok(/crm\/(#.*)?$/.test(page.url()), 'médico entra no CRM da clínica');
   ok(await page.locator('.coluna').count() === 6, 'quadro tem 6 colunas');
   const ultima = await page.locator('.coluna').last().boundingBox();
   ok(ultima && ultima.x + ultima.width <= 1366, 'as 6 colunas cabem na tela de 1366 px');
@@ -49,11 +62,23 @@ try {
   await page.click('text=Patrícia Gomes Ribeiro'); await page.waitForTimeout(350);
   await page.click('[data-esocial]'); await page.waitForTimeout(150);
   ok(/Enviado em/.test(await page.locator('[data-painel]').innerText()), 'S-2220 marcado como enviado');
+  const [baixado] = await Promise.all([page.waitForEvent('download'), page.click('[data-xml]')]);
+  const xml = await (await import('node:fs/promises')).readFile(await baixado.path(), 'utf8');
+  ok(/<evtMonit/.test(xml) && /<tpExameOcup>0<\/tpExameOcup>/.test(xml) && /<cpfTrab>78901234567<\/cpfTrab>/.test(xml), 'XML do S-2220 baixa com o evento do ASO');
   await page.click('[data-fechar]'); await page.waitForTimeout(300);
   await page.click('.agora__filtro [data-tarefa=""]'); await page.waitForTimeout(150);
   await page.click('.card:has-text("Valter Gomes Silva") >> nth=0'); await page.waitForTimeout(350);
   ok(/Pode ser dispensado/.test(await page.locator('[data-painel]').innerText()), 'demissional dispensável pela NR-7 (grau de risco 2, ASO de 80 dias)');
-  await page.click('[data-fechar]'); await page.waitForTimeout(300);
+  const caixa = await page.locator('[data-painel]').boundingBox();
+  ok(caixa && Math.abs(caixa.x + caixa.width / 2 - 683) < 4 && caixa.y > 0, 'atendimento abre em pop-up no centro');
+  await page.click('[data-guia]'); await page.waitForTimeout(200);
+  const guia = await page.locator('[data-aso-conteudo]').innerText();
+  ok(/Guia de encaminhamento/.test(guia) && /Valter Gomes Silva/.test(guia) && /ficha\.html\?t=/.test(guia), 'guia de encaminhamento com dados, exames e link da ficha');
+  await page.click('[data-fechar-aso]');
+  await page.click('[data-fechar]'); await page.waitForTimeout(350);
+  await page.click('.card:has-text("Márcia Duarte Lopes")'); await page.waitForTimeout(350);
+  ok(/Exame obrigatório/.test(await page.locator('[data-painel]').innerText()), 'retorno ao trabalho com 45 dias de afastamento pede o exame');
+  await page.click('[data-fechar]'); await page.waitForTimeout(350);
   ok(await page.locator('.segmento__pilula').count() >= 0, 'pílula das abas carregada');
   await page.click('[data-tarefa="cobrar"]'); await page.waitForTimeout(150);
   const cobrar = await page.locator('.card b').allInnerTexts();
@@ -64,9 +89,15 @@ try {
   // atendimento com ficha: visão médica x empresa
   await page.click('text=Lucas Henrique Souza'); await page.waitForTimeout(350);
   ok(await page.locator('.atencao .forte').count() > 0, 'visão médica mostra pontos de atenção');
-  await page.click('[data-ver="empresa"]'); await page.waitForTimeout(150);
-  ok(await page.locator('.atencao').count() === 0 && await page.locator('.bloco--trava').count() === 1, 'visão da empresa esconde respostas de saúde');
-  await page.click('[data-ver="medico"]');
+  ok(/Ficha aberta por Dra\. Camila Rocha/.test(await page.locator('[data-painel]').innerText()), 'abrir a ficha fica registrado no histórico');
+  await page.click('[data-fechar]'); await page.waitForTimeout(350);
+  await logar(page, 'clinica');
+  await page.click('text=Lucas Henrique Souza'); await page.waitForTimeout(350);
+  ok(await page.locator('.atencao').count() === 0 && await page.locator('.bloco--trava').count() === 1, 'recepção não vê respostas de saúde');
+  ok(await page.locator('.card .selo--vermelho', { hasText: 'atenção' }).count() === 0, 'cartão da recepção não mostra pontos de atenção');
+  await page.click('[data-fechar]'); await page.waitForTimeout(350);
+  await logar(page, 'medico');
+  await page.click('text=Lucas Henrique Souza'); await page.waitForTimeout(350);
 
   // agendar, atender, emitir ASO com restrição
   await page.click('[data-agendar]'); await page.waitForTimeout(150);
@@ -181,7 +212,7 @@ try {
 
   // perfis: administração (Nexus Safe), clínica e RH
   await page.goto(B + 'crm/entrar.html'); await page.waitForTimeout(250);
-  ok(await page.locator('[data-entrar]').count() === 3, 'tela de entrada tem os 3 perfis');
+  ok(await page.locator('[data-usar]').count() === 7, 'tela de entrada lista as contas de demonstração');
   await page.goto(B + 'crm/#/suporte'); await page.waitForTimeout(250);
   await page.click('[data-form-suporte] button[type=submit]'); await page.waitForTimeout(100);
   ok(await page.locator('[data-form-suporte] .campo__erro').count() === 2, 'chamado vazio não é aberto');
@@ -190,8 +221,9 @@ try {
   await page.click('[data-form-suporte] .opcao:has-text("parou o atendimento")');
   await page.click('[data-form-suporte] button[type=submit]'); await page.waitForTimeout(200);
   ok(/Computador da recepção travando/.test(await page.locator('#vista').innerText()), 'clínica abre chamado de TI');
-  await page.click('text=Trocar de perfil'); await page.waitForTimeout(250);
-  await page.click('[data-entrar="admin"]'); await page.waitForTimeout(350);
+  await page.click('[data-sair]'); await page.waitForTimeout(250);
+  ok(/entrar\.html/.test(page.url()), 'sair volta para a tela de entrada');
+  await page.click('[data-usar="admin"]'); await page.click('[data-form-login] button[type=submit]'); await page.waitForTimeout(350);
   ok(/admin\.html/.test(page.url()) && await page.locator('tbody tr').count() === 3, 'administração lista as 3 agências');
   const adm = await page.locator('body').innerText();
   ok(!/ponto de atenção|resposta "sim"|Convulsão/i.test(adm), 'administração não vê dado de saúde');
@@ -202,10 +234,18 @@ try {
   const card = page.locator('#vista [data-chamado]', { hasText: 'Computador da recepção travando' });
   ok(await card.count() === 1, 'chamado da clínica chega na administração');
   ok(/Responder em \d+ min/.test(await card.innerText()), 'chamado urgente mostra o prazo de resposta');
+  await page.click('[data-filtro-chamado="aguardando"]'); await page.waitForTimeout(150);
+  ok(/Prazo pausado/.test(await page.locator('#vista').innerText()), 'chamado aguardando a clínica fica com o prazo pausado');
+  await page.click('[data-filtro-chamado="abertos"]'); await page.waitForTimeout(150);
+  const imp = page.locator('#vista [data-chamado]', { hasText: 'Impressora de etiquetas' });
+  await imp.locator('[data-resposta]').fill('Cabeça de impressão queimada, precisa de técnico da marca.');
+  await imp.locator('[data-acao="escalonar"]').click(); await page.waitForTimeout(200);
+  ok(/Nível 2/.test(await page.locator('#vista [data-chamado]', { hasText: 'Impressora de etiquetas' }).innerText()), 'chamado escalonado para o nível 2');
   await card.locator('[data-acao="resolver"]').click(); await page.waitForTimeout(100);
   ok(await page.locator('#vista [data-chamado]', { hasText: 'Computador da recepção travando' }).count() === 1 && /Em aberto/.test(await page.locator('[data-filtro-chamado="abertos"]').innerText()), 'resolver sem escrever não fecha o chamado');
   await card.locator('[data-resposta]').fill('Memória trocada.');
   await card.locator('[data-acao="resolver"]').click(); await page.waitForTimeout(200);
+  await logar(page, 'clinica');
   await page.goto(B + 'crm/#/suporte'); await page.waitForTimeout(250);
   ok(/Memória trocada/.test(await page.locator('#vista').innerText()), 'clínica vê a resposta da administração');
   await page.locator('[data-chamado]', { hasText: 'Computador da recepção travando' }).locator('[data-avaliar="sim"]').click(); await page.waitForTimeout(150);
@@ -216,7 +256,10 @@ try {
   ok(/Periódico convocado em/.test(await page.locator('#vista').innerText()), 'clínica convoca o periódico');
   await page.goto(B + 'crm/'); await page.waitForTimeout(250);
   ok(await page.locator('.coluna').first().locator('.card', { hasText: 'Sérgio Almeida Prado' }).count() === 1, 'periódico convocado entra no quadro com o link enviado');
+  await logar(page, 'rh.mercado');
   await page.goto(B + 'crm/empresa.html?e=e1'); await page.waitForTimeout(300);
+  ok(/Mercado Bom Dia/.test(await page.locator('h1').innerText()), 'RH não troca de empresa pelo endereço');
+  await logar(page, 'rh.metalurgica');
   const rh = await page.locator('#vista').innerText();
   ok(/Lucas Henrique Souza/.test(rh) && !/Ana Beatriz Moreira/.test(rh), 'RH vê só os funcionários da própria empresa');
   ok(!/ponto de atenção|resposta "sim"|Convulsão|Pontos de atenção/i.test(rh), 'RH não vê dado de saúde');
@@ -230,12 +273,15 @@ try {
   await page.fill('[data-form-pedido] [name=admissaoEm]', new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10));
   await page.click('text=Enviar pedido'); await page.waitForTimeout(250);
   ok(/Rafael Moura/.test(await page.locator('#vista').innerText()), 'RH pede exame e o funcionário aparece');
-  await page.goto(B + 'crm/'); await page.waitForTimeout(250);
+  await logar(page, 'clinica');
   ok(await page.locator('.card', { hasText: 'Rafael Moura' }).count() === 1, 'pedido do RH chega no quadro da clínica');
 
   // celular sem rolagem lateral
   for (const u of ['', 'crm/', 'crm/#/cadastros', 'crm/#/automacoes', 'crm/#/suporte', 'crm/#/periodicos', 'crm/entrar.html', 'crm/admin.html', 'crm/admin.html#/chamados', 'crm/empresa.html?e=e1', 'marca/']) {
+    const conta = /admin/.test(u) ? 'admin' : /empresa/.test(u) ? 'rh.metalurgica' : /crm\/(#|$)/.test(u) ? 'medico' : '';
+    if (conta) await logar(m, conta);
     await m.goto(B + u); await m.waitForTimeout(250);
+    if (conta) ok(!/entrar\.html/.test(m.url()), `celular abre /${u} logado`);
     const [sw, iw] = await m.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
     ok(sw <= iw, `sem rolagem lateral no celular: /${u}`);
   }

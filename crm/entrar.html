@@ -15,79 +15,96 @@
 <link rel="stylesheet" href="../assets/base.css">
 <link rel="stylesheet" href="crm.css">
 <style>
-  .entrar { max-width: 1000px; margin: 0 auto; padding: clamp(28px, 6vw, 64px) 16px 56px; }
-  .entrar__cab { display: grid; gap: 10px; margin-bottom: 28px; }
-  .entrar__cab h1 { font-size: clamp(26px, 4vw, 34px); }
-  .entrar__cab p { color: var(--apoio); max-width: 38em; }
-  .perfis { display: grid; grid-template-columns: repeat(auto-fit, minmax(min(280px, 100%), 1fr)); gap: 14px; }
-  .perfil { background: var(--branco); border-radius: var(--raio); box-shadow: inset 0 0 0 1px var(--linha); padding: 20px; display: flex; flex-direction: column; gap: 12px; }
-  .perfil__quem { font-size: 12.5px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--apoio); }
-  .perfil h2 { font-size: 20px; }
-  .perfil p { font-size: 14.5px; color: var(--apoio); }
-  .perfil ul { margin: 0; padding: 0 0 0 18px; font-size: 14px; color: var(--texto); display: grid; gap: 4px; }
-  .perfil .botao { margin-top: auto; }
-  .entrar__nota { margin-top: 22px; }
+  .entrar { max-width: 1040px; margin: 0 auto; padding: clamp(28px, 6vw, 64px) 16px 56px; display: grid; gap: 28px; }
+  .entrar__grade { display: grid; grid-template-columns: minmax(0, 400px) minmax(0, 1fr); gap: 20px; align-items: start; }
+  @media (max-width: 860px) { .entrar__grade { grid-template-columns: minmax(0, 1fr); } }
+  .cartao-login { background: var(--branco); border-radius: 18px; box-shadow: inset 0 0 0 1px var(--linha), var(--sombra); padding: clamp(20px, 4vw, 28px); display: grid; gap: 16px; }
+  .cartao-login h1 { font-size: clamp(24px, 3.4vw, 30px); }
+  .cartao-login > p { color: var(--apoio); font-size: 14.5px; margin-top: -8px; }
+  .senha { position: relative; }
+  .senha .entrada { padding-right: 84px; }
+  .senha button { position: absolute; right: 4px; top: 50%; transform: translateY(-50%); min-height: 34px; padding: 0 10px; border: 0; border-radius: 7px; background: none; color: var(--apoio); font: inherit; font-size: 13px; font-weight: 600; cursor: pointer; }
+  .senha button:hover { color: var(--verde-escuro); background: var(--fundo); }
+  .erro-login { background: var(--vermelho-claro); color: #7a1f19; border-radius: 10px; padding: 10px 12px; font-size: 14px; }
+  .sessao-ativa { background: var(--verde-claro); border-radius: 10px; padding: 10px 12px; font-size: 14px; color: var(--verde-escuro); display: flex; flex-wrap: wrap; gap: 8px; align-items: center; justify-content: space-between; }
+  .contas { background: var(--branco); border-radius: 18px; box-shadow: inset 0 0 0 1px var(--linha); padding: 18px 20px; }
+  .contas h2 { font-size: 17px; margin-bottom: 4px; }
+  .contas > p { color: var(--apoio); font-size: 14px; margin-bottom: 10px; }
+  .conta { display: grid; grid-template-columns: minmax(0, 1fr) auto; gap: 4px 12px; align-items: center; padding: 10px 0; border-top: 1px solid var(--linha); }
+  .conta code { font: 600 14px/1.3 ui-monospace, SFMono-Regular, Menlo, monospace; color: var(--tinta); }
+  .conta span { font-size: 13px; color: var(--apoio); grid-column: 1; }
+  .conta .botao { grid-row: 1 / span 2; grid-column: 2; }
+  .grupo-conta { font-size: 12px; font-weight: 600; text-transform: uppercase; letter-spacing: .05em; color: var(--apoio); margin: 14px 0 2px; }
 </style>
 </head>
 <body>
 <div class="demo-faixa">Modelo de demonstração. Dados fictícios, salvos só neste navegador. <a href="../">Voltar ao plano</a></div>
 
 <main class="entrar">
-  <div class="entrar__cab">
-    <a class="marca" href="../"><svg class="ns" viewBox="15 15 70 70" aria-hidden="true"><path class="ns__a" d="M22 64V34a12 12 0 0 1 12-12h30"/><path class="ns__b" d="M78 36v30a12 12 0 0 1-12 12H36"/><rect class="ns__c" x="42" y="42" width="16" height="16" rx="4"/></svg><span>Nexus <i>Safe</i></span></a>
-    <h1>Entrar como</h1>
-    <p>Cada perfil vê só o que é dele. A Nexus Safe cuida das agências e do suporte; a agência cuida dos atendimentos; o RH acompanha os próprios funcionários.</p>
-  </div>
+  <a class="marca" href="../"><svg class="ns" viewBox="15 15 70 70" aria-hidden="true"><path class="ns__a" d="M22 64V34a12 12 0 0 1 12-12h30"/><path class="ns__b" d="M78 36v30a12 12 0 0 1-12 12H36"/><rect class="ns__c" x="42" y="42" width="16" height="16" rx="4"/></svg><span>Nexus <i>Safe</i></span></a>
 
-  <div class="perfis">
-    <section class="perfil">
-      <span class="perfil__quem">Quem oferece o serviço</span>
-      <h2>Nexus Safe</h2>
-      <p>Administração da plataforma e do suporte.</p>
-      <ul>
-        <li>Agências clientes e o que cada uma contratou</li>
-        <li>Uso do mês: fichas, ASOs e mensagens</li>
-        <li>Chamados de TI de todas as agências</li>
-      </ul>
-      <button class="botao" type="button" data-entrar="admin">Entrar na administração</button>
-    </section>
+  <div class="entrar__grade">
+    <form class="cartao-login" data-form-login novalidate>
+      <h1>Entrar</h1>
+      <p>Cada perfil vê só o que é dele.</p>
+      <div class="sessao-ativa" data-sessao hidden></div>
+      <p class="erro-login" data-erro-login role="alert" hidden></p>
+      <label class="campo">Usuário<input class="entrada" name="usuario" required autocomplete="username" autocapitalize="none" spellcheck="false"></label>
+      <label class="campo">Senha<span class="senha"><input class="entrada" type="password" name="senha" required autocomplete="current-password"><button type="button" data-mostrar aria-label="Mostrar senha">Mostrar</button></span></label>
+      <button class="botao" type="submit">Entrar</button>
+    </form>
 
-    <section class="perfil">
-      <span class="perfil__quem">Cliente da Nexus Safe</span>
-      <h2>Clínica</h2>
-      <p>A agência de SST que atende as empresas.</p>
-      <ul>
-        <li>Quadro de atendimentos, do link ao ASO</li>
-        <li>Ficha do candidato e visão médica</li>
-        <li>Pedidos de suporte de TI</li>
-      </ul>
-      <button class="botao" type="button" data-entrar="clinica">Entrar como clínica</button>
-    </section>
-
-    <section class="perfil">
-      <span class="perfil__quem">Cliente da clínica</span>
-      <h2>RH da empresa</h2>
-      <p>Acompanha os exames dos próprios funcionários, sem dado de saúde.</p>
-      <label class="campo">Empresa<select class="entrada" data-empresa></select></label>
-      <button class="botao" type="button" data-entrar="rh">Entrar como RH</button>
+    <section class="contas" aria-label="Contas de demonstração">
+      <h2>Contas de demonstração</h2>
+      <p>Senha de todas: <b style="color:var(--tinta)">123</b>. Toque em "Usar" para preencher.</p>
+      <div data-contas></div>
     </section>
   </div>
 
-  <p class="aviso-demo entrar__nota">No modelo não há senha: o perfil fica guardado neste navegador. Na versão real, cada pessoa entra com e-mail e senha, e o servidor só entrega o que aquele perfil pode ver.</p>
+  <p class="aviso-demo">No modelo, a conta fica guardada neste navegador. Na versão real, a senha é guardada com criptografia no servidor, a sessão expira e cada pedido confere a permissão do perfil.</p>
 </main>
 
+<script src="campos.js"></script>
 <script src="dados.js"></script>
 <script src="contas.js"></script>
 <script>
   (function () {
-    var N = window.Nexus, C = window.Contas;
-    var sel = document.querySelector('[data-empresa]');
-    sel.innerHTML = N.carregar().empresas.map(function (e) { return '<option value="' + e.id + '">' + e.nome.replace(/[<>&"]/g, '') + '</option>'; }).join('');
+    var C = window.Contas, esc = C.esc;
+    var form = document.querySelector('[data-form-login]'), erro = document.querySelector('[data-erro-login]');
+    var GRUPOS = [
+      ['Nexus Safe: quem oferece o serviço', ['admin']],
+      ['Clínica: cliente da Nexus Safe', ['clinica', 'medico']],
+      ['RH da empresa: cliente da clínica', ['rh.metalurgica', 'rh.construtora', 'rh.mercado', 'rh.transportes']]
+    ];
+    var EXPLICA = { admin: 'Agências, contratos, uso e chamados de TI', clinica: 'Recepção: quadro, agenda, cadastros e suporte', medico: 'Equipe médica: tudo da recepção e a ficha de saúde' };
+    document.querySelector('[data-contas]').innerHTML = GRUPOS.map(function (g) {
+      return '<p class="grupo-conta">' + esc(g[0]) + '</p>' + g[1].map(function (u) {
+        var c = C.USUARIOS[u], e = c.empresaId && window.Nexus.empresa(c.empresaId);
+        return '<div class="conta"><code>' + esc(u) + '</code><span>' + esc(EXPLICA[u] || (c.nome + ' · ' + (e ? e.nome.replace(/ \(fict[íi]ci[ao]\)/, '') : ''))) + '</span><button class="botao botao--claro botao--pequeno" type="button" data-usar="' + esc(u) + '">Usar</button></div>';
+      }).join('');
+    }).join('');
+
+    var p = C.lerPerfil();
+    if (p && p.usuario) {
+      var s = document.querySelector('[data-sessao]');
+      s.innerHTML = '<span>Você já entrou como <b>' + esc(p.usuario) + '</b>.</span><a class="botao botao--pequeno" href="' + C.destino(p) + '">Continuar</a>';
+      s.hidden = false;
+    }
+
     document.addEventListener('click', function (ev) {
-      var b = ev.target.closest('[data-entrar]'); if (!b) return;
-      var tipo = b.dataset.entrar;
-      C.gravarPerfil(tipo === 'rh' ? { tipo: 'rh', empresaId: sel.value } : { tipo: tipo });
-      location.href = tipo === 'rh' ? 'empresa.html?e=' + encodeURIComponent(sel.value) : C.PERFIS[tipo].inicio;
+      var u = ev.target.closest('[data-usar]');
+      if (u) { form.usuario.value = u.dataset.usar; form.senha.value = '123'; erro.hidden = true; form.querySelector('[type=submit]').focus(); return; }
+      var m = ev.target.closest('[data-mostrar]');
+      if (m) { var ver = form.senha.type === 'password'; form.senha.type = ver ? 'text' : 'password'; m.textContent = ver ? 'Ocultar' : 'Mostrar'; m.setAttribute('aria-label', ver ? 'Ocultar senha' : 'Mostrar senha'); }
+    });
+
+    form.addEventListener('submit', function (ev) {
+      ev.preventDefault();
+      erro.hidden = true;
+      if (window.Campos.validar(form).length) return;
+      var sessao = C.entrar(form.usuario.value, form.senha.value);
+      if (!sessao) { erro.textContent = 'Usuário ou senha incorretos.'; erro.hidden = false; form.senha.value = ''; form.senha.focus(); return; }
+      location.href = C.destino(sessao);
     });
   })();
 </script>

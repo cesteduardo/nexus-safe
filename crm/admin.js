@@ -11,7 +11,7 @@
   var NOME_SITUACAO = { ativa: 'Ativa', implantacao: 'Em implantação', teste: 'Teste grátis' };
   var COR_SITUACAO = { ativa: 'selo--verde', implantacao: 'selo--azul', teste: 'selo--ambar' };
 
-  C.gravarPerfil({ tipo: 'admin' });
+  var sessao = C.exigir('admin'); if (!sessao) return;
 
   function toast(msg) { var t = $('[data-toast]'); t.textContent = msg; t.classList.add('visivel'); clearTimeout(toast.t); toast.t = setTimeout(function () { t.classList.remove('visivel'); }, 2600); }
   function abertos(agId) { return C.carregar().chamados.filter(function (k) { return k.situacao !== 'resolvido' && (!agId || k.agenciaId === agId); }); }
@@ -74,7 +74,7 @@
   function fecharPainel(semHash) {
     if (painel.hidden) return;
     painel.classList.remove('aberto'); veu.classList.remove('aberto'); document.body.style.overflow = '';
-    setTimeout(function () { painel.hidden = true; veu.hidden = true; }, 260);
+    setTimeout(function () { painel.hidden = true; veu.hidden = true; }, 330);
     if (!semHash) location.hash = '#/agencias';
   }
 
@@ -100,7 +100,7 @@
     var ind = C.indicadores(daAgencia);
     var h = '<div class="cab"><div><h1>Chamados de TI</h1><p>A fila já vem na ordem: fora do prazo, urgente e o mais antigo primeiro.</p></div><div class="cab__acoes"><button class="botao" type="button" data-novo-chamado>+ Novo chamado</button></div></div>';
     h += '<div class="agora agora--fixa">' + [
-      [ind.abertos, 'Em aberto', ind.urgentes ? ind.urgentes + (ind.urgentes > 1 ? ' urgentes' : ' urgente') : 'Nenhum urgente'],
+      [ind.abertos, 'Em aberto', (ind.urgentes ? ind.urgentes + (ind.urgentes > 1 ? ' urgentes' : ' urgente') : 'Nenhum urgente') + (ind.escalonados ? ' · ' + ind.escalonados + ' no nível 2' : '')],
       [ind.fora, 'Fora do prazo', ind.fora ? 'Atender primeiro' : 'Tudo dentro da meta'],
       [ind.respostaMedia, 'Primeira resposta', 'Tempo médio até alguém responder'],
       [ind.avaliados ? ind.boas + '/' + ind.avaliados : 'sem dados', 'Avaliação', 'Chamados que a clínica disse que resolveu']
@@ -108,7 +108,7 @@
     h += '<div class="filtros-chamados"><div class="segmento" role="group" aria-label="Mostrar chamados">' + [['abertos', 'Em aberto'], ['fora', 'Fora do prazo'], ['aguardando', 'Aguardando a clínica'], ['resolvidos', 'Resolvidos'], ['todos', 'Todos']].map(function (g) { return '<button type="button" data-filtro-chamado="' + g[0] + '" aria-pressed="' + (filtroChamados === g[0]) + '">' + g[1] + ' (' + daAgencia.filter(grupos[g[0]]).length + ')</button>'; }).join('') + '</div>' +
       '<select class="entrada" data-filtro-agencia aria-label="Agência"><option value="">Todas as agências</option>' + d.agencias.map(function (a) { return '<option value="' + a.id + '"' + (filtroAgencia === a.id ? ' selected' : '') + '>' + esc(a.nome) + '</option>'; }).join('') + '</select></div>';
     h += '<div class="msgs">' + (lista.length ? lista.map(function (k) { return C.chamadoHtml(k, 'nexus'); }).join('') : '<p class="aviso-demo">Nenhum chamado aqui.</p>') + '</div>';
-    h += '<details class="bloco" style="margin-top:16px"><summary style="cursor:pointer;font-weight:600;color:var(--tinta)">Metas de atendimento</summary><p style="margin:8px 0 10px">Valores de exemplo para o plano mensal. O relógio começa quando o chamado é aberto.</p><ul class="metas">' +
+    h += '<details class="bloco" style="margin-top:16px"><summary style="cursor:pointer;font-weight:600;color:var(--tinta)">Metas de atendimento</summary><p style="margin:8px 0 10px">Valores de exemplo para o plano mensal. O relógio começa quando o chamado é aberto e para enquanto ele aguarda a clínica. O que o primeiro atendimento não resolve sobe para o nível 2 com o motivo escrito.</p><ul class="metas">' +
       Object.keys(C.PRIORIDADES).map(function (p) { var x = C.PRIORIDADES[p]; return '<li><b>' + esc(x.nome) + '</b>Responder em ' + C.duracao(x.resposta) + '<br>Resolver em ' + C.duracao(x.solucao) + '</li>'; }).join('') + '</ul></details>';
     vista.innerHTML = h;
   }
@@ -130,10 +130,11 @@
     else if (t.matches('[data-filtro-chamado]')) { filtroChamados = t.dataset.filtroChamado; renderChamados(); }
     else if (t.matches('[data-acao]')) {
       var card = t.closest('[data-chamado]'), txt = card.querySelector('[data-resposta]').value.trim(), quem = card.querySelector('[data-responsavel]').value, acao = t.dataset.acao;
-      if (!txt) { var r = card.querySelector('[data-resposta]'); r.focus(); r.placeholder = acao === 'resolver' ? 'Escreva o que foi feito para resolver' : 'Escreva a mensagem para a clínica'; r.classList.add('entrada--falta'); return; }
+      if (!txt) { var r = card.querySelector('[data-resposta]'); r.focus(); r.placeholder = acao === 'resolver' ? 'Escreva o que foi feito para resolver' : acao === 'escalonar' ? 'Escreva por que precisa do nível 2' : 'Escreva a mensagem para a clínica'; r.classList.add('entrada--falta'); return; }
+      if (acao === 'escalonar') { C.escalonar(card.dataset.chamado, quem, txt); toast('Chamado passado para o nível 2'); redesenhar(); return; }
       C.atribuir(card.dataset.chamado, quem);
       C.registrar(card.dataset.chamado, 'nexus', quem, txt, acao);
-      toast(acao === 'resolver' ? 'Chamado resolvido' : acao === 'pedir' ? 'Pedido enviado à clínica' : 'Resposta enviada');
+      toast(acao === 'resolver' ? 'Chamado resolvido' : acao === 'pedir' ? 'Pedido enviado à clínica. Prazo pausado.' : 'Resposta enviada');
       redesenhar();
     }
     else if (t.matches('[data-restaurar]')) { if (confirm('Voltar a demonstração ao estado inicial? O que você fez aqui será apagado.')) { C.restaurar(); N.restaurar(); location.hash = '#/agencias'; rota(); toast('Demonstração restaurada'); } }

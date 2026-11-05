@@ -20,15 +20,16 @@ e por último o texto e as imagens do plano.
 ## Mercado (pesquisa de 05/11, ver PESQUISA.md)
 - [x] Admissão prevista no cadastro, aviso de admissão em risco ou atrasada, S-2220 com prazo, aba de periódicos (avisar o RH e convocar), demissional dispensável pela NR-7, ordem de chegada na agenda.
 - [x] Chamados com metas de resposta e solução por prioridade, fila ordenada, conversa nos dois sentidos, aguardando a clínica, responsável, canal, avaliação e reabertura.
-- [ ] Guia de encaminhamento em PDF para o RH entregar ao funcionário (empresa, função, exames do protocolo, preparo, endereço da clínica).
-- [ ] Chamados: pausar o relógio do prazo enquanto o chamado aguarda a clínica, e mostrar isso no cartão.
-- [ ] Chamados: escalonar para segundo nível, com motivo, e indicador de quantos foram escalonados.
-- [ ] S-2220: gerar o XML do evento a partir do ASO (modelo, sem transmitir), com download.
-- [ ] Retorno ao trabalho: no cadastro, pedir a data de início do afastamento e avisar se for menos de 30 dias (não precisa do exame).
+- [x] Guia de encaminhamento em PDF para o RH entregar ao funcionário (empresa, função, exames do protocolo, preparo, endereço da clínica).
+- [x] Chamados: pausar o relógio do prazo enquanto o chamado aguarda a clínica, e mostrar isso no cartão.
+- [x] Chamados: escalonar para segundo nível, com motivo, e indicador de quantos foram escalonados.
+- [x] S-2220: gerar o XML do evento a partir do ASO (modelo, sem transmitir), com download.
+- [x] Retorno ao trabalho: no cadastro, pedir a data de início do afastamento e avisar se for menos de 30 dias (não precisa do exame).
 
 ## Perfis
+- [x] Login de verdade no modelo (`crm/entrar.html`): contas admin, clinica (recepção), medico e uma de RH por empresa, senha 123; páginas protegidas, Sair, RH preso à própria empresa. Painéis abrem em pop-up no centro (folha de baixo no celular).
 - [x] Três perfis com tela de entrada (`crm/entrar.html`): administração da Nexus Safe (agências, contrato, uso, chamados de TI), clínica (o CRM, com aba de suporte) e RH da empresa (só os próprios funcionários, pedido de exame e ASO). Nenhum dos dois de fora vê dado de saúde.
-- [ ] Perfis dentro da clínica: recepção vê cadastro, etapa e agenda; só a equipe médica vê a ficha e os pontos de atenção. Trocar o botão "Equipe médica / Empresa cliente" do painel pelo perfil de quem entrou.
+- [x] Perfis dentro da clínica: recepção vê cadastro, etapa e agenda; só a equipe médica vê a ficha e os pontos de atenção. Trocar o botão "Equipe médica / Empresa cliente" do painel pelo perfil de quem entrou.
 - [ ] Administração no celular: a tabela de agências vira uma lista de cartões até 600 px.
 - [ ] Administração: cadastrar agência nova (nome, cidade, contato com telefone no padrão, serviços, situação).
 - [ ] Plano (index.html): seção curta "Três perfis" com o que cada um vê, ligando para `crm/entrar.html`.
@@ -51,7 +52,7 @@ e por último o texto e as imagens do plano.
 
 ## Mostrar o que o plano promete
 - [ ] Link da ficha com validade de 7 dias: guardar `expiraEm`, mostrar "Link expirado, peça outro à clínica" e, no CRM, botão "Gerar novo link" que invalida o anterior.
-- [ ] Trilha de acesso simulada: registrar no histórico quando a visão médica abre a ficha ("Ficha aberta por Dra. Camila Rocha") e mostrar isso na visão médica.
+- [x] Trilha de acesso simulada: registrar no histórico quando a visão médica abre a ficha ("Ficha aberta por Dra. Camila Rocha") e mostrar isso na visão médica.
 - [x] Visão do RH da empresa cliente: página `crm/empresa.html?e=ID` listando só os atendimentos daquela empresa, com etapa e botão do ASO, sem nenhum dado de saúde. Também pede exame.
 - [ ] Agenda do dia: aba "Agenda" com os exames agendados por horário e o preparo de cada um.
 - [ ] Versão para imprimir da ficha preenchida (só na visão médica), no mesmo padrão do ASO.

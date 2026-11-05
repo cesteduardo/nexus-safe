@@ -3,7 +3,7 @@
 (function () {
   'use strict';
 
-  var CHAVE = 'nexus-safe-demo-v3';
+  var CHAVE = 'nexus-safe-demo-v4';
 
   var ETAPAS = [
     { id: 'enviado', nome: 'Link enviado' },
@@ -183,6 +183,7 @@
 
     var candidatos = [
       cand({ nome: 'Valter Gomes Silva', tipoExame: 'demissional', cpf: '901.234.567-89', celular: '(17) 99901-2345', empresaId: 'e3', funcaoId: 'f5', etapa: 'enviado', criadoEm: agoraMenos(0, 9), historico: [{ em: agoraMenos(0, 9), txt: 'Demissional pedido pelo RH. Link enviado.' }] }),
+      cand({ nome: 'Márcia Duarte Lopes', tipoExame: 'retorno_trabalho', afastadoDesde: agoraMenos(45), cpf: '135.792.468-01', celular: '(17) 99135-7924', empresaId: 'e1', funcaoId: 'f1', etapa: 'enviado', criadoEm: agoraMenos(0, 10), historico: [{ em: agoraMenos(0, 10), txt: 'Retorno ao trabalho pedido pelo RH (afastamento por cirurgia). Link enviado.' }] }),
       cand({ admissaoEm: daquiA(6), nome: 'Ana Beatriz Moreira', cpf: '123.456.789-09', celular: '(17) 99123-4567', empresaId: 'e3', funcaoId: 'f5', etapa: 'enviado', criadoEm: agoraMenos(0, 8), historico: [{ em: agoraMenos(0, 8), txt: 'Cadastrada pela recepção. Link enviado pelo WhatsApp.' }] }),
       cand({ nome: 'Marcos Vinícius Teixeira', tipoExame: 'periodico', cpf: '890.123.456-78', celular: '(17) 99890-1234', empresaId: 'e2', funcaoId: 'f3', etapa: 'enviado', criadoEm: agoraMenos(1, 15), historico: [{ em: agoraMenos(30, 9), txt: 'Aviso automático ao RH: periódico vence em 30 dias.' }, { em: agoraMenos(1, 15), txt: 'Periódico solicitado pelo RH. Link enviado.' }] }),
       cand({ admissaoEm: agoraMenos(1), nome: 'Carlos Eduardo Lima', cpf: '234.567.890-12', celular: '(17) 99234-5678', empresaId: 'e2', funcaoId: 'f3', etapa: 'enviado', criadoEm: agoraMenos(2, 10), historico: [{ em: agoraMenos(2, 10), txt: 'Cadastrado pelo RH da empresa. Link enviado.' }, { em: agoraMenos(1, 10), txt: 'Lembrete automático: falta preencher a ficha.' }] }),
@@ -227,7 +228,7 @@
       { em: agoraMenos(0, 8), automacao: 'link', para: 'Ana Beatriz Moreira', texto: 'Oi, Ana! Aqui é da Clínica Vida Ocupacional. Antes do seu exame admissional, preencha a ficha neste link (leva uns 10 minutos).' }
     ];
 
-    return { versao: 3, clinica: 'Clínica Vida Ocupacional', pcmso: { coordenador: 'Dr. Ricardo Alves', crm: 'CRM-SP 654321', aprovadoEm: agoraMenos(60, 10) }, empresas: empresas, funcoes: funcoes, candidatos: candidatos, automacoes: automacoes, mensagens: mensagens };
+    return { versao: 4, clinica: 'Clínica Vida Ocupacional', endereco: 'Rua das Palmeiras, 450, Centro (endereço fictício)', horario: 'Segunda a sexta, das 7h às 17h. Exames de sangue até as 10h.', pcmso: { coordenador: 'Dr. Ricardo Alves', crm: 'CRM-SP 654321', aprovadoEm: agoraMenos(60, 10) }, empresas: empresas, funcoes: funcoes, candidatos: candidatos, automacoes: automacoes, mensagens: mensagens };
   }
 
   /* ---------- armazenamento ---------- */
@@ -235,7 +236,7 @@
   function carregar() {
     if (memoria) return memoria;
     try { var t = localStorage.getItem(CHAVE); if (t) memoria = JSON.parse(t); } catch (e) { memoria = null; }
-    if (!memoria || memoria.versao !== 3) { memoria = seed(); salvar(); }
+    if (!memoria || memoria.versao !== 4) { memoria = seed(); salvar(); }
     return memoria;
   }
   function salvar() { try { localStorage.setItem(CHAVE, JSON.stringify(memoria)); } catch (e) { /* segue só em memória */ } }
@@ -274,10 +275,70 @@
       '<p class="aso__ns"><svg class="ns" viewBox="15 15 70 70" aria-hidden="true"><path class="ns__a" d="M22 64V34a12 12 0 0 1 12-12h30"/><path class="ns__b" d="M78 36v30a12 12 0 0 1-12 12H36"/><rect class="ns__c" x="42" y="42" width="16" height="16" rx="4"/></svg>Emitido com Nexus Safe</p></div>';
   }
 
+  /* ---------- guia de encaminhamento (o RH entrega ao funcionário) ---------- */
+  function guiaHtml(c) {
+    var d = carregar(), f = funcao(c.funcaoId), e = empresa(c.empresaId), N = window.Nexus, prep = preparos(f);
+    var link = new URL('ficha.html?t=' + c.token, location.href).href;
+    var exame = c.agendadoPara ? (c.agendadoModo === 'chegada' ? new Date(c.agendadoPara).toLocaleDateString('pt-BR') + ', por ordem de chegada (7h às 11h)' : new Date(c.agendadoPara).toLocaleString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', hour: '2-digit', minute: '2-digit' })) : 'A clínica confirma o horário pelo WhatsApp depois que a ficha for enviada.';
+    return '<div class="aso guia"><div class="aso__cab"><div><h2>Guia de encaminhamento</h2><p>Exame ocupacional · ' + esc(d.clinica) + '</p></div><div style="text-align:right"><p>Tipo de exame</p><b>' + esc(nomeTipo(c.tipoExame)) + '</b></div></div>' +
+      '<table><tr><th>Clínica</th><td>' + esc(d.clinica) + '<br>' + esc(d.endereco) + '<br>' + esc(d.horario) + '</td></tr>' +
+      '<tr><th>Quando</th><td>' + esc(exame) + '</td></tr>' +
+      '<tr><th>Empresa</th><td>' + esc(e.nome) + '<br>CNPJ ' + esc(e.cnpj) + '</td></tr>' +
+      '<tr><th>Funcionário</th><td>' + esc(c.nome) + '<br>CPF ' + esc(c.cpf) + '</td></tr>' +
+      '<tr><th>Função e setor</th><td>' + esc(f.nome) + ' · ' + esc(f.setor) + '</td></tr>' +
+      (c.admissaoEm ? '<tr><th>Admissão prevista</th><td>' + new Date(c.admissaoEm).toLocaleDateString('pt-BR') + '</td></tr>' : '') +
+      '<tr><th>Riscos ocupacionais (PGR)</th><td>' + f.riscos.map(function (r) { return esc(RISCO_GRUPO[r]) + ': ' + esc(RISCOS[r]); }).join('<br>') + '</td></tr>' +
+      '<tr><th>Exames do protocolo (PCMSO)</th><td>' + f.exames.map(function (x) { return esc(CATALOGO[x].codigo) + ' · ' + esc(EXAMES[x]); }).join('<br>') + '</td></tr>' +
+      '<tr><th>Preparo</th><td>' + esc((prep.length ? prep.join('; ') + '; ' : '') + 'levar documento com foto e carteira de trabalho').replace(/^./, function (x) { return x.toUpperCase(); }) + '.</td></tr>' +
+      '<tr><th>Antes de ir</th><td>Preencher a ficha no celular (uns 10 minutos):<br><span style="word-break:break-all">' + esc(link) + '</span></td></tr></table>' +
+      '<p style="font-size:12.5px;color:#444">O exame é pago pela empresa. As respostas de saúde da ficha vão só para a equipe médica da clínica.</p>' +
+      '<div class="aso__assin"><div>' + esc(e.contato) + '<br>Responsável pelo encaminhamento</div><div>' + new Date().toLocaleDateString('pt-BR') + '<br>Data da emissão</div></div>' +
+      '<p class="aso__ns">Emitido com Nexus Safe</p></div>';
+  }
+
+  function nomeArquivo(c) { return 'S-2220-' + String(c.nome).normalize('NFD').replace(/[\u0300-\u036f]/g, '').replace(/[^A-Za-z0-9]+/g, '-').replace(/^-|-$/g, '') + '.xml'; }
+  function baixar(nome, texto) {
+    var url = URL.createObjectURL(new Blob([texto], { type: 'application/xml' })), a = document.createElement('a');
+    a.href = url; a.download = nome; document.body.appendChild(a); a.click();
+    setTimeout(function () { URL.revokeObjectURL(url); a.remove(); }, 1000);
+  }
+
+  /* ---------- S-2220 (eSocial): XML de exemplo, para conferir antes de transmitir ---------- */
+  var TP_EXAME = { admissional: 0, periodico: 1, retorno_trabalho: 2, mudanca_riscos: 3, demissional: 9 };
+  function xmlEsc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (ch) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&apos;' }[ch]; }); }
+  function dia(iso) { return new Date(iso).toISOString().slice(0, 10); }
+  function s2220Xml(c) {
+    var d = carregar(), f = funcao(c.funcaoId), e = empresa(c.empresaId), a = c.aso;
+    var so = function (v) { return String(v || '').replace(/\D/g, ''); };
+    var crm = function (t) { var m = String(t || '').match(/CRM-?([A-Z]{2})\s*(\d+)/); return m ? { uf: m[1], nr: m[2] } : { uf: 'SP', nr: so(t) }; };
+    var med = crm(a.crm), coord = crm(d.pcmso.crm);
+    var dtExm = dia(c.agendadoPara || a.data);
+    return '<?xml version="1.0" encoding="UTF-8"?>\n' +
+      '<!-- Gerado pelo modelo da Nexus Safe. Exemplo para conferir: validar no leiaute S-1.2 do eSocial antes de transmitir.\n' +
+      '     procRealizado usa a Tabela 27 do eSocial; o código de cada exame ainda precisa ser preenchido. -->\n' +
+      '<eSocial xmlns="http://www.esocial.gov.br/schema/evt/evtMonit/v_S_01_02_00">\n' +
+      '  <evtMonit Id="ID1' + so(e.cnpj).slice(0, 8).padEnd(14, '0') + dia(a.data).replace(/-/g, '') + '000000' + '00001">\n' +
+      '    <ideEvento><indRetif>1</indRetif><tpAmb>2</tpAmb><procEmi>1</procEmi><verProc>NexusSafe-modelo</verProc></ideEvento>\n' +
+      '    <ideEmpregador><tpInsc>1</tpInsc><nrInsc>' + so(e.cnpj).slice(0, 8) + '</nrInsc></ideEmpregador>\n' +
+      '    <ideVinculo><cpfTrab>' + so(c.cpf) + '</cpfTrab><matricula>A_PREENCHER</matricula></ideVinculo>\n' +
+      '    <exMedOcup>\n' +
+      '      <tpExameOcup>' + TP_EXAME[c.tipoExame] + '</tpExameOcup>\n' +
+      '      <aso>\n' +
+      '        <dtAso>' + dia(a.data) + '</dtAso>\n' +
+      '        <resAso>' + (a.resultado === 'Inapto' ? 2 : 1) + '</resAso>\n' +
+      f.exames.map(function (x) { return '        <exame><dtExm>' + dtExm + '</dtExm><procRealizado>A_PREENCHER</procRealizado><obsProc>' + xmlEsc(CATALOGO[x].codigo + ' ' + EXAMES[x]) + '</obsProc></exame>\n'; }).join('') +
+      '        <medico><nmMed>' + xmlEsc(a.medico) + '</nmMed><nrCRM>' + med.nr + '</nrCRM><ufCRM>' + med.uf + '</ufCRM></medico>\n' +
+      '      </aso>\n' +
+      '      <respMonit><nmResp>' + xmlEsc(d.pcmso.coordenador) + '</nmResp><nrCRM>' + coord.nr + '</nrCRM><ufCRM>' + coord.uf + '</ufCRM></respMonit>\n' +
+      '    </exMedOcup>\n' +
+      '  </evtMonit>\n' +
+      '</eSocial>\n';
+  }
+
   window.Nexus = {
     ETAPAS: ETAPAS, RISCOS: RISCOS, RISCO_GRUPO: RISCO_GRUPO, EXAMES: EXAMES, CATALOGO: CATALOGO, TIPOS_EXAME: TIPOS_EXAME, nomeTipo: nomeTipo, preparos: preparos, somarMeses: somarMeses, SAUDE: SAUDE, ESPECIFICAS: ESPECIFICAS, EXPOSICOES: EXPOSICOES, FAMILIA: FAMILIA,
     carregar: carregar, recarregar: recarregar, salvar: salvar, restaurar: restaurar, empresa: empresa, funcao: funcao,
     alertas: alertas, nomeSaude: nomeSaude, nomeEspecifica: nomeEspecifica, enfileirar: enfileirar,
-    token: token, uid: uid, primeiroNome: primeiroNome, asoHtml: asoHtml, prazoS2220: prazoS2220, limiteDispensa: limiteDispensa
+    token: token, uid: uid, primeiroNome: primeiroNome, asoHtml: asoHtml, guiaHtml: guiaHtml, s2220Xml: s2220Xml, baixar: baixar, nomeArquivo: nomeArquivo, prazoS2220: prazoS2220, limiteDispensa: limiteDispensa
   };
 })();

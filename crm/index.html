@@ -14,6 +14,7 @@
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
 <link rel="stylesheet" href="../assets/base.css">
 <link rel="stylesheet" href="crm.css">
+<script>try{var p=JSON.parse(localStorage.getItem('nexus-safe-perfil'));if(!p||!p.usuario||p.tipo!=='clinica')location.replace('entrar.html')}catch(e){location.replace('entrar.html')}</script>
 </head>
 <body>
 <div class="demo-faixa">Modelo de demonstração. Dados fictícios, salvos só neste navegador. <a href="../">Voltar ao plano</a></div>
@@ -30,7 +31,8 @@
       <a href="#/suporte" data-rota="suporte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>Suporte de TI</a>
     </nav>
     <div class="lateral__pe">
-      <a href="entrar.html">Trocar de perfil</a>
+      <span class="lateral__usuario" data-usuario></span>
+      <button type="button" data-sair>Sair</button>
       <button type="button" data-restaurar>Restaurar a demonstração</button>
     </div>
   </aside>
@@ -52,7 +54,8 @@
     </div>
     <div class="acoes-linha">
       <label class="campo">Tipo de exame<select class="entrada" name="tipoExame" data-sel-tipo></select></label>
-      <label class="campo" data-campo-admissao>Admissão prevista<input class="entrada" type="date" name="admissaoEm" required data-futuro></label>
+      <label class="campo" data-so-tipo="admissional">Admissão prevista<input class="entrada" type="date" name="admissaoEm" required data-futuro></label>
+      <label class="campo" data-so-tipo="retorno_trabalho">Afastado desde <small>Início do afastamento por doença ou acidente</small><input class="entrada" type="date" name="afastadoDesde" required data-passado></label>
     </div>
     <label class="campo">Empresa<select class="entrada" name="empresaId" required data-sel-empresa></select></label>
     <label class="campo">Função<select class="entrada" name="funcaoId" required data-sel-funcao></select><small data-riscos-funcao></small></label>
@@ -78,6 +81,7 @@
 <script src="campos.js"></script>
 <script src="dados.js"></script>
 <script src="contas.js"></script>
+<script src="sessao.js"></script>
 <script src="movimento.js"></script>
 <script src="app.js"></script>
 </body>
