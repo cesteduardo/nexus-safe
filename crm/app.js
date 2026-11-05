@@ -42,6 +42,7 @@
     if (base === 'cadastros') { fecharPainel(true); renderCadastros(); }
     else if (base === 'automacoes') { fecharPainel(true); renderAutomacoes(); }
     else if (base === 'suporte') { fecharPainel(true); renderSuporte(); }
+    else if (base === 'periodicos') { fecharPainel(true); renderPeriodicos(); }
     else {
       renderQuadro();
       if (base === 'c' && partes[1]) abrirPainel(partes[1]); else fecharPainel(true);
@@ -54,8 +55,18 @@
     { id: 'cobrar', nome: 'Cobrar a ficha', dica: 'Link enviado antes de hoje', teste: function (c) { var hoje = new Date(); hoje.setHours(0, 0, 0, 0); return (c.etapa === 'enviado' || c.etapa === 'preenchendo') && new Date(c.criadoEm) < hoje; } },
     { id: 'agendar', nome: 'Agendar exame', dica: 'Ficha recebida, sem horário', teste: function (c) { return c.etapa === 'recebida'; } },
     { id: 'proximos', nome: 'Exames até amanhã', dica: 'Confirmar presença e preparo', teste: function (c) { if (c.etapa !== 'agendado' || !c.agendadoPara) return false; var fim = new Date(); fim.setDate(fim.getDate() + 1); fim.setHours(23, 59, 59, 999); return new Date(c.agendadoPara) <= fim; } },
-    { id: 'aso', nome: 'Emitir ASO', dica: 'Atendido, falta o atestado', teste: function (c) { return c.etapa === 'atendido'; } }
+    { id: 'aso', nome: 'Emitir ASO', dica: 'Atendido, falta o atestado', teste: function (c) { return c.etapa === 'atendido'; } },
+    { id: 'esocial', nome: 'Enviar S-2220', dica: 'ASO emitido, falta o eSocial', teste: function (c) { return c.etapa === 'aso' && c.esocial && c.esocial.status === 'pendente'; } },
+    { id: 'admissao', nome: 'Admissão em risco', dica: 'Admite em até 2 dias sem ASO', teste: function (c) { return admissaoRisco(c) !== ''; } }
   ];
+  /* A empresa só admite com o ASO na mão: perto da data sem ASO é risco; passou da data é atraso. */
+  function admissaoRisco(c) {
+    if (!c.admissaoEm || c.tipoExame !== 'admissional' || c.etapa === 'aso') return '';
+    var hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    var dias = Math.round((new Date(new Date(c.admissaoEm).setHours(0, 0, 0, 0)) - hoje) / 864e5);
+    if (dias < 0) return 'atrasada';
+    return dias <= 2 ? 'perto' : '';
+  }
   function tarefa(id) { for (var i = 0; i < TAREFAS.length; i++) if (TAREFAS[i].id === id) return TAREFAS[i]; return null; }
 
   function renderQuadro() {
@@ -97,6 +108,9 @@
     if (c.etapa === 'preenchendo') meta.push('<span class="selo selo--azul">Rascunho salvo</span>');
     if (c.etapa === 'agendado' && c.agendadoPara) meta.push('<span class="selo selo--azul">' + data(c.agendadoPara, true) + '</span>');
     if (c.etapa === 'aso' && c.aso) meta.push('<span class="selo ' + (c.aso.resultado === 'Inapto' ? 'selo--vermelho' : 'selo--verde') + '">' + esc(c.aso.resultado) + '</span>');
+    if (c.etapa === 'aso' && c.esocial && c.esocial.status === 'pendente') meta.push('<span class="selo selo--ambar">S-2220 até ' + data(c.esocial.prazo) + '</span>');
+    var ar = admissaoRisco(c);
+    if (ar) meta.push('<span class="selo ' + (ar === 'atrasada' ? 'selo--vermelho' : 'selo--ambar') + '">' + (ar === 'atrasada' ? 'Admissão atrasada' : 'Admite ' + data(c.admissaoEm)) + '</span>');
     if (c.ficha && c.etapa !== 'aso') {
       if (al.fortes.length) meta.push('<span class="selo selo--vermelho">' + al.fortes.length + (al.fortes.length > 1 ? ' pontos' : ' ponto') + ' de atenção</span>');
       else if (al.leves.length) meta.push('<span class="selo selo--ambar">' + al.leves.length + (al.leves.length > 1 ? ' respostas' : ' resposta') + ' "sim"</span>');
@@ -143,7 +157,8 @@
     else if (c.aso) h += '<div class="bloco"><h3>ASO</h3><p>Aptidão: <b style="color:var(--tinta)">' + esc(c.aso.resultado) + '</b> em ' + data(c.aso.data) + '.' + (c.aso.restricoes ? ' Restrições: ' + esc(c.aso.restricoes) + '.' : '') + (c.aso.validade ? ' Próximo periódico até ' + new Date(c.aso.validade).toLocaleDateString('pt-BR') + '.' : '') + '</p><div class="acoes-linha" style="margin-top:10px"><button class="botao botao--pequeno" type="button" data-ver-aso>Ver ASO</button></div></div>';
 
     h += '<div class="bloco"><h3>Cadastro</h3><dl class="dl"><dt>CPF</dt><dd>' + esc(c.cpf) + '</dd><dt>Celular</dt><dd>' + esc(c.celular) + '</dd><dt>Empresa</dt><dd>' + esc(e.nome) + '</dd><dt>Função</dt><dd>' + esc(f.nome) + ' (' + esc(f.setor) + ')</dd>' +
-      (c.agendadoPara ? '<dt>Exame</dt><dd>' + data(c.agendadoPara, true) + '</dd>' : '') + '</dl></div>';
+      (c.admissaoEm ? '<dt>Admissão prevista</dt><dd>' + new Date(c.admissaoEm).toLocaleDateString('pt-BR') + (admissaoRisco(c) === 'atrasada' ? ' <span class="selo selo--vermelho">atrasada</span>' : '') + '</dd>' : '') +
+      (c.agendadoPara ? '<dt>Exame</dt><dd>' + quandoExame(c) + '</dd>' : '') + '</dl></div>' + demissionalHtml(c) + esocialHtml(c);
 
     var pc = N.carregar().pcmso, prep = N.preparos(f);
     h += '<div class="bloco"><h3>Riscos e protocolo do PCMSO</h3><p class="sub">Riscos da função (PGR)</p><div class="chips">' + f.riscos.map(function (r) { return '<span class="selo selo--ambar">' + esc(N.RISCO_GRUPO[r]) + ': ' + esc(N.RISCOS[r]) + '</span>'; }).join('') + '</div>' +
@@ -168,6 +183,26 @@
     painel.innerHTML = h;
   }
 
+  function quandoExame(c) { return c.agendadoModo === 'chegada' ? new Date(c.agendadoPara).toLocaleDateString('pt-BR') + ', por ordem de chegada (7h às 11h)' : data(c.agendadoPara, true); }
+
+  /* NR-7: demissional dispensável se o último ASO da pessoa é recente para o grau de risco da empresa. */
+  function demissionalHtml(c) {
+    if (c.tipoExame !== 'demissional' || c.etapa === 'aso') return '';
+    var e = N.empresa(c.empresaId), limite = N.limiteDispensa(e.grauRisco || 3);
+    var ant = N.carregar().candidatos.filter(function (x) { return x.id !== c.id && x.cpf === c.cpf && x.aso; }).sort(function (a, b) { return new Date(b.aso.data) - new Date(a.aso.data); })[0];
+    if (!ant) return '<div class="bloco"><h3>Demissional</h3><p>Nenhum ASO anterior desta pessoa no sistema. O exame demissional é necessário.</p></div>';
+    var dias = Math.floor((Date.now() - new Date(ant.aso.data)) / 864e5), pode = dias < limite;
+    return '<div class="bloco"><h3>Demissional ' + (pode ? '<span class="selo selo--verde">Pode ser dispensado</span>' : '<span class="selo">Exame necessário</span>') + '</h3><p>Último ASO em ' + new Date(ant.aso.data).toLocaleDateString('pt-BR') + ' (' + esc(N.nomeTipo(ant.tipoExame).toLowerCase()) + '), há ' + dias + ' dias. A empresa é grau de risco ' + (e.grauRisco || 3) + ': a NR-7 permite dispensar o demissional se o último exame tiver menos de ' + limite + ' dias.' + (pode ? ' Confirme com o médico coordenador antes de dispensar.' : '') + '</p></div>';
+  }
+
+  function esocialHtml(c) {
+    if (!c.esocial) return '';
+    var ok = c.esocial.status === 'enviado';
+    return '<div class="bloco"><h3>eSocial S-2220 <span class="selo ' + (ok ? 'selo--verde' : 'selo--ambar') + '">' + (ok ? 'Enviado' : 'Pendente') + '</span></h3><p>' +
+      (ok ? 'Enviado em ' + new Date(c.esocial.enviadoEm).toLocaleDateString('pt-BR') + (c.esocial.recibo ? '. Recibo ' + esc(c.esocial.recibo) : '') + '.' : 'O evento de monitoramento da saúde do trabalhador precisa ir ao eSocial até ' + new Date(c.esocial.prazo).toLocaleDateString('pt-BR') + ' (dia 15 do mês seguinte ao ASO).') + '</p>' +
+      (ok ? '' : '<div class="acoes-linha" style="margin-top:10px"><button class="botao botao--pequeno" type="button" data-esocial>Marcar como enviado</button></div><p style="font-size:13px;margin-top:8px">No modelo, o envio é simulado. Na versão real, sai o XML do S-2220 para o sistema da clínica ou da empresa transmitir.</p>') + '</div>';
+  }
+
   function acoesHtml(c, f) {
     var h = '<div class="bloco"><h3>Próximo passo</h3>';
     if (c.etapa === 'enviado' || c.etapa === 'preenchendo') {
@@ -178,9 +213,9 @@
     } else if (c.etapa === 'recebida') {
       var sug = new Date(); sug.setDate(sug.getDate() + 1); sug.setHours(8, 0, 0, 0);
       var v = new Date(sug.getTime() - sug.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
-      h += '<p style="margin-bottom:10px">Ficha recebida. Marque o exame: a confirmação sai pelo WhatsApp com as orientações da função.</p><div class="acoes-linha"><label class="campo">Data e hora<input class="entrada" type="datetime-local" value="' + v + '" data-agenda></label><button class="botao" type="button" data-agendar>Agendar exame</button></div>';
+      h += '<p style="margin-bottom:10px">Ficha recebida. Marque o exame: a confirmação sai pelo WhatsApp com as orientações da função.</p><div class="acoes-linha"><label class="campo">Como atende<select class="entrada" data-agenda-modo><option value="hora">Horário marcado</option><option value="chegada">Ordem de chegada (7h às 11h)</option></select></label><label class="campo">Data e hora<input class="entrada" type="datetime-local" value="' + v + '" data-agenda></label><button class="botao" type="button" data-agendar>Agendar exame</button></div>';
     } else if (c.etapa === 'agendado') {
-      h += '<p style="margin-bottom:10px">Exame em ' + data(c.agendadoPara, true) + '. Quando o candidato for atendido, marque aqui.</p><div class="acoes-linha"><button class="botao" type="button" data-atendido>Marcar como atendido</button></div>';
+      h += '<p style="margin-bottom:10px">Exame em ' + quandoExame(c) + '. Quando o candidato for atendido, marque aqui.</p><div class="acoes-linha"><button class="botao" type="button" data-atendido>Marcar como atendido</button></div>';
     } else if (c.etapa === 'atendido') {
       h += '<p style="margin-bottom:10px">Emitir o ASO. O RH da empresa recebe só a aptidão, sem diagnóstico.</p>' +
         '<div class="acoes-linha"><label class="campo">Aptidão<select class="entrada" data-aso-resultado><option>Apto</option><option>Apto com restrição</option><option>Inapto</option></select></label>' +
@@ -251,17 +286,44 @@
     vista.innerHTML = h;
   }
 
+  /* ---------- periódicos: a clínica avisa antes de vencer ---------- */
+  function renderPeriodicos() {
+    var d = N.carregar(), hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    var lista = d.candidatos.filter(function (c) { return c.aso && c.aso.validade; }).map(function (c) { return { c: c, dias: Math.round((new Date(c.aso.validade) - hoje) / 864e5) }; })
+      .filter(function (x) { return x.dias <= 90; }).sort(function (a, b) { return a.dias - b.dias; });
+    var vencidos = lista.filter(function (x) { return x.dias < 0; }).length, em30 = lista.filter(function (x) { return x.dias >= 0 && x.dias <= 30; }).length;
+    var h = '<div class="cab"><div><h1>Periódicos</h1><p>ASOs que vencem nos próximos 90 dias. A clínica avisa a empresa antes, em vez de esperar o RH lembrar.</p></div></div>';
+    h += '<div class="agora agora--fixa">' + [[vencidos, 'Vencidos', 'Trabalhador sem ASO válido'], [em30, 'Vencem em 30 dias', 'Avisar o RH e convocar'], [lista.length - vencidos - em30, 'Vencem em 31 a 90 dias', 'Para planejar a agenda']].map(function (r) { return '<div class="agora__item"><b>' + r[0] + '</b><span>' + esc(r[1]) + '<small>' + esc(r[2]) + '</small></span></div>'; }).join('') + '</div>';
+    if (!lista.length) h += '<p class="aviso-demo">Nenhum ASO vencendo nos próximos 90 dias.</p>';
+    else h += '<div class="rolagem"><table class="tabela"><thead><tr><th>Funcionário</th><th>Empresa</th><th>Vence</th><th>Próximo passo</th></tr></thead><tbody>' + lista.map(function (x) {
+      var c = x.c, f = N.funcao(c.funcaoId), e = N.empresa(c.empresaId);
+      var cor = x.dias < 0 ? 'selo--vermelho' : x.dias <= 30 ? 'selo--ambar' : 'selo';
+      var quando = x.dias < 0 ? 'Venceu há ' + (-x.dias) + (x.dias === -1 ? ' dia' : ' dias') : x.dias === 0 ? 'Vence hoje' : 'Em ' + x.dias + (x.dias === 1 ? ' dia' : ' dias');
+      var acoes = c.convocadoEm ? '<span style="color:var(--apoio)">Periódico convocado em ' + data(c.convocadoEm) + '</span>' :
+        '<div class="acoes-linha">' + (c.avisoRhEm ? '<span class="selo selo--verde">RH avisado em ' + data(c.avisoRhEm) + '</span>' : '<button class="botao botao--claro botao--pequeno" type="button" data-avisar-rh="' + c.id + '">Avisar o RH</button>') + '<button class="botao botao--pequeno" type="button" data-convocar="' + c.id + '">Convocar periódico</button></div>';
+      return '<tr><td><span class="agencia__nome">' + esc(c.nome) + '<small>' + esc(f.nome) + ' · ASO de ' + new Date(c.aso.data).toLocaleDateString('pt-BR') + '</small></span></td><td>' + esc(e.nome.replace(/ \(fict[íi]ci[ao]\)/, '')) + '</td><td><span class="selo ' + cor + '">' + quando + '</span><br><span style="font-size:13px;color:var(--apoio)">' + new Date(c.aso.validade).toLocaleDateString('pt-BR') + '</span></td><td>' + acoes + '</td></tr>';
+    }).join('') + '</tbody></table></div>';
+    h += '<p class="aviso-demo" style="margin-top:16px">A periodicidade vem do protocolo do PCMSO de cada função. Com a automação "Periódico vencendo" ligada, o aviso ao RH sai sozinho 30 dias antes.</p>';
+    vista.innerHTML = h;
+  }
+
   /* ---------- suporte de TI (a clínica abre, a Nexus Safe atende) ---------- */
   var AGENCIA = 'a1';
   function renderSuporte() {
     var C = window.Contas, ks = C.carregar().chamados.filter(function (k) { return k.agenciaId === AGENCIA; });
-    var h = '<div class="cab"><div><h1>Suporte de TI</h1><p>Impressora, rede, computador, sistema, backup ou WhatsApp com problema? Abra um chamado e a Nexus Safe responde por aqui.</p></div></div>';
-    h += '<div class="duas-col"><form class="bloco" data-form-suporte novalidate style="display:grid;gap:12px"><h3 style="margin:0">Abrir chamado</h3>' +
+    var abertos = ks.filter(function (k) { return k.situacao !== 'resolvido'; }), resolvidos = ks.filter(function (k) { return k.situacao === 'resolvido'; });
+    var esperando = abertos.filter(function (k) { return k.situacao === 'aguardando'; }).length;
+    var h = '<div class="cab"><div><h1>Suporte de TI</h1><p>Impressora, rede, computador, sistema, backup ou WhatsApp com problema? Abra aqui e acompanhe a resposta da Nexus Safe.</p></div></div>';
+    if (esperando) h += '<p class="aviso-demo" style="border-left:3px solid var(--ambar)"><b style="color:var(--tinta)">O suporte está esperando uma resposta sua</b> em ' + esperando + (esperando > 1 ? ' chamados.' : ' chamado.') + '</p>';
+    h += '<div class="duas-col"><div><form class="bloco" data-form-suporte novalidate style="display:grid;gap:12px"><h3 style="margin:0">Abrir chamado</h3>' +
       '<label class="campo">O que aconteceu<input class="entrada" name="assunto" required autocomplete="off" placeholder="Ex.: impressora de ASO não imprime"></label>' +
-      '<div class="acoes-linha"><label class="campo">Tipo<select class="entrada" name="categoria" required>' + C.CATEGORIAS.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select></label>' +
-      '<label class="campo">Está parando o atendimento?<select class="entrada" name="prioridade" required><option value="normal">Não</option><option value="alta">Sim, é urgente</option></select></label></div>' +
-      '<div class="acoes-linha"><button class="botao" type="submit">Abrir chamado</button></div></form>';
-    h += '<div><h2 class="titulo-secao" style="margin-top:0">Seus chamados</h2><div class="msgs">' + (ks.length ? ks.map(function (k) { return C.chamadoHtml(k, false); }).join('') : '<p class="aviso-demo">Nenhum chamado ainda.</p>') + '</div></div></div>';
+      '<label class="campo">Conte mais<textarea class="entrada" name="descricao" required placeholder="Desde quando, em qual computador ou aparelho, o que já tentaram"></textarea></label>' +
+      '<label class="campo">Tipo<select class="entrada" name="categoria" required>' + C.CATEGORIAS.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select></label>' +
+      '<fieldset class="campo" style="border:0;padding:0;margin:0"><legend style="margin-bottom:6px">Está parando o atendimento?</legend><div class="opcoes-lista">' +
+      Object.keys(C.PRIORIDADES).map(function (p, n) { var x = C.PRIORIDADES[p]; return '<label class="opcao"><input type="radio" name="prioridade" value="' + p + '"' + (p === 'normal' ? ' checked' : '') + '><span><b>' + esc(x.pergunta) + '</b><small>Resposta em até ' + C.duracao(x.resposta) + '</small></span></label>'; }).join('') + '</div></fieldset>' +
+      '<div class="acoes-linha"><button class="botao" type="submit">Abrir chamado</button></div></form></div>';
+    h += '<div><h2 class="titulo-secao" style="margin-top:0">Em aberto (' + abertos.length + ')</h2><div class="msgs">' + (abertos.length ? abertos.map(function (k) { return C.chamadoHtml(k, 'clinica'); }).join('') : '<p class="aviso-demo">Nada em aberto.</p>') + '</div>' +
+      (resolvidos.length ? '<h2 class="titulo-secao">Resolvidos (' + resolvidos.length + ')</h2><div class="msgs">' + resolvidos.map(function (k) { return C.chamadoHtml(k, 'clinica'); }).join('') + '</div>' : '') + '</div></div>';
     vista.innerHTML = h;
   }
   document.addEventListener('submit', function (ev) {
@@ -269,8 +331,19 @@
     ev.preventDefault();
     if (window.Campos.validar(ev.target).length) return;
     var fd = new FormData(ev.target);
-    window.Contas.abrirChamado({ agenciaId: AGENCIA, assunto: fd.get('assunto').trim(), categoria: fd.get('categoria'), prioridade: fd.get('prioridade'), por: 'Recepção' });
+    window.Contas.abrirChamado({ agenciaId: AGENCIA, assunto: fd.get('assunto').trim(), descricao: fd.get('descricao').trim(), categoria: fd.get('categoria'), prioridade: fd.get('prioridade'), canal: 'Portal', por: 'Recepção' });
     renderSuporte(); toast('Chamado aberto. A Nexus Safe foi avisada.');
+  });
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest('[data-acao="enviar"], [data-avaliar]'); if (!t || !window.Contas) return;
+    var C = window.Contas, card = t.closest('[data-chamado]'), id = card.dataset.chamado;
+    if (t.matches('[data-acao="enviar"]')) {
+      var r = card.querySelector('[data-resposta]'), txt = r.value.trim();
+      if (!txt) { r.focus(); r.classList.add('entrada--falta'); return; }
+      C.registrar(id, 'clinica', 'Recepção', txt); toast('Mensagem enviada ao suporte');
+    } else if (t.dataset.avaliar === 'sim') { C.avaliar(id, true); toast('Obrigado pela avaliação'); }
+    else { C.registrar(id, 'clinica', 'Recepção', 'Não resolveu. Reabrindo o chamado.', 'reabrir'); toast('Chamado reaberto'); }
+    renderSuporte();
   });
 
   /* ---------- novo candidato ---------- */
@@ -281,6 +354,11 @@
     se.innerHTML = d.empresas.map(function (e) { return '<option value="' + e.id + '">' + esc(e.nome) + '</option>'; }).join('');
     if (filtro.empresa) se.value = filtro.empresa;
     atualizarFuncoes();
+    mostrarAdmissao();
+  }
+  function mostrarAdmissao() {
+    var adm = $('[data-sel-tipo]').value === 'admissional', cx = $('[data-campo-admissao]');
+    cx.hidden = !adm; cx.querySelector('input').disabled = !adm;
   }
   function atualizarFuncoes() {
     var d = N.carregar(), eid = $('[data-sel-empresa]').value;
@@ -311,10 +389,10 @@
     }
     else if (t.matches('[data-agendar]') && c) {
       var v = $('[data-agenda]').value; if (!v) return;
-      c.agendadoPara = new Date(v).toISOString(); c.etapa = 'agendado';
-      registrar(c, 'Exame agendado para ' + data(c.agendadoPara, true) + '.');
+      c.agendadoPara = new Date(v).toISOString(); c.etapa = 'agendado'; c.agendadoModo = $('[data-agenda-modo]').value;
+      registrar(c, 'Exame agendado para ' + quandoExame(c) + '.');
       var f = N.funcao(c.funcaoId), ori = N.preparos(f).map(function (x) { return x.charAt(0).toLowerCase() + x.slice(1); });
-      if (N.enfileirar('agenda', c.nome, 'Oi, ' + N.primeiroNome(c.nome) + '! Seu exame ' + N.nomeTipo(c.tipoExame).toLowerCase() + ' está marcado para ' + data(c.agendadoPara, true) + ' na ' + d.clinica + '. Leve RG e carteira de trabalho' + (ori.length ? '; ' + ori.join('; ') : '') + '.')) registrar(c, 'Confirmação enviada pelo WhatsApp.');
+      if (N.enfileirar('agenda', c.nome, 'Oi, ' + N.primeiroNome(c.nome) + '! Seu exame ' + N.nomeTipo(c.tipoExame).toLowerCase() + ' está marcado para ' + quandoExame(c) + ' na ' + d.clinica + '. Leve RG e carteira de trabalho' + (ori.length ? '; ' + ori.join('; ') : '') + '.')) registrar(c, 'Confirmação enviada pelo WhatsApp.');
       N.salvar(); renderPainel(c); renderQuadro(); toast('Exame agendado');
     }
     else if (t.matches('[data-atendido]') && c) {
@@ -324,12 +402,30 @@
       var res = $('[data-aso-resultado]').value, med = $('[data-aso-medico]').value || 'Dra. Camila Rocha';
       var agora = new Date().toISOString(), fa = N.funcao(c.funcaoId);
       c.aso = { resultado: res, restricoes: res === 'Apto com restrição' ? $('[data-aso-restricoes]').value.trim() : '', medico: med, crm: 'CRM-SP 123456', data: agora, validade: c.tipoExame === 'demissional' ? '' : N.somarMeses(agora, fa.periodicidade), obs: $('[data-aso-obs]').value.trim() };
-      c.etapa = 'aso'; registrar(c, 'ASO emitido: ' + res + '.');
+      c.etapa = 'aso'; c.esocial = { status: 'pendente', prazo: N.prazoS2220(agora) }; registrar(c, 'ASO emitido: ' + res + '. S-2220 pendente até ' + new Date(c.esocial.prazo).toLocaleDateString('pt-BR') + '.');
       var e = N.empresa(c.empresaId), fu = N.funcao(c.funcaoId);
       if (N.enfileirar('aso', e.contato + ' · ' + e.nome.replace(/ \(fict[íi]ci[ao]\)/, ''), 'Olá, ' + N.primeiroNome(e.contato) + '. O ASO ' + N.nomeTipo(c.tipoExame).toLowerCase() + ' de ' + c.nome + ' (' + fu.nome + ') está pronto: ' + res.toUpperCase() + '. O PDF segue anexo. ' + d.clinica + '.')) registrar(c, 'Aviso enviado ao RH da empresa.');
       N.salvar(); renderPainel(c); renderQuadro(); abrirAso(c);
     }
+    else if (t.matches('[data-esocial]') && c) {
+      c.esocial.status = 'enviado'; c.esocial.enviadoEm = new Date().toISOString(); c.esocial.recibo = '1.2.' + String(Date.now()).slice(-10);
+      registrar(c, 'S-2220 enviado ao eSocial.'); N.salvar(); renderPainel(c); renderQuadro(); toast('S-2220 marcado como enviado');
+    }
     else if (t.matches('[data-ver-aso]') && c) abrirAso(c);
+    else if (t.matches('[data-avisar-rh]')) {
+      var cv = candidato(t.dataset.avisarRh), ev2 = N.empresa(cv.empresaId), fv = N.funcao(cv.funcaoId);
+      cv.avisoRhEm = new Date().toISOString();
+      N.enfileirar('periodico', ev2.contato + ' · ' + ev2.nome.replace(/ \(fict[íi]ci[ao]\)/, ''), 'Olá, ' + N.primeiroNome(ev2.contato) + '. O ASO de ' + cv.nome + ' (' + fv.nome + ') vence em ' + new Date(cv.aso.validade).toLocaleDateString('pt-BR') + '. Podemos convocar o periódico? ' + d.clinica + '.');
+      registrar(cv, 'RH avisado do vencimento do ASO.'); N.salvar(); renderPeriodicos(); toast('Aviso enviado ao RH');
+    }
+    else if (t.matches('[data-convocar]')) {
+      var base = candidato(t.dataset.convocar), agora2 = new Date().toISOString();
+      var novo = { id: N.uid(), token: N.token(), tipoExame: 'periodico', nome: base.nome, cpf: base.cpf, celular: base.celular, empresaId: base.empresaId, funcaoId: base.funcaoId, etapa: 'enviado', criadoEm: agora2, agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] };
+      registrar(novo, 'Periódico convocado pela clínica (ASO anterior vence em ' + new Date(base.aso.validade).toLocaleDateString('pt-BR') + ').');
+      if (N.enfileirar('link', novo.nome, textoLink(novo))) registrar(novo, 'Link da ficha enviado pelo WhatsApp.');
+      base.convocadoEm = agora2; registrar(base, 'Periódico convocado.');
+      d.candidatos.unshift(novo); N.salvar(); renderPeriodicos(); toast('Periódico convocado. Link enviado.');
+    }
     else if (t.matches('[data-fechar-aso]')) $('[data-modal-aso]').close();
     else if (t.matches('[data-imprimir]')) window.print();
     else if (t.matches('[data-restaurar]')) { if (confirm('Voltar a demonstração ao estado inicial? O que você fez aqui será apagado.')) { N.restaurar(); if (window.Contas) window.Contas.restaurar(); filtro = { empresa: '', busca: '', tarefa: '' }; location.hash = '#/quadro'; rota(); toast('Demonstração restaurada'); } }
@@ -338,6 +434,7 @@
   document.addEventListener('change', function (ev) {
     var t = ev.target;
     if (t.matches('[data-filtro-empresa]')) { filtro.empresa = t.value; renderQuadro(); }
+    else if (t.matches('[data-sel-tipo]')) mostrarAdmissao();
     else if (t.matches('[data-sel-empresa]')) atualizarFuncoes();
     else if (t.matches('[data-sel-funcao]')) mostrarRiscos();
     else if (t.matches('[data-auto]')) { var d = N.carregar(); d.automacoes.forEach(function (a) { if (a.id === t.dataset.auto) a.ativo = t.checked; }); N.salvar(); toast(t.checked ? 'Automação ligada' : 'Automação desligada'); }
@@ -357,7 +454,7 @@
     if (window.Campos.validar(ev.target).length) { ev.preventDefault(); return; }
     var fd = new FormData(ev.target);
     var d = N.carregar();
-    var c = { id: N.uid(), token: N.token(), tipoExame: fd.get('tipoExame') || 'admissional', nome: fd.get('nome').trim().replace(/ +/g, ' '), cpf: fd.get('cpf'), celular: fd.get('celular'), empresaId: fd.get('empresaId'), funcaoId: fd.get('funcaoId'), etapa: 'enviado', criadoEm: new Date().toISOString(), agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] };
+    var c = { id: N.uid(), token: N.token(), tipoExame: fd.get('tipoExame') || 'admissional', nome: fd.get('nome').trim().replace(/ +/g, ' '), cpf: fd.get('cpf'), celular: fd.get('celular'), empresaId: fd.get('empresaId'), funcaoId: fd.get('funcaoId'), admissaoEm: fd.get('admissaoEm') ? new Date(fd.get('admissaoEm') + 'T08:00:00').toISOString() : '', etapa: 'enviado', criadoEm: new Date().toISOString(), agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] };
     registrar(c, 'Cadastrado(a) pela recepção.');
     if (N.enfileirar('link', c.nome, textoLink(c))) registrar(c, 'Link da ficha enviado pelo WhatsApp.');
     d.candidatos.unshift(c); N.salvar();

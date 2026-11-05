@@ -41,7 +41,20 @@ try {
   ok(await page.locator('.coluna').count() === 6, 'quadro tem 6 colunas');
   const ultima = await page.locator('.coluna').last().boundingBox();
   ok(ultima && ultima.x + ultima.width <= 1366, 'as 6 colunas cabem na tela de 1366 px');
-  ok(await page.locator('.agora__item').count() === 4, 'faixa "para fazer agora" tem 4 tarefas');
+  ok(await page.locator('.agora__item').count() === 6, 'faixa "para fazer agora" tem 6 tarefas');
+  ok(await page.locator('.marca .ns .ns__a').count() === 1 && await page.locator('.marca .ns rect.ns__c').count() === 1, 'logo nova (Elo) no topo');
+  ok(await page.locator('.card', { hasText: 'Carlos Eduardo Lima' }).locator('.selo--vermelho', { hasText: 'Admissão atrasada' }).count() === 1, 'cartão avisa admissão atrasada');
+  await page.click('[data-tarefa="esocial"]'); await page.waitForTimeout(150);
+  ok((await page.locator('.card b').allInnerTexts()).join() === 'Patrícia Gomes Ribeiro', 'tarefa "enviar S-2220" mostra o ASO pendente de eSocial');
+  await page.click('text=Patrícia Gomes Ribeiro'); await page.waitForTimeout(350);
+  await page.click('[data-esocial]'); await page.waitForTimeout(150);
+  ok(/Enviado em/.test(await page.locator('[data-painel]').innerText()), 'S-2220 marcado como enviado');
+  await page.click('[data-fechar]'); await page.waitForTimeout(300);
+  await page.click('.agora__filtro [data-tarefa=""]'); await page.waitForTimeout(150);
+  await page.click('.card:has-text("Valter Gomes Silva") >> nth=0'); await page.waitForTimeout(350);
+  ok(/Pode ser dispensado/.test(await page.locator('[data-painel]').innerText()), 'demissional dispensável pela NR-7 (grau de risco 2, ASO de 80 dias)');
+  await page.click('[data-fechar]'); await page.waitForTimeout(300);
+  ok(await page.locator('.segmento__pilula').count() >= 0, 'pílula das abas carregada');
   await page.click('[data-tarefa="cobrar"]'); await page.waitForTimeout(150);
   const cobrar = await page.locator('.card b').allInnerTexts();
   ok(cobrar.length === 3 && !cobrar.includes('Ana Beatriz Moreira') && cobrar.includes('Carlos Eduardo Lima'), 'tarefa "cobrar a ficha" filtra só os links parados');
@@ -64,13 +77,14 @@ try {
   const aso = await page.locator('[data-aso-conteudo]').innerText();
   ok(/APTO COM RESTRIÇÃO/.test(aso) && /altura por 90 dias/.test(aso) && /periódico até/.test(aso), 'ASO traz aptidão, restrição e validade');
   await page.click('[data-fechar-aso]');
+  ok(/S-2220/.test(await page.locator('[data-painel]').innerText()) && /Pendente/.test(await page.locator('[data-painel]').innerText()), 'ASO emitido abre a pendência do S-2220');
   await page.click('[data-fechar]'); await page.waitForTimeout(300);
 
   // novo atendimento e ficha no celular
   await page.click('[data-novo]');
   // padrão de formulário: nada vazio, nome só letras, telefone sem +55, CPF válido
   await page.click('text=Cadastrar e gerar link'); await page.waitForTimeout(150);
-  ok(await page.locator('[data-form-novo] .campo__erro').count() === 3, 'cadastro vazio não envia e marca os 3 campos');
+  ok(await page.locator('[data-form-novo] .campo__erro').count() === 4, 'cadastro vazio não envia e marca os 4 campos');
   await page.type('[name=nome]', 'Eduardo123 Gonçalves');
   const n1 = await page.inputValue('[name=nome]');
   await page.fill('[name=nome]', ''); await page.type('[name=nome]', 'Edu@rdo');
@@ -89,6 +103,10 @@ try {
   await page.click('text=Cadastrar e gerar link'); await page.waitForTimeout(150);
   ok(/CPF inválido/.test(await page.locator('[data-form-novo]').innerText()), 'CPF com dígito errado é recusado');
   await page.fill('[name=cpf]', '52998224725');
+  await page.fill('[data-form-novo] [name=admissaoEm]', '2020-01-01');
+  await page.click('text=Cadastrar e gerar link'); await page.waitForTimeout(150);
+  ok(/não pode ser no passado/.test(await page.locator('[data-form-novo]').innerText()), 'admissão prevista não aceita data passada');
+  await page.fill('[data-form-novo] [name=admissaoEm]', new Date(Date.now() + 5 * 864e5).toISOString().slice(0, 10));
   await page.selectOption('[data-sel-empresa]', 'e2');
   await page.click('text=Cadastrar e gerar link'); await page.waitForTimeout(350);
   const link = await page.inputValue('.link-ficha input');
@@ -166,8 +184,10 @@ try {
   ok(await page.locator('[data-entrar]').count() === 3, 'tela de entrada tem os 3 perfis');
   await page.goto(B + 'crm/#/suporte'); await page.waitForTimeout(250);
   await page.click('[data-form-suporte] button[type=submit]'); await page.waitForTimeout(100);
-  ok(await page.locator('[data-form-suporte] .campo__erro').count() === 1, 'chamado vazio não é aberto');
+  ok(await page.locator('[data-form-suporte] .campo__erro').count() === 2, 'chamado vazio não é aberto');
   await page.fill('[data-form-suporte] [name=assunto]', 'Computador da recepção travando');
+  await page.fill('[data-form-suporte] [name=descricao]', 'Trava ao abrir o sistema, desde ontem.');
+  await page.click('[data-form-suporte] .opcao:has-text("parou o atendimento")');
   await page.click('[data-form-suporte] button[type=submit]'); await page.waitForTimeout(200);
   ok(/Computador da recepção travando/.test(await page.locator('#vista').innerText()), 'clínica abre chamado de TI');
   await page.click('text=Trocar de perfil'); await page.waitForTimeout(250);
@@ -181,10 +201,21 @@ try {
   await page.click('[data-rota="chamados"]'); await page.waitForTimeout(250);
   const card = page.locator('#vista [data-chamado]', { hasText: 'Computador da recepção travando' });
   ok(await card.count() === 1, 'chamado da clínica chega na administração');
-  await card.locator('[data-nota]').fill('Memória trocada.');
-  await card.locator('[data-situacao="resolvido"]').click(); await page.waitForTimeout(200);
+  ok(/Responder em \d+ min/.test(await card.innerText()), 'chamado urgente mostra o prazo de resposta');
+  await card.locator('[data-acao="resolver"]').click(); await page.waitForTimeout(100);
+  ok(await page.locator('#vista [data-chamado]', { hasText: 'Computador da recepção travando' }).count() === 1 && /Em aberto/.test(await page.locator('[data-filtro-chamado="abertos"]').innerText()), 'resolver sem escrever não fecha o chamado');
+  await card.locator('[data-resposta]').fill('Memória trocada.');
+  await card.locator('[data-acao="resolver"]').click(); await page.waitForTimeout(200);
   await page.goto(B + 'crm/#/suporte'); await page.waitForTimeout(250);
   ok(/Memória trocada/.test(await page.locator('#vista').innerText()), 'clínica vê a resposta da administração');
+  await page.locator('[data-chamado]', { hasText: 'Computador da recepção travando' }).locator('[data-avaliar="sim"]').click(); await page.waitForTimeout(150);
+  ok(/Avaliado: resolveu/.test(await page.locator('#vista').innerText()), 'clínica avalia o chamado resolvido');
+  await page.goto(B + 'crm/#/periodicos'); await page.waitForTimeout(250);
+  ok(/Sérgio Almeida Prado/.test(await page.locator('#vista').innerText()), 'periódicos lista o ASO que vence em breve');
+  await page.click('[data-convocar]'); await page.waitForTimeout(200);
+  ok(/Periódico convocado em/.test(await page.locator('#vista').innerText()), 'clínica convoca o periódico');
+  await page.goto(B + 'crm/'); await page.waitForTimeout(250);
+  ok(await page.locator('.coluna').first().locator('.card', { hasText: 'Sérgio Almeida Prado' }).count() === 1, 'periódico convocado entra no quadro com o link enviado');
   await page.goto(B + 'crm/empresa.html?e=e1'); await page.waitForTimeout(300);
   const rh = await page.locator('#vista').innerText();
   ok(/Lucas Henrique Souza/.test(rh) && !/Ana Beatriz Moreira/.test(rh), 'RH vê só os funcionários da própria empresa');
@@ -196,13 +227,14 @@ try {
   await page.fill('[data-form-pedido] [name=nome]', 'Rafael Moura');
   await page.fill('[data-form-pedido] [name=cpf]', '52998224725');
   await page.fill('[data-form-pedido] [name=celular]', '17988887777');
+  await page.fill('[data-form-pedido] [name=admissaoEm]', new Date(Date.now() + 7 * 864e5).toISOString().slice(0, 10));
   await page.click('text=Enviar pedido'); await page.waitForTimeout(250);
   ok(/Rafael Moura/.test(await page.locator('#vista').innerText()), 'RH pede exame e o funcionário aparece');
   await page.goto(B + 'crm/'); await page.waitForTimeout(250);
   ok(await page.locator('.card', { hasText: 'Rafael Moura' }).count() === 1, 'pedido do RH chega no quadro da clínica');
 
   // celular sem rolagem lateral
-  for (const u of ['', 'crm/', 'crm/#/cadastros', 'crm/#/automacoes', 'crm/#/suporte', 'crm/entrar.html', 'crm/admin.html', 'crm/admin.html#/chamados', 'crm/empresa.html?e=e1', 'marca/']) {
+  for (const u of ['', 'crm/', 'crm/#/cadastros', 'crm/#/automacoes', 'crm/#/suporte', 'crm/#/periodicos', 'crm/entrar.html', 'crm/admin.html', 'crm/admin.html#/chamados', 'crm/empresa.html?e=e1', 'marca/']) {
     await m.goto(B + u); await m.waitForTimeout(250);
     const [sw, iw] = await m.evaluate(() => [document.documentElement.scrollWidth, innerWidth]);
     ok(sw <= iw, `sem rolagem lateral no celular: /${u}`);

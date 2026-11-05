@@ -101,6 +101,7 @@
       else if (t === 'tel' && !telValido(v)) msg = 'Telefone com DDD, como (17) 99999-9999.';
       else if (t === 'cpf' && !cpfValido(v)) msg = 'CPF inválido. Confira os números.';
       else if (el.dataset.nascimento != null) msg = erroNascimento(v);
+      else if (el.dataset.futuro != null) { var hj = new Date(); hj.setHours(0, 0, 0, 0); if (new Date(v + 'T12:00:00') < hj) msg = 'A data não pode ser no passado.'; }
       if (msg) {
         var m = document.createElement('span'); m.className = 'campo__erro'; m.textContent = msg;
         el.insertAdjacentElement('afterend', m);

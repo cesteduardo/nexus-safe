@@ -20,11 +20,12 @@
 
 <div class="app">
   <aside class="lateral">
-    <a class="marca" href="#/quadro"><svg class="ns" viewBox="18 18 64 64" aria-hidden="true"><path d="M24 76V24L48.6 71Q51.2 76 56.6 76H60.6C70.1 76 76.6 70.8 76.6 62.8C76.6 55.3 71 51.9 61.4 50.1C52 48.4 47 45.1 47 37.6C47 29.6 53 23.3 61.4 23.3C67.2 23.3 72.2 25.9 75.2 30.4"/></svg><span>Nexus <i>Safe</i></span></a>
+    <a class="marca" href="#/quadro"><svg class="ns" viewBox="15 15 70 70" aria-hidden="true"><path class="ns__a" d="M22 64V34a12 12 0 0 1 12-12h30"/><path class="ns__b" d="M78 36v30a12 12 0 0 1-12 12H36"/><rect class="ns__c" x="42" y="42" width="16" height="16" rx="4"/></svg><span>Nexus <i>Safe</i></span></a>
     <div class="lateral__clinica">Agência<b data-clinica></b></div>
     <nav class="menu" aria-label="Seções">
       <a href="#/quadro" data-rota="quadro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>Atendimentos</a>
       <a href="#/cadastros" data-rota="cadastros"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 21V7l8-4 8 4v14"/><path d="M9 21v-6h6v6M9 10h.01M15 10h.01"/></svg>Empresas e funções</a>
+      <a href="#/periodicos" data-rota="periodicos"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="5" width="18" height="16" rx="2"/><path d="M16 3v4M8 3v4M3 10h18M12 14v3l2 1"/></svg>Periódicos</a>
       <a href="#/automacoes" data-rota="automacoes"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 12a8 8 0 0 1-11.6 7.1L4 20l1-4.6A8 8 0 1 1 21 12Z"/></svg>Automações</a>
       <a href="#/suporte" data-rota="suporte"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M14.7 6.3a4 4 0 0 0-5.4 5.4L3 18l3 3 6.3-6.3a4 4 0 0 0 5.4-5.4l-2.6 2.6-2.4-.6-.6-2.4z"/></svg>Suporte de TI</a>
     </nav>
@@ -49,7 +50,10 @@
       <label class="campo">CPF<input class="entrada" name="cpf" inputmode="numeric" placeholder="000.000.000-00" required data-campo="cpf"></label>
       <label class="campo">Celular (WhatsApp)<input class="entrada" name="celular" inputmode="tel" placeholder="(17) 99999-9999" required data-campo="tel"></label>
     </div>
-    <label class="campo">Tipo de exame<select class="entrada" name="tipoExame" data-sel-tipo></select></label>
+    <div class="acoes-linha">
+      <label class="campo">Tipo de exame<select class="entrada" name="tipoExame" data-sel-tipo></select></label>
+      <label class="campo" data-campo-admissao>Admissão prevista<input class="entrada" type="date" name="admissaoEm" required data-futuro></label>
+    </div>
     <label class="campo">Empresa<select class="entrada" name="empresaId" required data-sel-empresa></select></label>
     <label class="campo">Função<select class="entrada" name="funcaoId" required data-sel-funcao></select><small data-riscos-funcao></small></label>
     <div class="modal__acoes">
@@ -74,6 +78,7 @@
 <script src="campos.js"></script>
 <script src="dados.js"></script>
 <script src="contas.js"></script>
+<script src="movimento.js"></script>
 <script src="app.js"></script>
 </body>
 </html>

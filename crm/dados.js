@@ -3,7 +3,7 @@
 (function () {
   'use strict';
 
-  var CHAVE = 'nexus-safe-demo-v2';
+  var CHAVE = 'nexus-safe-demo-v3';
 
   var ETAPAS = [
     { id: 'enviado', nome: 'Link enviado' },
@@ -133,6 +133,10 @@
 
   /* ---------- dados de demonstração ---------- */
   function agoraMenos(dias, horas) { var d = new Date(); d.setDate(d.getDate() - dias); d.setHours(horas || 9, 0, 0, 0); return d.toISOString(); }
+  /* S-2220 (eSocial): até o dia 15 do mês seguinte ao ASO. */
+  function prazoS2220(isoAso) { var d = new Date(isoAso); return new Date(d.getFullYear(), d.getMonth() + 1, 15, 23, 59).toISOString(); }
+  /* NR-7: o demissional pode ser dispensado se o último exame foi há menos de 135 dias (grau de risco 1 e 2) ou 90 dias (grau 3 e 4). */
+  function limiteDispensa(grau) { return grau <= 2 ? 135 : 90; }
   function daquiA(dias, horas) { var d = new Date(); d.setDate(d.getDate() + dias); d.setHours(horas || 8, 0, 0, 0); return d.toISOString(); }
   function token() { var c = 'abcdefghijkmnpqrstuvwxyz23456789', s = ''; for (var i = 0; i < 24; i++) s += c[Math.floor(Math.random() * c.length)]; return s; }
   function uid() { return Math.random().toString(36).slice(2, 10); }
@@ -155,10 +159,10 @@
 
   function seed() {
     var empresas = [
-      { id: 'e1', nome: 'Metalúrgica Vale Norte (fictícia)', cnpj: '12.345.678/0001-90', contato: 'Fernanda (RH)', tel: '(17) 99200-1111' },
-      { id: 'e2', nome: 'Construtora Horizonte Azul (fictícia)', cnpj: '23.456.789/0001-01', contato: 'Paulo (DP)', tel: '(17) 99200-2222' },
-      { id: 'e3', nome: 'Mercado Bom Dia (fictício)', cnpj: '34.567.890/0001-12', contato: 'Juliana (RH)', tel: '(17) 99200-3333' },
-      { id: 'e4', nome: 'Transportes Rota Certa (fictícia)', cnpj: '45.678.901/0001-23', contato: 'Marcos (frota)', tel: '(17) 99200-4444' }
+      { id: 'e1', nome: 'Metalúrgica Vale Norte (fictícia)', cnpj: '12.345.678/0001-90', contato: 'Fernanda (RH)', tel: '(17) 99200-1111', grauRisco: 3 },
+      { id: 'e2', nome: 'Construtora Horizonte Azul (fictícia)', cnpj: '23.456.789/0001-01', contato: 'Paulo (DP)', tel: '(17) 99200-2222', grauRisco: 4 },
+      { id: 'e3', nome: 'Mercado Bom Dia (fictício)', cnpj: '34.567.890/0001-12', contato: 'Juliana (RH)', tel: '(17) 99200-3333', grauRisco: 2 },
+      { id: 'e4', nome: 'Transportes Rota Certa (fictícia)', cnpj: '45.678.901/0001-23', contato: 'Marcos (frota)', tel: '(17) 99200-4444', grauRisco: 3 }
     ];
     var funcoes = [
       { id: 'f1', empresaId: 'e1', nome: 'Soldador', setor: 'Caldeiraria', riscos: ['ruido', 'quimico', 'calor'], exames: ['clinico', 'audiometria', 'espirometria', 'raiox'], periodicidade: 6 },
@@ -178,22 +182,23 @@
     var saudeJose = fichaBase().saude; saudeJose.pressao = { sim: true, detalhe: 'Toma losartana' };
 
     var candidatos = [
-      cand({ nome: 'Ana Beatriz Moreira', cpf: '123.456.789-09', celular: '(17) 99123-4567', empresaId: 'e3', funcaoId: 'f5', etapa: 'enviado', criadoEm: agoraMenos(0, 8), historico: [{ em: agoraMenos(0, 8), txt: 'Cadastrada pela recepção. Link enviado pelo WhatsApp.' }] }),
+      cand({ nome: 'Valter Gomes Silva', tipoExame: 'demissional', cpf: '901.234.567-89', celular: '(17) 99901-2345', empresaId: 'e3', funcaoId: 'f5', etapa: 'enviado', criadoEm: agoraMenos(0, 9), historico: [{ em: agoraMenos(0, 9), txt: 'Demissional pedido pelo RH. Link enviado.' }] }),
+      cand({ admissaoEm: daquiA(6), nome: 'Ana Beatriz Moreira', cpf: '123.456.789-09', celular: '(17) 99123-4567', empresaId: 'e3', funcaoId: 'f5', etapa: 'enviado', criadoEm: agoraMenos(0, 8), historico: [{ em: agoraMenos(0, 8), txt: 'Cadastrada pela recepção. Link enviado pelo WhatsApp.' }] }),
       cand({ nome: 'Marcos Vinícius Teixeira', tipoExame: 'periodico', cpf: '890.123.456-78', celular: '(17) 99890-1234', empresaId: 'e2', funcaoId: 'f3', etapa: 'enviado', criadoEm: agoraMenos(1, 15), historico: [{ em: agoraMenos(30, 9), txt: 'Aviso automático ao RH: periódico vence em 30 dias.' }, { em: agoraMenos(1, 15), txt: 'Periódico solicitado pelo RH. Link enviado.' }] }),
-      cand({ nome: 'Carlos Eduardo Lima', cpf: '234.567.890-12', celular: '(17) 99234-5678', empresaId: 'e2', funcaoId: 'f3', etapa: 'enviado', criadoEm: agoraMenos(2, 10), historico: [{ em: agoraMenos(2, 10), txt: 'Cadastrado pelo RH da empresa. Link enviado.' }, { em: agoraMenos(1, 10), txt: 'Lembrete automático: falta preencher a ficha.' }] }),
-      cand({ nome: 'Diego Santos Pereira', cpf: '345.678.901-23', celular: '(17) 99345-6789', empresaId: 'e1', funcaoId: 'f1', etapa: 'preenchendo', criadoEm: agoraMenos(1, 9), rascunho: { passo: 3 }, historico: [{ em: agoraMenos(1, 9), txt: 'Link enviado.' }, { em: agoraMenos(0, 7), txt: 'Abriu a ficha e começou a preencher.' }] }),
-      cand({ nome: 'Lucas Henrique Souza', cpf: '456.789.012-34', celular: '(17) 99456-7890', empresaId: 'e1', funcaoId: 'f2', etapa: 'recebida', criadoEm: agoraMenos(3, 9),
+      cand({ admissaoEm: agoraMenos(1), nome: 'Carlos Eduardo Lima', cpf: '234.567.890-12', celular: '(17) 99234-5678', empresaId: 'e2', funcaoId: 'f3', etapa: 'enviado', criadoEm: agoraMenos(2, 10), historico: [{ em: agoraMenos(2, 10), txt: 'Cadastrado pelo RH da empresa. Link enviado.' }, { em: agoraMenos(1, 10), txt: 'Lembrete automático: falta preencher a ficha.' }] }),
+      cand({ admissaoEm: daquiA(4), nome: 'Diego Santos Pereira', cpf: '345.678.901-23', celular: '(17) 99345-6789', empresaId: 'e1', funcaoId: 'f1', etapa: 'preenchendo', criadoEm: agoraMenos(1, 9), rascunho: { passo: 3 }, historico: [{ em: agoraMenos(1, 9), txt: 'Link enviado.' }, { em: agoraMenos(0, 7), txt: 'Abriu a ficha e começou a preencher.' }] }),
+      cand({ admissaoEm: daquiA(2), nome: 'Lucas Henrique Souza', cpf: '456.789.012-34', celular: '(17) 99456-7890', empresaId: 'e1', funcaoId: 'f2', etapa: 'recebida', criadoEm: agoraMenos(3, 9),
         ficha: fichaBase({ saude: saudeLucas, especificas: { choque: { sim: false }, marcapasso: { sim: false }, medo_altura: { sim: false }, tontura_alt: { sim: true, detalhe: 'Uma vez, em andaime' }, remedio_sono: { sim: false }, ruido_14h: { sim: false }, zumbido: { sim: false }, ouvido: { sim: false } } }),
         historico: [{ em: agoraMenos(3, 9), txt: 'Link enviado.' }, { em: agoraMenos(1, 14), txt: 'Ficha enviada pelo candidato.' }] }),
-      cand({ nome: 'Renata Alves Costa', cpf: '567.890.123-45', celular: '(17) 99567-8901', empresaId: 'e3', funcaoId: 'f4', etapa: 'agendado', criadoEm: agoraMenos(4, 9), agendadoPara: daquiA(1, 8),
+      cand({ admissaoEm: daquiA(3), nome: 'Renata Alves Costa', cpf: '567.890.123-45', celular: '(17) 99567-8901', empresaId: 'e3', funcaoId: 'f4', etapa: 'agendado', criadoEm: agoraMenos(4, 9), agendadoPara: daquiA(1, 8),
         ficha: fichaBase({ saude: saudeRenata, pessoais: Object.assign(fichaBase().pessoais, { sexo: 'Feminino', estado_civil: 'Solteiro(a)', emergencia_nome: 'Sônia Costa', emergencia_parentesco: 'Mãe' }), trabalhos: [{ empresa: 'Lanchonete Central', funcao: 'Atendente', tempo: '1 ano e meio', exposicoes: ['Calor'], epi: 'sim' }], especificas: { passou_mal_calor: { sim: false }, diarreia: { sim: false }, ferida_mao: { sim: false } } }),
         historico: [{ em: agoraMenos(4, 9), txt: 'Link enviado.' }, { em: agoraMenos(3, 20), txt: 'Ficha enviada pelo candidato.' }, { em: agoraMenos(2, 11), txt: 'Exame agendado. Confirmação enviada.' }] }),
-      cand({ nome: 'José Roberto Nunes', cpf: '678.901.234-56', celular: '(17) 99678-9012', empresaId: 'e4', funcaoId: 'f6', etapa: 'atendido', criadoEm: agoraMenos(6, 9), agendadoPara: agoraMenos(0, 8),
+      cand({ admissaoEm: daquiA(1), nome: 'José Roberto Nunes', cpf: '678.901.234-56', celular: '(17) 99678-9012', empresaId: 'e4', funcaoId: 'f6', etapa: 'atendido', criadoEm: agoraMenos(6, 9), agendadoPara: agoraMenos(0, 8),
         ficha: fichaBase({ saude: saudeJose, habitos: { fuma: 'sim', fuma_detalhe: '10 cigarros por dia há 15 anos', alcool: 'socialmente', atividade: 'nao' }, trabalhos: [{ empresa: 'Logística Sul', funcao: 'Motorista', tempo: '8 anos', exposicoes: ['Ruído', 'Vibração'], epi: 'sim' }], especificas: { cnh_cde: { sim: true }, oculos_dirigir: { sim: false }, cnh_suspensa: { sim: false }, ruido_14h: { sim: false }, zumbido: { sim: true, detalhe: 'Às vezes, no ouvido esquerdo' }, ouvido: { sim: false } } }),
         historico: [{ em: agoraMenos(6, 9), txt: 'Link enviado.' }, { em: agoraMenos(5, 19), txt: 'Ficha enviada pelo candidato.' }, { em: agoraMenos(4, 10), txt: 'Exame agendado. Confirmação enviada.' }, { em: agoraMenos(0, 9), txt: 'Atendido pela Dra. Camila Rocha.' }] }),
       cand({ nome: 'Patrícia Gomes Ribeiro', cpf: '789.012.345-67', celular: '(17) 99789-0123', empresaId: 'e1', funcaoId: 'f1', etapa: 'aso', criadoEm: agoraMenos(9, 9), agendadoPara: agoraMenos(5, 8),
         ficha: fichaBase({ pessoais: Object.assign(fichaBase().pessoais, { sexo: 'Feminino' }), especificas: { ruido_14h: { sim: false }, zumbido: { sim: false }, ouvido: { sim: false }, alergia_quim: { sim: false }, rinite: { sim: false }, passou_mal_calor: { sim: false } } }),
-        aso: { resultado: 'Apto', restricoes: '', medico: 'Dra. Camila Rocha', crm: 'CRM-SP 123456', data: agoraMenos(5, 11), validade: somarMeses(agoraMenos(5, 11), 6), obs: '' },
+        aso: { resultado: 'Apto', restricoes: '', medico: 'Dra. Camila Rocha', crm: 'CRM-SP 123456', data: agoraMenos(5, 11), validade: somarMeses(agoraMenos(5, 11), 6), obs: '' }, esocial: { status: 'pendente', prazo: prazoS2220(agoraMenos(5, 11)) },
         historico: [{ em: agoraMenos(9, 9), txt: 'Link enviado.' }, { em: agoraMenos(8, 18), txt: 'Ficha enviada.' }, { em: agoraMenos(7, 10), txt: 'Exame agendado.' }, { em: agoraMenos(5, 9), txt: 'Atendida.' }, { em: agoraMenos(5, 11), txt: 'ASO emitido: Apto. Aviso enviado ao RH.' }] })
     ];
 
@@ -203,8 +208,17 @@
       { id: 'agenda', nome: 'Confirmação de horário', quando: 'Exame agendado', para: 'Candidato', ativo: true },
       { id: 'vespera', nome: 'Lembrete da véspera', quando: '1 dia antes do exame', para: 'Candidato', ativo: true },
       { id: 'aso', nome: 'ASO pronto', quando: 'ASO emitido', para: 'RH da empresa', ativo: true },
-      { id: 'periodico', nome: 'Periódico vencendo', quando: '30 dias antes do vencimento', para: 'RH da empresa', ativo: false }
+      { id: 'periodico', nome: 'Periódico vencendo', quando: '30 dias antes do vencimento', para: 'RH da empresa', ativo: true }
     ];
+
+    candidatos.push(
+      cand({ nome: 'Sérgio Almeida Prado', tipoExame: 'periodico', cpf: '012.345.678-90', celular: '(17) 99012-3456', empresaId: 'e4', funcaoId: 'f6', etapa: 'aso', criadoEm: agoraMenos(342, 9), agendadoPara: agoraMenos(340, 8),
+        aso: { resultado: 'Apto', restricoes: '', medico: 'Dra. Camila Rocha', crm: 'CRM-SP 123456', data: agoraMenos(340, 11), validade: somarMeses(agoraMenos(340, 11), 12), obs: '' }, esocial: { status: 'enviado', prazo: prazoS2220(agoraMenos(340, 11)), enviadoEm: agoraMenos(338, 10) },
+        historico: [{ em: agoraMenos(342, 9), txt: 'Periódico convocado.' }, { em: agoraMenos(340, 11), txt: 'ASO emitido: Apto.' }, { em: agoraMenos(338, 10), txt: 'S-2220 enviado ao eSocial.' }] }),
+      cand({ nome: 'Valter Gomes Silva', tipoExame: 'periodico', cpf: '901.234.567-89', celular: '(17) 99901-2345', empresaId: 'e3', funcaoId: 'f5', etapa: 'aso', criadoEm: agoraMenos(82, 9), agendadoPara: agoraMenos(80, 8),
+        aso: { resultado: 'Apto', restricoes: '', medico: 'Dra. Camila Rocha', crm: 'CRM-SP 123456', data: agoraMenos(80, 11), validade: somarMeses(agoraMenos(80, 11), 24), obs: '' }, esocial: { status: 'enviado', prazo: prazoS2220(agoraMenos(80, 11)), enviadoEm: agoraMenos(79, 10) },
+        historico: [{ em: agoraMenos(80, 11), txt: 'ASO emitido: Apto.' }, { em: agoraMenos(79, 10), txt: 'S-2220 enviado ao eSocial.' }] })
+    );
 
     var mensagens = [
       { em: agoraMenos(5, 11), automacao: 'aso', para: 'Fernanda (RH) · Metalúrgica Vale Norte', texto: 'Olá, Fernanda. O ASO admissional de Patrícia Gomes Ribeiro (Soldador) está pronto: APTO. O PDF segue anexo. Clínica Vida Ocupacional.' },
@@ -213,7 +227,7 @@
       { em: agoraMenos(0, 8), automacao: 'link', para: 'Ana Beatriz Moreira', texto: 'Oi, Ana! Aqui é da Clínica Vida Ocupacional. Antes do seu exame admissional, preencha a ficha neste link (leva uns 10 minutos).' }
     ];
 
-    return { versao: 2, clinica: 'Clínica Vida Ocupacional', pcmso: { coordenador: 'Dr. Ricardo Alves', crm: 'CRM-SP 654321', aprovadoEm: agoraMenos(60, 10) }, empresas: empresas, funcoes: funcoes, candidatos: candidatos, automacoes: automacoes, mensagens: mensagens };
+    return { versao: 3, clinica: 'Clínica Vida Ocupacional', pcmso: { coordenador: 'Dr. Ricardo Alves', crm: 'CRM-SP 654321', aprovadoEm: agoraMenos(60, 10) }, empresas: empresas, funcoes: funcoes, candidatos: candidatos, automacoes: automacoes, mensagens: mensagens };
   }
 
   /* ---------- armazenamento ---------- */
@@ -221,7 +235,7 @@
   function carregar() {
     if (memoria) return memoria;
     try { var t = localStorage.getItem(CHAVE); if (t) memoria = JSON.parse(t); } catch (e) { memoria = null; }
-    if (!memoria || memoria.versao !== 2) { memoria = seed(); salvar(); }
+    if (!memoria || memoria.versao !== 3) { memoria = seed(); salvar(); }
     return memoria;
   }
   function salvar() { try { localStorage.setItem(CHAVE, JSON.stringify(memoria)); } catch (e) { /* segue só em memória */ } }
@@ -257,13 +271,13 @@
       '<p>Conclusão: o trabalhador está</p><div class="aso__resultado">' + esc(c.aso.resultado.toUpperCase()) + ' para a função</div>' +
       '<p style="font-size:12.5px;color:#444">Emitido em ' + new Date(c.aso.data).toLocaleDateString('pt-BR') + '. Médico(a) responsável pelo exame: ' + esc(c.aso.medico) + ', ' + esc(c.aso.crm || 'CRM-SP 123456') + '.</p>' +
       '<div class="aso__assin"><div>' + esc(c.aso.medico) + '<br>Médico(a) examinador(a)</div><div>' + esc(c.nome) + '<br>Trabalhador(a): recebi a 2ª via</div></div>' +
-      '<p class="aso__ns"><svg class="ns" viewBox="18 18 64 64" aria-hidden="true"><path d="M24 76V24L48.6 71Q51.2 76 56.6 76H60.6C70.1 76 76.6 70.8 76.6 62.8C76.6 55.3 71 51.9 61.4 50.1C52 48.4 47 45.1 47 37.6C47 29.6 53 23.3 61.4 23.3C67.2 23.3 72.2 25.9 75.2 30.4"/></svg>Emitido com Nexus Safe</p></div>';
+      '<p class="aso__ns"><svg class="ns" viewBox="15 15 70 70" aria-hidden="true"><path class="ns__a" d="M22 64V34a12 12 0 0 1 12-12h30"/><path class="ns__b" d="M78 36v30a12 12 0 0 1-12 12H36"/><rect class="ns__c" x="42" y="42" width="16" height="16" rx="4"/></svg>Emitido com Nexus Safe</p></div>';
   }
 
   window.Nexus = {
     ETAPAS: ETAPAS, RISCOS: RISCOS, RISCO_GRUPO: RISCO_GRUPO, EXAMES: EXAMES, CATALOGO: CATALOGO, TIPOS_EXAME: TIPOS_EXAME, nomeTipo: nomeTipo, preparos: preparos, somarMeses: somarMeses, SAUDE: SAUDE, ESPECIFICAS: ESPECIFICAS, EXPOSICOES: EXPOSICOES, FAMILIA: FAMILIA,
     carregar: carregar, recarregar: recarregar, salvar: salvar, restaurar: restaurar, empresa: empresa, funcao: funcao,
     alertas: alertas, nomeSaude: nomeSaude, nomeEspecifica: nomeEspecifica, enfileirar: enfileirar,
-    token: token, uid: uid, primeiroNome: primeiroNome, asoHtml: asoHtml
+    token: token, uid: uid, primeiroNome: primeiroNome, asoHtml: asoHtml, prazoS2220: prazoS2220, limiteDispensa: limiteDispensa
   };
 })();

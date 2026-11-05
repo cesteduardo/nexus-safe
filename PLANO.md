@@ -73,6 +73,10 @@ Três perfis, cada um vendo só o que é dele:
 | Clínica | A agência de SST, cliente da Nexus Safe | Quadro de atendimentos, ficha, visão médica, ASO, automações e pedidos de suporte. |
 | RH da empresa | O cliente da agência | Os próprios funcionários: etapa, data do exame, pedido de exame e ASO, sem diagnóstico. |
 
+### O que o mercado pede
+
+Resumo em `PESQUISA.md`: ASO no prazo da admissão, S-2220 sem atraso, aviso de periódico antes de vencer e regra do demissional conferida pelo sistema. Tudo isso já aparece no modelo.
+
 ---
 
 ## 3. O que vai na ficha

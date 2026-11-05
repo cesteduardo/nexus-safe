@@ -20,7 +20,7 @@
 
 <div class="app">
   <aside class="lateral">
-    <a class="marca" href="#/agencias"><svg class="ns" viewBox="18 18 64 64" aria-hidden="true"><path d="M24 76V24L48.6 71Q51.2 76 56.6 76H60.6C70.1 76 76.6 70.8 76.6 62.8C76.6 55.3 71 51.9 61.4 50.1C52 48.4 47 45.1 47 37.6C47 29.6 53 23.3 61.4 23.3C67.2 23.3 72.2 25.9 75.2 30.4"/></svg><span>Nexus <i>Safe</i></span></a>
+    <a class="marca" href="#/agencias"><svg class="ns" viewBox="15 15 70 70" aria-hidden="true"><path class="ns__a" d="M22 64V34a12 12 0 0 1 12-12h30"/><path class="ns__b" d="M78 36v30a12 12 0 0 1-12 12H36"/><rect class="ns__c" x="42" y="42" width="16" height="16" rx="4"/></svg><span>Nexus <i>Safe</i></span></a>
     <div class="lateral__clinica">Perfil<b>Administração</b></div>
     <nav class="menu" aria-label="Seções">
       <a href="#/agencias" data-rota="agencias"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 21h18M5 21V8l7-4 7 4v13"/><path d="M9 21v-5h6v5"/></svg>Agências clientes</a>
@@ -43,9 +43,11 @@
     <h2>Novo chamado</h2>
     <label class="campo">Agência<select class="entrada" name="agenciaId" required data-sel-agencia></select></label>
     <label class="campo">O que aconteceu<input class="entrada" name="assunto" required autocomplete="off" placeholder="Ex.: impressora de ASO não imprime"></label>
+    <label class="campo">Detalhes<textarea class="entrada" name="descricao" required placeholder="O que já foi tentado, desde quando, em qual máquina"></textarea></label>
     <div class="acoes-linha">
       <label class="campo">Tipo<select class="entrada" name="categoria" required data-sel-categoria></select></label>
-      <label class="campo">Prioridade<select class="entrada" name="prioridade" required><option value="normal">Normal</option><option value="alta">Alta</option></select></label>
+      <label class="campo">Prioridade<select class="entrada" name="prioridade" required><option value="urgente">Urgente</option><option value="normal" selected>Normal</option><option value="baixa">Baixa</option></select></label>
+      <label class="campo">Chegou por<select class="entrada" name="canal" required><option>WhatsApp</option><option>Telefone</option><option>Portal</option></select></label>
     </div>
     <div class="modal__acoes">
       <button class="botao botao--claro" value="cancelar" formnovalidate>Cancelar</button>
@@ -59,6 +61,7 @@
 <script src="campos.js"></script>
 <script src="dados.js"></script>
 <script src="contas.js"></script>
+<script src="movimento.js"></script>
 <script src="admin.js"></script>
 </body>
 </html>

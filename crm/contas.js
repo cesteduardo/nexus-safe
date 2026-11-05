@@ -3,12 +3,16 @@
    - admin: a equipe da Nexus Safe (quem oferece o serviço). Vê agências, uso e chamados. Nunca vê resposta de saúde.
    - clinica: a agência de SST, cliente da Nexus Safe. Usa o CRM e abre chamados.
    - rh: o RH da empresa, cliente da agência. Vê só os próprios funcionários, etapa e ASO.
-   Tudo fictício e salvo só neste navegador. */
+   Tudo fictício e salvo só neste navegador.
+
+   Chamados seguem o que funciona em help desk: prioridade na abertura, meta de primeira
+   resposta separada da meta de solução, conversa nos dois sentidos, "aguardando a clínica"
+   e avaliação no fim. */
 (function () {
   'use strict';
 
   var CHAVE_PERFIL = 'nexus-safe-perfil';
-  var CHAVE = 'nexus-safe-contas-v1';
+  var CHAVE = 'nexus-safe-contas-v2';
 
   var PERFIS = {
     admin: { nome: 'Nexus Safe', papel: 'Administração', usuario: 'Equipe Nexus Safe', inicio: 'admin.html' },
@@ -19,26 +23,42 @@
   function lerPerfil() { try { return JSON.parse(localStorage.getItem(CHAVE_PERFIL)) || null; } catch (e) { return null; } }
   function gravarPerfil(p) { try { localStorage.setItem(CHAVE_PERFIL, JSON.stringify(p)); } catch (e) { /* segue sem lembrar */ } }
 
-  function quando(dias, hora) { var d = new Date(); d.setDate(d.getDate() - dias); d.setHours(hora || 9, 0, 0, 0); return d.toISOString(); }
+  var MIN = 6e4, HORA = 36e5;
+  function ha(min) { return new Date(Date.now() - min * MIN).toISOString(); }
+  function diasAtras(d) { return ha(d * 1440); }
 
   var SERVICOS = { suporte: 'Suporte de TI', automacoes: 'Automações de WhatsApp', plataforma: 'Plataforma Nexus Safe' };
   var CATEGORIAS = ['Impressora', 'Rede e Wi-Fi', 'Computador', 'Sistema da clínica', 'Backup', 'WhatsApp', 'Outro'];
-  var SITUACOES = { aberto: 'Aberto', andamento: 'Em andamento', resolvido: 'Resolvido' };
+  var SITUACOES = { aberto: 'Aberto', atendimento: 'Em atendimento', aguardando: 'Aguardando a clínica', resolvido: 'Resolvido' };
+  var CANAIS = ['Portal', 'WhatsApp', 'Telefone'];
+  var EQUIPE = ['Bruno (suporte)', 'Lívia (suporte)'];
+
+  /* Metas de atendimento sugeridas para o plano mensal. Valores de exemplo: o dono ajusta. */
+  var PRIORIDADES = {
+    urgente: { nome: 'Urgente', pergunta: 'Sim, parou o atendimento', resposta: 30, solucao: 4 * 60 },
+    normal: { nome: 'Normal', pergunta: 'Atrapalha, mas dá para trabalhar', resposta: 4 * 60, solucao: 24 * 60 },
+    baixa: { nome: 'Baixa', pergunta: 'Pode esperar', resposta: 24 * 60, solucao: 72 * 60 }
+  };
+
+  function msg(min, lado, autor, txt) { return { em: ha(min), lado: lado, autor: autor, txt: txt }; }
 
   function seed() {
     return {
-      versao: 1,
+      versao: 2,
       agencias: [
         /* a única com CRM de verdade no modelo: os números saem do quadro */
-        { id: 'a1', nome: 'Clínica Vida Ocupacional', cidade: 'São José do Rio Preto, SP', contato: 'Dra. Camila Rocha', tel: '(17) 99300-1010', desde: quando(40), situacao: 'ativa', servicos: ['suporte', 'automacoes', 'plataforma'], usuarios: 4, aoVivo: true },
-        { id: 'a2', nome: 'Ocupa Saúde Mirassol', cidade: 'Mirassol, SP', contato: 'Rogério Lima', tel: '(17) 99300-2020', desde: quando(18), situacao: 'implantacao', servicos: ['suporte', 'plataforma'], usuarios: 2, uso: { fichas: 6, asos: 2, mensagens: 14 } },
-        { id: 'a3', nome: 'SST Norte Paulista', cidade: 'Catanduva, SP', contato: 'Aline Prado', tel: '(17) 99300-3030', desde: quando(7), situacao: 'teste', servicos: ['suporte'], usuarios: 1, uso: { fichas: 0, asos: 0, mensagens: 0 } }
+        { id: 'a1', nome: 'Clínica Vida Ocupacional', cidade: 'São José do Rio Preto, SP', contato: 'Dra. Camila Rocha', tel: '(17) 99300-1010', desde: diasAtras(40), situacao: 'ativa', servicos: ['suporte', 'automacoes', 'plataforma'], usuarios: 4, aoVivo: true },
+        { id: 'a2', nome: 'Ocupa Saúde Mirassol', cidade: 'Mirassol, SP', contato: 'Rogério Lima', tel: '(17) 99300-2020', desde: diasAtras(18), situacao: 'implantacao', servicos: ['suporte', 'plataforma'], usuarios: 2, uso: { fichas: 6, asos: 2, mensagens: 14 } },
+        { id: 'a3', nome: 'SST Norte Paulista', cidade: 'Catanduva, SP', contato: 'Aline Prado', tel: '(17) 99300-3030', desde: diasAtras(7), situacao: 'teste', servicos: ['suporte'], usuarios: 1, uso: { fichas: 0, asos: 0, mensagens: 0 } }
       ],
       chamados: [
-        { id: 'k1', agenciaId: 'a1', assunto: 'Impressora de etiquetas não puxa o papel', categoria: 'Impressora', prioridade: 'alta', situacao: 'aberto', abertoEm: quando(0, 8), por: 'Recepção', notas: [] },
-        { id: 'k2', agenciaId: 'a2', assunto: 'Configurar o modelo de ASO no sistema da clínica', categoria: 'Sistema da clínica', prioridade: 'normal', situacao: 'andamento', abertoEm: quando(2, 10), por: 'Rogério Lima', notas: [{ em: quando(1, 15), txt: 'Modelo montado, falta o médico aprovar.' }] },
-        { id: 'k3', agenciaId: 'a1', assunto: 'Backup da noite de terça falhou', categoria: 'Backup', prioridade: 'alta', situacao: 'resolvido', abertoEm: quando(6, 7), por: 'Nexus Safe (alerta automático)', notas: [{ em: quando(6, 11), txt: 'Disco externo cheio. Rotação ajustada e backup refeito.' }] },
-        { id: 'k4', agenciaId: 'a3', assunto: 'Wi-Fi da recepção cai à tarde', categoria: 'Rede e Wi-Fi', prioridade: 'normal', situacao: 'aberto', abertoEm: quando(1, 16), por: 'Aline Prado', notas: [] }
+        { id: 'k1', agenciaId: 'a1', assunto: 'Impressora de etiquetas não puxa o papel', descricao: 'A Zebra da recepção liga, mas a etiqueta sai em branco e o papel trava. Já trocamos o rolo.', categoria: 'Impressora', prioridade: 'urgente', canal: 'Portal', situacao: 'aberto', abertoEm: ha(18), por: 'Recepção', responsavel: '', primeiraRespostaEm: '', resolvidoEm: '', mensagens: [], avaliacao: null },
+        { id: 'k2', agenciaId: 'a2', assunto: 'Configurar o modelo de ASO no sistema da clínica', descricao: 'Queremos o ASO com o logo da clínica e o campo de riscos por grupo.', categoria: 'Sistema da clínica', prioridade: 'normal', canal: 'WhatsApp', situacao: 'aguardando', abertoEm: ha(26 * 60), por: 'Rogério Lima', responsavel: 'Lívia (suporte)', primeiraRespostaEm: ha(25 * 60), resolvidoEm: '', avaliacao: null,
+          mensagens: [msg(25 * 60, 'nexus', 'Lívia (suporte)', 'Recebi. Vou montar o modelo e mando para aprovação.'), msg(3 * 60, 'nexus', 'Lívia (suporte)', 'Modelo montado. Falta o médico coordenador aprovar o texto do rodapé. Pode me mandar o CRM dele?')] },
+        { id: 'k3', agenciaId: 'a1', assunto: 'Backup da noite de terça falhou', descricao: 'Alerta automático do monitoramento: a cópia noturna não terminou.', categoria: 'Backup', prioridade: 'urgente', canal: 'Portal', situacao: 'resolvido', abertoEm: diasAtras(6), por: 'Nexus Safe (alerta automático)', responsavel: 'Bruno (suporte)', primeiraRespostaEm: ha(6 * 1440 - 12), resolvidoEm: ha(6 * 1440 - 170), avaliacao: { boa: true, em: ha(5 * 1440) },
+          mensagens: [msg(6 * 1440 - 12, 'nexus', 'Bruno (suporte)', 'Vi o alerta. Estou entrando remoto agora.'), msg(6 * 1440 - 170, 'nexus', 'Bruno (suporte)', 'Disco externo estava cheio. Ajustei a rotação para guardar 30 dias e refiz o backup. Testei a restauração de um arquivo.')] },
+        { id: 'k4', agenciaId: 'a3', assunto: 'Wi-Fi da recepção cai à tarde', descricao: 'Por volta das 15h a internet some por uns minutos, todo dia.', categoria: 'Rede e Wi-Fi', prioridade: 'normal', canal: 'Telefone', situacao: 'atendimento', abertoEm: ha(7 * 60), por: 'Aline Prado', responsavel: 'Bruno (suporte)', primeiraRespostaEm: ha(6 * 60), resolvidoEm: '', avaliacao: null,
+          mensagens: [msg(6 * 60, 'nexus', 'Bruno (suporte)', 'Pode ser o roteador esquentando ou interferência. Vou olhar o registro dele hoje à tarde, no horário da queda.')] }
       ]
     };
   }
@@ -47,7 +67,7 @@
   function carregar() {
     if (memoria) return memoria;
     try { var t = localStorage.getItem(CHAVE); if (t) memoria = JSON.parse(t); } catch (e) { memoria = null; }
-    if (!memoria || memoria.versao !== 1) { memoria = seed(); salvar(); }
+    if (!memoria || memoria.versao !== 2) { memoria = seed(); salvar(); }
     return memoria;
   }
   function salvar() { try { localStorage.setItem(CHAVE, JSON.stringify(memoria)); } catch (e) { /* segue só em memória */ } }
@@ -55,6 +75,7 @@
   function recarregar() { memoria = null; return carregar(); }
 
   function agencia(id) { var d = carregar(); for (var i = 0; i < d.agencias.length; i++) if (d.agencias[i].id === id) return d.agencias[i]; return null; }
+  function chamado(id) { var d = carregar(); for (var i = 0; i < d.chamados.length; i++) if (d.chamados[i].id === id) return d.chamados[i]; return null; }
 
   /* Uso do mês: a agência ao vivo conta o que está no quadro; as outras têm números fixos. */
   function uso(a) {
@@ -68,41 +89,110 @@
     };
   }
 
-  function abrirChamado(dados) {
-    var d = carregar();
-    var k = { id: 'k' + Date.now().toString(36), agenciaId: dados.agenciaId, assunto: dados.assunto, categoria: dados.categoria, prioridade: dados.prioridade || 'normal', situacao: 'aberto', abertoEm: new Date().toISOString(), por: dados.por, notas: [] };
-    d.chamados.unshift(k); salvar(); return k;
+  /* ---------- prazos ---------- */
+  function duracao(min) {
+    min = Math.max(0, Math.round(min));
+    if (min < 60) return min + ' min';
+    var h = Math.floor(min / 60), m = min % 60;
+    if (h < 48) return h + ' h' + (m ? ' ' + m + ' min' : '');
+    return Math.round(h / 24) + ' dias';
+  }
+  /* Situação do prazo: o que vale agora é a resposta (se ninguém respondeu) ou a solução. */
+  function prazo(k) {
+    var p = PRIORIDADES[k.prioridade] || PRIORIDADES.normal, ab = new Date(k.abertoEm).getTime(), agora = Date.now();
+    if (k.situacao === 'resolvido') {
+      var levou = (new Date(k.resolvidoEm).getTime() - ab) / MIN;
+      return { tipo: 'feito', fora: levou > p.solucao, texto: 'Resolvido em ' + duracao(levou) + (levou > p.solucao ? ', fora do prazo' : ', no prazo') };
+    }
+    if (!k.primeiraRespostaEm) {
+      var r = ab + p.resposta * MIN - agora;
+      return r >= 0 ? { tipo: 'resposta', fora: false, perto: r < p.resposta * MIN * 0.25, texto: 'Responder em ' + duracao(r / MIN) } : { tipo: 'resposta', fora: true, texto: 'Resposta atrasada ' + duracao(-r / MIN) };
+    }
+    var s = ab + p.solucao * MIN - agora;
+    return s >= 0 ? { tipo: 'solucao', fora: false, perto: s < p.solucao * MIN * 0.25, texto: 'Resolver em ' + duracao(s / MIN) } : { tipo: 'solucao', fora: true, texto: 'Fora do prazo há ' + duracao(-s / MIN) };
   }
 
+  /* ---------- ações ---------- */
+  function abrirChamado(dados) {
+    var d = carregar();
+    var k = { id: 'k' + Date.now().toString(36), agenciaId: dados.agenciaId, assunto: dados.assunto, descricao: dados.descricao || '', categoria: dados.categoria, prioridade: dados.prioridade || 'normal', canal: dados.canal || 'Portal', situacao: 'aberto', abertoEm: new Date().toISOString(), por: dados.por, responsavel: '', primeiraRespostaEm: '', resolvidoEm: '', mensagens: [], avaliacao: null };
+    d.chamados.unshift(k); salvar(); return k;
+  }
+  /* lado: 'nexus' (suporte) ou 'clinica'. acao: 'responder' | 'pedir' (aguardando a clínica) | 'resolver' | 'reabrir' */
+  function registrar(id, lado, autor, txt, acao) {
+    var k = chamado(id); if (!k) return null;
+    var agora = new Date().toISOString();
+    if (txt) k.mensagens.push({ em: agora, lado: lado, autor: autor, txt: txt });
+    if (lado === 'nexus') {
+      if (!k.primeiraRespostaEm) k.primeiraRespostaEm = agora;
+      if (!k.responsavel) k.responsavel = autor;
+      k.situacao = acao === 'pedir' ? 'aguardando' : acao === 'resolver' ? 'resolvido' : 'atendimento';
+      if (acao === 'resolver') k.resolvidoEm = agora;
+    } else {
+      if (acao === 'reabrir') { k.situacao = 'atendimento'; k.resolvidoEm = ''; k.avaliacao = null; }
+      else if (k.situacao === 'aguardando') k.situacao = 'atendimento';
+    }
+    salvar(); return k;
+  }
+  function atribuir(id, nome) { var k = chamado(id); if (!k) return; k.responsavel = nome; salvar(); }
+  function avaliar(id, boa) { var k = chamado(id); if (!k) return; k.avaliacao = { boa: boa, em: new Date().toISOString() }; salvar(); }
+
+  /* Números do suporte para o painel da administração. */
+  function indicadores(lista) {
+    var abertos = lista.filter(function (k) { return k.situacao !== 'resolvido'; });
+    var fora = abertos.filter(function (k) { return prazo(k).fora; }).length;
+    var resp = lista.filter(function (k) { return k.primeiraRespostaEm; }).map(function (k) { return (new Date(k.primeiraRespostaEm) - new Date(k.abertoEm)) / MIN; });
+    var aval = lista.filter(function (k) { return k.avaliacao; });
+    return {
+      abertos: abertos.length, fora: fora,
+      urgentes: abertos.filter(function (k) { return k.prioridade === 'urgente'; }).length,
+      respostaMedia: resp.length ? duracao(resp.reduce(function (a, b) { return a + b; }, 0) / resp.length) : 'sem dados',
+      boas: aval.filter(function (k) { return k.avaliacao.boa; }).length, avaliados: aval.length
+    };
+  }
+
+  /* ---------- desenho ---------- */
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function dataHora(iso) { var d = new Date(iso); return d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + ' ' + d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }); }
-  var COR_SITUACAO = { aberto: 'selo--ambar', andamento: 'selo--azul', resolvido: 'selo--verde' };
+  var COR_SITUACAO = { aberto: 'selo--ambar', atendimento: 'selo--azul', aguardando: 'selo', resolvido: 'selo--verde' };
 
-  /* Cartão de chamado. A administração muda a situação e anota; a clínica só acompanha. */
-  function chamadoHtml(k, admin) {
-    var a = agencia(k.agenciaId);
-    var h = '<article class="msg chamado" data-chamado="' + k.id + '"><div class="msg__cab"><span>' + (admin ? '<b>' + esc(a ? a.nome : '') + '</b> · ' : '') + esc(k.categoria) + ' · aberto por ' + esc(k.por) + '</span><span>' + dataHora(k.abertoEm) + '</span></div>' +
-      '<p class="chamado__assunto">' + esc(k.assunto) + '</p><div class="chips" style="margin-top:8px"><span class="selo ' + COR_SITUACAO[k.situacao] + '">' + esc(SITUACOES[k.situacao]) + '</span>' + (k.prioridade === 'alta' ? '<span class="selo selo--vermelho">Prioridade alta</span>' : '') + '</div>';
-    if (k.notas.length) h += '<ol class="linha-tempo chamado__notas">' + k.notas.map(function (n) { return '<li><time>' + dataHora(n.em) + '</time><span>' + esc(n.txt) + '</span></li>'; }).join('') + '</ol>';
-    if (admin && k.situacao !== 'resolvido') {
-      h += '<div class="chamado__acoes"><input class="entrada" data-nota placeholder="Anotar o que foi feito" aria-label="Anotação do chamado">' +
-        (k.situacao === 'aberto' ? '<button class="botao botao--claro botao--pequeno" type="button" data-situacao="andamento">Começar</button>' : '') +
-        '<button class="botao botao--pequeno" type="button" data-situacao="resolvido">Resolver</button></div>';
+  /* Cartão de chamado. lado 'nexus' atende; lado 'clinica' acompanha, responde e avalia. */
+  function chamadoHtml(k, lado) {
+    var a = agencia(k.agenciaId), pz = prazo(k), nexus = lado === 'nexus';
+    var corPrazo = pz.tipo === 'feito' ? (pz.fora ? 'selo--ambar' : 'selo--verde') : pz.fora ? 'selo--vermelho' : pz.perto ? 'selo--ambar' : 'selo';
+    var h = '<article class="chamado" data-chamado="' + k.id + '"' + (pz.fora && k.situacao !== 'resolvido' ? ' data-fora' : '') + '>' +
+      '<div class="msg__cab"><span>' + (nexus ? '<b>' + esc(a ? a.nome : '') + '</b> · ' : '') + esc(k.categoria) + ' · ' + esc(k.canal) + ' · ' + esc(k.por) + '</span><span>' + dataHora(k.abertoEm) + '</span></div>' +
+      '<p class="chamado__assunto">' + esc(k.assunto) + '</p>' + (k.descricao ? '<p class="chamado__desc">' + esc(k.descricao) + '</p>' : '') +
+      '<div class="chips" style="margin-top:10px"><span class="selo ' + COR_SITUACAO[k.situacao] + '">' + esc(SITUACOES[k.situacao]) + '</span>' +
+      (k.prioridade !== 'normal' ? '<span class="selo ' + (k.prioridade === 'urgente' ? 'selo--vermelho' : '') + '">' + esc(PRIORIDADES[k.prioridade].nome) + '</span>' : '') +
+      '<span class="selo ' + corPrazo + '">' + esc(pz.texto) + '</span>' +
+      (k.responsavel ? '<span class="selo">Com ' + esc(k.responsavel) + '</span>' : '') +
+      (k.avaliacao ? '<span class="selo ' + (k.avaliacao.boa ? 'selo--verde' : 'selo--ambar') + '">' + (k.avaliacao.boa ? 'Avaliado: resolveu' : 'Avaliado: não resolveu') + '</span>' : '') + '</div>';
+
+    if (k.mensagens.length) h += '<ol class="conversa">' + k.mensagens.map(function (m) { return '<li class="conversa__msg conversa__msg--' + m.lado + '"><div><b>' + esc(m.autor) + '</b><time>' + dataHora(m.em) + '</time></div><p>' + esc(m.txt) + '</p></li>'; }).join('') + '</ol>';
+
+    if (nexus && k.situacao !== 'resolvido') {
+      h += '<div class="chamado__acoes"><textarea class="entrada" data-resposta rows="2" placeholder="Responder à clínica" aria-label="Resposta para a clínica"></textarea>' +
+        '<div class="chamado__botoes"><select class="entrada" data-responsavel aria-label="Responsável">' + EQUIPE.map(function (n) { return '<option' + (n === k.responsavel ? ' selected' : '') + '>' + esc(n) + '</option>'; }).join('') + '</select>' +
+        '<button class="botao botao--claro botao--pequeno" type="button" data-acao="responder">Responder</button>' +
+        '<button class="botao botao--claro botao--pequeno" type="button" data-acao="pedir">Pedir informação</button>' +
+        '<button class="botao botao--pequeno" type="button" data-acao="resolver">Resolver</button></div></div>';
+    }
+    if (!nexus && k.situacao !== 'resolvido') {
+      h += '<div class="chamado__acoes"><textarea class="entrada" data-resposta rows="2" placeholder="' + (k.situacao === 'aguardando' ? 'O suporte está esperando sua resposta' : 'Acrescentar uma informação') + '" aria-label="Mensagem para o suporte"></textarea>' +
+        '<div class="chamado__botoes"><button class="botao botao--claro botao--pequeno" type="button" data-acao="enviar">Enviar</button></div></div>';
+    }
+    if (!nexus && k.situacao === 'resolvido' && !k.avaliacao) {
+      h += '<div class="chamado__avaliar"><span>O problema foi resolvido?</span><button class="botao botao--pequeno" type="button" data-avaliar="sim">Sim, resolveu</button><button class="botao botao--claro botao--pequeno" type="button" data-avaliar="nao">Não, reabrir</button></div>';
     }
     return h + '</article>';
   }
 
-  function mudarSituacao(id, situacao, nota) {
-    var d = carregar(), k = d.chamados.filter(function (x) { return x.id === id; })[0];
-    if (!k) return null;
-    k.situacao = situacao;
-    k.notas.push({ em: new Date().toISOString(), txt: nota || (situacao === 'resolvido' ? 'Chamado resolvido.' : 'Atendimento começou.') });
-    salvar(); return k;
-  }
-
   window.Contas = {
-    PERFIS: PERFIS, SERVICOS: SERVICOS, CATEGORIAS: CATEGORIAS, SITUACOES: SITUACOES,
+    PERFIS: PERFIS, SERVICOS: SERVICOS, CATEGORIAS: CATEGORIAS, SITUACOES: SITUACOES, PRIORIDADES: PRIORIDADES, CANAIS: CANAIS, EQUIPE: EQUIPE,
     lerPerfil: lerPerfil, gravarPerfil: gravarPerfil,
-    carregar: carregar, salvar: salvar, restaurar: restaurar, recarregar: recarregar, agencia: agencia, uso: uso, abrirChamado: abrirChamado, mudarSituacao: mudarSituacao, chamadoHtml: chamadoHtml, esc: esc, dataHora: dataHora
+    carregar: carregar, salvar: salvar, restaurar: restaurar, recarregar: recarregar, agencia: agencia, chamado: chamado, uso: uso,
+    abrirChamado: abrirChamado, registrar: registrar, atribuir: atribuir, avaliar: avaliar, prazo: prazo, duracao: duracao, indicadores: indicadores,
+    chamadoHtml: chamadoHtml, esc: esc, dataHora: dataHora
   };
 })();

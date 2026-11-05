@@ -6,6 +6,8 @@
   var $ = function (s, r) { return (r || document).querySelector(s); };
   var vista = $('#vista'), painel = $('[data-painel]'), veu = $('[data-veu]');
   var filtroChamados = 'abertos';
+  /* o relógio dos prazos anda: redesenha a cada minuto se nada estiver sendo digitado */
+  setInterval(function () { var a = document.activeElement; if (!a || !a.matches('textarea, input, select')) { if (/chamados/.test(location.hash)) renderChamados(); } }, 60000);
   var NOME_SITUACAO = { ativa: 'Ativa', implantacao: 'Em implantação', teste: 'Teste grátis' };
   var COR_SITUACAO = { ativa: 'selo--verde', implantacao: 'selo--azul', teste: 'selo--ambar' };
 
@@ -26,11 +28,11 @@
     var d = C.carregar();
     var tot = { fichas: 0, asos: 0, mensagens: 0 };
     d.agencias.forEach(function (a) { var u = C.uso(a); tot.fichas += u.fichas; tot.asos += u.asos; tot.mensagens += u.mensagens; });
-    var ab = abertos(), altas = ab.filter(function (k) { return k.prioridade === 'alta'; }).length;
+    var ind = C.indicadores(d.chamados);
     var ativas = d.agencias.filter(function (a) { return a.situacao === 'ativa'; }).length;
     var resumo = [
       [d.agencias.length, 'Agências clientes', ativas + (ativas === 1 ? ' ativa' : ' ativas') + ', as outras em implantação ou teste'],
-      [ab.length, 'Chamados em aberto', altas ? altas + ' com prioridade alta' : 'Nenhum com prioridade alta'],
+      [ind.abertos, 'Chamados em aberto', ind.fora ? ind.fora + ' fora do prazo' : 'Todos dentro do prazo'],
       [tot.fichas, 'Fichas recebidas no mês', tot.asos + ' ASOs emitidos'],
       [tot.mensagens, 'Mensagens de WhatsApp', 'Enviadas pelas automações no mês']
     ];
@@ -59,7 +61,7 @@
       '<div class="painel__linha" style="align-items:center"><span class="selo ' + COR_SITUACAO[a.situacao] + '">' + NOME_SITUACAO[a.situacao] + '</span></div></div><div class="painel__corpo">';
     h += '<div class="bloco"><h3>Contrato</h3><dl class="dl"><dt>Serviços</dt><dd>' + a.servicos.map(function (s) { return esc(C.SERVICOS[s]); }).join(', ') + '</dd><dt>Contato</dt><dd>' + esc(a.contato) + '<br><span style="color:var(--apoio)">' + esc(a.tel) + '</span></dd><dt>Usuários</dt><dd>' + a.usuarios + '</dd></dl></div>';
     h += '<div class="bloco"><h3>Uso no mês</h3><dl class="dl"><dt>Fichas recebidas</dt><dd>' + u.fichas + '</dd><dt>ASOs emitidos</dt><dd>' + u.asos + '</dd><dt>Mensagens de WhatsApp</dt><dd>' + u.mensagens + '</dd></dl>' + (a.aoVivo ? '<p style="margin-top:10px;font-size:13px">Números contados do quadro desta agência no modelo.</p>' : '') + '</div>';
-    h += '<div class="bloco"><h3>Chamados <button class="botao botao--claro botao--pequeno" type="button" data-novo-chamado="' + a.id + '">+ Novo</button></h3><div class="msgs">' + (ks.length ? ks.map(function (k) { return C.chamadoHtml(k, true); }).join('') : '<p>Nenhum chamado.</p>') + '</div></div>';
+    h += '<div class="bloco"><h3>Chamados <button class="botao botao--claro botao--pequeno" type="button" data-novo-chamado="' + a.id + '">+ Novo</button></h3><div class="msgs">' + (ks.length ? ks.map(function (k) { return C.chamadoHtml(k, 'nexus'); }).join('') : '<p>Nenhum chamado.</p>') + '</div></div>';
     h += '<div class="bloco bloco--trava"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="11" width="14" height="10" rx="2"/><path d="M8 11V7a4 4 0 0 1 8 0v4"/></svg><b>Fichas e respostas de saúde ficam com a agência</b><p>A administração vê contrato, uso e suporte. Dado de saúde é da agência e do candidato (LGPD, art. 11).</p></div>';
     painel.innerHTML = h + '</div>';
     if (painel.hidden) {
@@ -77,13 +79,37 @@
   }
 
   /* ---------- chamados ---------- */
+  var filtroAgencia = '';
   function renderChamados() {
     var d = C.carregar();
-    var grupos = { abertos: function (k) { return k.situacao !== 'resolvido'; }, resolvidos: function (k) { return k.situacao === 'resolvido'; }, todos: function () { return true; } };
-    var lista = d.chamados.filter(grupos[filtroChamados]);
-    var h = '<div class="cab"><div><h1>Chamados de TI</h1><p>Impressora, rede, sistema, backup e WhatsApp de todas as agências.</p></div><div class="cab__acoes"><button class="botao" type="button" data-novo-chamado>+ Novo chamado</button></div></div>';
-    h += '<div class="segmento" role="group" aria-label="Mostrar" style="margin-bottom:14px">' + [['abertos', 'Em aberto'], ['resolvidos', 'Resolvidos'], ['todos', 'Todos']].map(function (g) { return '<button type="button" data-filtro-chamado="' + g[0] + '" aria-pressed="' + (filtroChamados === g[0]) + '">' + g[1] + ' (' + d.chamados.filter(grupos[g[0]]).length + ')</button>'; }).join('') + '</div>';
-    h += '<div class="msgs">' + (lista.length ? lista.map(function (k) { return C.chamadoHtml(k, true); }).join('') : '<p class="aviso-demo">Nenhum chamado aqui.</p>') + '</div>';
+    var grupos = {
+      abertos: function (k) { return k.situacao !== 'resolvido'; },
+      fora: function (k) { return k.situacao !== 'resolvido' && C.prazo(k).fora; },
+      aguardando: function (k) { return k.situacao === 'aguardando'; },
+      resolvidos: function (k) { return k.situacao === 'resolvido'; },
+      todos: function () { return true; }
+    };
+    var daAgencia = d.chamados.filter(function (k) { return !filtroAgencia || k.agenciaId === filtroAgencia; });
+    /* fila: fora do prazo primeiro, depois urgente, depois o mais antigo */
+    var peso = { urgente: 0, normal: 1, baixa: 2 };
+    var lista = daAgencia.filter(grupos[filtroChamados]).sort(function (a, b) {
+      var fa = C.prazo(a).fora && a.situacao !== 'resolvido' ? 0 : 1, fb = C.prazo(b).fora && b.situacao !== 'resolvido' ? 0 : 1;
+      if (filtroChamados === 'resolvidos' || filtroChamados === 'todos') return new Date(b.abertoEm) - new Date(a.abertoEm);
+      return fa - fb || peso[a.prioridade] - peso[b.prioridade] || new Date(a.abertoEm) - new Date(b.abertoEm);
+    });
+    var ind = C.indicadores(daAgencia);
+    var h = '<div class="cab"><div><h1>Chamados de TI</h1><p>A fila já vem na ordem: fora do prazo, urgente e o mais antigo primeiro.</p></div><div class="cab__acoes"><button class="botao" type="button" data-novo-chamado>+ Novo chamado</button></div></div>';
+    h += '<div class="agora agora--fixa">' + [
+      [ind.abertos, 'Em aberto', ind.urgentes ? ind.urgentes + (ind.urgentes > 1 ? ' urgentes' : ' urgente') : 'Nenhum urgente'],
+      [ind.fora, 'Fora do prazo', ind.fora ? 'Atender primeiro' : 'Tudo dentro da meta'],
+      [ind.respostaMedia, 'Primeira resposta', 'Tempo médio até alguém responder'],
+      [ind.avaliados ? ind.boas + '/' + ind.avaliados : 'sem dados', 'Avaliação', 'Chamados que a clínica disse que resolveu']
+    ].map(function (r) { return '<div class="agora__item"><b>' + esc(r[0]) + '</b><span>' + esc(r[1]) + '<small>' + esc(r[2]) + '</small></span></div>'; }).join('') + '</div>';
+    h += '<div class="filtros-chamados"><div class="segmento" role="group" aria-label="Mostrar chamados">' + [['abertos', 'Em aberto'], ['fora', 'Fora do prazo'], ['aguardando', 'Aguardando a clínica'], ['resolvidos', 'Resolvidos'], ['todos', 'Todos']].map(function (g) { return '<button type="button" data-filtro-chamado="' + g[0] + '" aria-pressed="' + (filtroChamados === g[0]) + '">' + g[1] + ' (' + daAgencia.filter(grupos[g[0]]).length + ')</button>'; }).join('') + '</div>' +
+      '<select class="entrada" data-filtro-agencia aria-label="Agência"><option value="">Todas as agências</option>' + d.agencias.map(function (a) { return '<option value="' + a.id + '"' + (filtroAgencia === a.id ? ' selected' : '') + '>' + esc(a.nome) + '</option>'; }).join('') + '</select></div>';
+    h += '<div class="msgs">' + (lista.length ? lista.map(function (k) { return C.chamadoHtml(k, 'nexus'); }).join('') : '<p class="aviso-demo">Nenhum chamado aqui.</p>') + '</div>';
+    h += '<details class="bloco" style="margin-top:16px"><summary style="cursor:pointer;font-weight:600;color:var(--tinta)">Metas de atendimento</summary><p style="margin:8px 0 10px">Valores de exemplo para o plano mensal. O relógio começa quando o chamado é aberto.</p><ul class="metas">' +
+      Object.keys(C.PRIORIDADES).map(function (p) { var x = C.PRIORIDADES[p]; return '<li><b>' + esc(x.nome) + '</b>Responder em ' + C.duracao(x.resposta) + '<br>Resolver em ' + C.duracao(x.solucao) + '</li>'; }).join('') + '</ul></details>';
     vista.innerHTML = h;
   }
 
@@ -102,20 +128,26 @@
     else if (t.matches('[data-novo-chamado]')) novoChamado(t.dataset.novoChamado);
     else if (t.matches('[data-fechar], [data-veu]')) fecharPainel();
     else if (t.matches('[data-filtro-chamado]')) { filtroChamados = t.dataset.filtroChamado; renderChamados(); }
-    else if (t.matches('[data-situacao]')) {
-      var card = t.closest('[data-chamado]'), nota = card.querySelector('[data-nota]').value.trim();
-      C.mudarSituacao(card.dataset.chamado, t.dataset.situacao, nota);
-      toast(t.dataset.situacao === 'resolvido' ? 'Chamado resolvido' : 'Chamado em andamento');
+    else if (t.matches('[data-acao]')) {
+      var card = t.closest('[data-chamado]'), txt = card.querySelector('[data-resposta]').value.trim(), quem = card.querySelector('[data-responsavel]').value, acao = t.dataset.acao;
+      if (!txt) { var r = card.querySelector('[data-resposta]'); r.focus(); r.placeholder = acao === 'resolver' ? 'Escreva o que foi feito para resolver' : 'Escreva a mensagem para a clínica'; r.classList.add('entrada--falta'); return; }
+      C.atribuir(card.dataset.chamado, quem);
+      C.registrar(card.dataset.chamado, 'nexus', quem, txt, acao);
+      toast(acao === 'resolver' ? 'Chamado resolvido' : acao === 'pedir' ? 'Pedido enviado à clínica' : 'Resposta enviada');
       redesenhar();
     }
     else if (t.matches('[data-restaurar]')) { if (confirm('Voltar a demonstração ao estado inicial? O que você fez aqui será apagado.')) { C.restaurar(); N.restaurar(); location.hash = '#/agencias'; rota(); toast('Demonstração restaurada'); } }
+  });
+
+  document.addEventListener('change', function (ev) {
+    if (ev.target.matches('[data-filtro-agencia]')) { filtroAgencia = ev.target.value; renderChamados(); }
   });
 
   $('[data-form-chamado]').addEventListener('submit', function (ev) {
     if (ev.submitter && ev.submitter.value === 'cancelar') return;
     if (window.Campos.validar(ev.target).length) { ev.preventDefault(); return; }
     var fd = new FormData(ev.target);
-    C.abrirChamado({ agenciaId: fd.get('agenciaId'), assunto: fd.get('assunto').trim(), categoria: fd.get('categoria'), prioridade: fd.get('prioridade'), por: 'Nexus Safe' });
+    C.abrirChamado({ agenciaId: fd.get('agenciaId'), assunto: fd.get('assunto').trim(), descricao: fd.get('descricao').trim(), categoria: fd.get('categoria'), prioridade: fd.get('prioridade'), canal: fd.get('canal'), por: 'Aberto pela Nexus Safe' });
     toast('Chamado aberto'); redesenhar();
   });
 

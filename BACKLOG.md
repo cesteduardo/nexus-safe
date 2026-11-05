@@ -17,6 +17,15 @@ para quem vai comprar:
 Por isso a ordem é: base da ficha, depois o trabalho da recepção, depois as promessas do plano,
 e por último o texto e as imagens do plano.
 
+## Mercado (pesquisa de 05/11, ver PESQUISA.md)
+- [x] Admissão prevista no cadastro, aviso de admissão em risco ou atrasada, S-2220 com prazo, aba de periódicos (avisar o RH e convocar), demissional dispensável pela NR-7, ordem de chegada na agenda.
+- [x] Chamados com metas de resposta e solução por prioridade, fila ordenada, conversa nos dois sentidos, aguardando a clínica, responsável, canal, avaliação e reabertura.
+- [ ] Guia de encaminhamento em PDF para o RH entregar ao funcionário (empresa, função, exames do protocolo, preparo, endereço da clínica).
+- [ ] Chamados: pausar o relógio do prazo enquanto o chamado aguarda a clínica, e mostrar isso no cartão.
+- [ ] Chamados: escalonar para segundo nível, com motivo, e indicador de quantos foram escalonados.
+- [ ] S-2220: gerar o XML do evento a partir do ASO (modelo, sem transmitir), com download.
+- [ ] Retorno ao trabalho: no cadastro, pedir a data de início do afastamento e avisar se for menos de 30 dias (não precisa do exame).
+
 ## Perfis
 - [x] Três perfis com tela de entrada (`crm/entrar.html`): administração da Nexus Safe (agências, contrato, uso, chamados de TI), clínica (o CRM, com aba de suporte) e RH da empresa (só os próprios funcionários, pedido de exame e ASO). Nenhum dos dois de fora vê dado de saúde.
 - [ ] Perfis dentro da clínica: recepção vê cadastro, etapa e agenda; só a equipe médica vê a ficha e os pontos de atenção. Trocar o botão "Equipe médica / Empresa cliente" do painel pelo perfil de quem entrou.
