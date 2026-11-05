@@ -36,6 +36,7 @@ await ctx.route(/fonts\.(googleapis|gstatic)\.com/, r => r.abort());
 try {
   await page.goto(B); await page.waitForTimeout(300);
   ok(await page.locator('h1').count() > 0, 'plano abre com título');
+  ok(await page.locator('#perfis').count() === 1 && await page.locator('#plataforma a[href="crm/entrar.html"]').count() === 1, 'plano tem a seção "Três perfis" ligando para a entrada');
 
   // login: sem conta não entra; senha errada avisa; cada usuário cai no próprio perfil
   const logar = async (pg, usuario, senha = '123') => {

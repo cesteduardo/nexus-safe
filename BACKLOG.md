@@ -32,7 +32,7 @@ e por último o texto e as imagens do plano.
 - [x] Perfis dentro da clínica: recepção vê cadastro, etapa e agenda; só a equipe médica vê a ficha e os pontos de atenção. Trocar o botão "Equipe médica / Empresa cliente" do painel pelo perfil de quem entrou.
 - [x] Administração no celular: a tabela de agências vira uma lista de cartões até 600 px.
 - [x] Administração: cadastrar agência nova (nome, cidade, contato com telefone no padrão, serviços, situação).
-- [ ] Plano (index.html): seção curta "Três perfis" com o que cada um vê, ligando para `crm/entrar.html`.
+- [x] Plano (index.html): seção curta "Três perfis" com o que cada um vê, ligando para `crm/entrar.html`.
 
 ## Correções e base
 - [x] Ficha: salvar o rascunho a cada campo alterado (hoje só salva ao avançar de passo), para não perder nada se o candidato fechar o navegador no meio.
