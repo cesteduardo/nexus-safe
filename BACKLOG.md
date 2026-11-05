@@ -17,6 +17,13 @@ para quem vai comprar:
 Por isso a ordem é: base da ficha, depois o trabalho da recepção, depois as promessas do plano,
 e por último o texto e as imagens do plano.
 
+## Perfis
+- [x] Três perfis com tela de entrada (`crm/entrar.html`): administração da Nexus Safe (agências, contrato, uso, chamados de TI), clínica (o CRM, com aba de suporte) e RH da empresa (só os próprios funcionários, pedido de exame e ASO). Nenhum dos dois de fora vê dado de saúde.
+- [ ] Perfis dentro da clínica: recepção vê cadastro, etapa e agenda; só a equipe médica vê a ficha e os pontos de atenção. Trocar o botão "Equipe médica / Empresa cliente" do painel pelo perfil de quem entrou.
+- [ ] Administração no celular: a tabela de agências vira uma lista de cartões até 600 px.
+- [ ] Administração: cadastrar agência nova (nome, cidade, contato com telefone no padrão, serviços, situação).
+- [ ] Plano (index.html): seção curta "Três perfis" com o que cada um vê, ligando para `crm/entrar.html`.
+
 ## Correções e base
 - [x] Ficha: salvar o rascunho a cada campo alterado (hoje só salva ao avançar de passo), para não perder nada se o candidato fechar o navegador no meio.
 - [x] Ficha: validar CPF do contato e data de nascimento (não aceitar data futura nem idade abaixo de 14 anos) com mensagem clara.
@@ -26,7 +33,7 @@ e por último o texto e as imagens do plano.
 - [ ] Ficha: texto completo do consentimento LGPD num "ler termo completo" que abre e fecha, sem sair da ficha.
 
 ## A recepção trabalha pelo quadro
-- [x] Faixa "Para fazer agora" no topo do quadro: cobrar a ficha, agendar exame, exames até amanhã, emitir ASO. Cada uma filtra o quadro. As 6 colunas cabem na tela a partir de 1200 px.
+- [x] Faixa "Para fazer agora" no topo do quadro: cobrar a ficha (link enviado antes de hoje), agendar exame, exames até amanhã, emitir ASO. Cada uma filtra o quadro. As 6 colunas cabem na tela a partir de 1200 px.
 - [ ] Guardar `etapaDesde` em cada atendimento (data em que entrou na etapa atual; subir a versão em `CHAVE` e `versao`) e mostrar no cartão "Parado há N dias" em âmbar quando passar de 2 dias na mesma etapa.
 - [ ] Botão "Cobrar no WhatsApp" no próprio cartão de quem está na tarefa "Cobrar a ficha", com a mensagem "falta terminar sua ficha" pronta. Ao clicar, registra no histórico e entra na fila de mensagens.
 - [ ] No painel, "Próximo passo" de quem está agendado para hoje ou amanhã: botão "Confirmar presença no WhatsApp" com o horário e o preparo.
@@ -36,7 +43,7 @@ e por último o texto e as imagens do plano.
 ## Mostrar o que o plano promete
 - [ ] Link da ficha com validade de 7 dias: guardar `expiraEm`, mostrar "Link expirado, peça outro à clínica" e, no CRM, botão "Gerar novo link" que invalida o anterior.
 - [ ] Trilha de acesso simulada: registrar no histórico quando a visão médica abre a ficha ("Ficha aberta por Dra. Camila Rocha") e mostrar isso na visão médica.
-- [ ] Visão do RH da empresa cliente: página `crm/empresa.html?e=ID` listando só os atendimentos daquela empresa, com etapa e botão do ASO, sem nenhum dado de saúde.
+- [x] Visão do RH da empresa cliente: página `crm/empresa.html?e=ID` listando só os atendimentos daquela empresa, com etapa e botão do ASO, sem nenhum dado de saúde. Também pede exame.
 - [ ] Agenda do dia: aba "Agenda" com os exames agendados por horário e o preparo de cada um.
 - [ ] Versão para imprimir da ficha preenchida (só na visão médica), no mesmo padrão do ASO.
 - [ ] Automações: botão "Rodar automações agora" que gera na fila o lembrete da véspera para quem tem exame amanhã e o aviso de periódico para ASO vencendo em 30 dias.

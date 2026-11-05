@@ -63,6 +63,16 @@ Um quadro (kanban) por candidato, uma coluna por etapa:
 
 Mais três cadastros simples: **empresas clientes**, **funções** (com os riscos e os exames de cada uma) e **profissionais** (médico, enfermagem, recepção). Nada de PGR completo, GHE, eSocial nessa primeira versão.
 
+### Perfis
+
+Três perfis, cada um vendo só o que é dele:
+
+| Perfil | Quem é | O que vê |
+|---|---|---|
+| Administração | A Nexus Safe, que oferece o serviço | Agências clientes, serviços contratados, uso do mês, chamados de TI. Nunca abre ficha nem resposta de saúde. |
+| Clínica | A agência de SST, cliente da Nexus Safe | Quadro de atendimentos, ficha, visão médica, ASO, automações e pedidos de suporte. |
+| RH da empresa | O cliente da agência | Os próprios funcionários: etapa, data do exame, pedido de exame e ASO, sem diagnóstico. |
+
 ---
 
 ## 3. O que vai na ficha

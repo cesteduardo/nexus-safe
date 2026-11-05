@@ -9,6 +9,11 @@ Site estático publicado no GitHub Pages a partir da branch `main`
   - `dados.js`: catálogos, perguntas, dados de demonstração, regras de alerta. Se mudar o formato dos dados salvos, suba a versão em `CHAVE` e em `versao`.
   - `app.js`: quadro, painel do atendimento (visão médica x empresa), ASO, cadastros, automações.
   - `ficha.html` + `ficha.js`: ficha que o candidato preenche no celular.
+  - `entrar.html`: escolha do perfil. Três perfis:
+    - **Administração** (`admin.html` + `admin.js`): a Nexus Safe, quem oferece o serviço. Agências clientes, contrato, uso do mês e chamados de TI.
+    - **Clínica** (`index.html` + `app.js`): a agência de SST, cliente da Nexus Safe. Quadro, ficha, ASO, automações e aba de suporte.
+    - **RH da empresa** (`empresa.html?e=ID` + `empresa.js`): cliente da agência. Só os próprios funcionários, etapa, pedido de exame e ASO.
+  - `contas.js`: perfis, agências e chamados (chave própria no localStorage). `campos.js`: regras dos formulários.
 - `marca/`: outras direções de logo, só como referência.
 - `crm/campos.js`: regras de nome, telefone e CPF (padrão GR Brands 2).
 - `PLANO.md`: o plano em texto. `BACKLOG.md`: o que fazer. `HISTORICO.md`: o que foi feito.
@@ -17,7 +22,7 @@ Site estático publicado no GitHub Pages a partir da branch `main`
 1. **Português do Brasil, sem travessões** (`—`). Reescreva a frase em vez de trocar por vírgula.
 2. **A logo é o NS de traço contínuo** (`assets/simbolo.svg`, refinado em 04/11 a pedido do dono). Não muda sem pedido dele. A página `marca/` guarda as outras direções só como referência.
 3. **Não decidir pelo dono:** preços, nome, e as "Decisões em aberto" do plano ficam como estão.
-4. **Dado de saúde é sensível (LGPD art. 11):** a visão da empresa cliente nunca mostra resposta de saúde, só cadastro, etapa e ASO. A ficha nunca pergunta gravidez, esterilização ou HIV.
+4. **Dado de saúde é sensível (LGPD art. 11):** nem a administração da Nexus Safe nem o RH da empresa veem resposta de saúde. A administração vê contagens; o RH vê cadastro, etapa e ASO. A ficha nunca pergunta gravidez, esterilização ou HIV.
 5. **Exame vem do protocolo do PCMSO**, nunca direto do risco.
 6. **Dados sempre fictícios.** Nada de empresa, pessoa ou CNPJ real.
 7. **Sem cara de site feito em IA:** nada de selos pulsando, ícones girando, rótulos com bolinha, gradiente chamativo. Mudanças visuais pequenas, uma peça por vez.

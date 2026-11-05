@@ -41,6 +41,7 @@
     document.querySelectorAll('[data-rota]').forEach(function (a) { if (a.dataset.rota === (base === 'c' ? 'quadro' : base)) a.setAttribute('aria-current', 'page'); else a.removeAttribute('aria-current'); });
     if (base === 'cadastros') { fecharPainel(true); renderCadastros(); }
     else if (base === 'automacoes') { fecharPainel(true); renderAutomacoes(); }
+    else if (base === 'suporte') { fecharPainel(true); renderSuporte(); }
     else {
       renderQuadro();
       if (base === 'c' && partes[1]) abrirPainel(partes[1]); else fecharPainel(true);
@@ -50,7 +51,7 @@
   /* ---------- quadro ---------- */
   /* O que a recepção precisa fazer agora. Cada tarefa é um filtro do quadro. */
   var TAREFAS = [
-    { id: 'cobrar', nome: 'Cobrar a ficha', dica: 'Link enviado há mais de 24 h', teste: function (c) { return (c.etapa === 'enviado' || c.etapa === 'preenchendo') && Date.now() - new Date(c.criadoEm).getTime() > 864e5; } },
+    { id: 'cobrar', nome: 'Cobrar a ficha', dica: 'Link enviado antes de hoje', teste: function (c) { var hoje = new Date(); hoje.setHours(0, 0, 0, 0); return (c.etapa === 'enviado' || c.etapa === 'preenchendo') && new Date(c.criadoEm) < hoje; } },
     { id: 'agendar', nome: 'Agendar exame', dica: 'Ficha recebida, sem horário', teste: function (c) { return c.etapa === 'recebida'; } },
     { id: 'proximos', nome: 'Exames até amanhã', dica: 'Confirmar presença e preparo', teste: function (c) { if (c.etapa !== 'agendado' || !c.agendadoPara) return false; var fim = new Date(); fim.setDate(fim.getDate() + 1); fim.setHours(23, 59, 59, 999); return new Date(c.agendadoPara) <= fim; } },
     { id: 'aso', nome: 'Emitir ASO', dica: 'Atendido, falta o atestado', teste: function (c) { return c.etapa === 'atendido'; } }
@@ -220,20 +221,7 @@
   }
 
   /* ---------- ASO ---------- */
-  function asoHtml(c) {
-    var d = N.carregar(), f = N.funcao(c.funcaoId), e = N.empresa(c.empresaId);
-    return '<div class="aso"><div class="aso__cab"><div><h2>Atestado de Saúde Ocupacional</h2><p>' + esc(d.clinica) + ' · modelo de demonstração</p></div><div style="text-align:right"><p>Tipo de exame</p><b>' + esc(N.nomeTipo(c.tipoExame)) + '</b></div></div>' +
-      '<table><tr><th>Empresa</th><td>' + esc(e.nome) + '<br>CNPJ ' + esc(e.cnpj) + '</td></tr><tr><th>Trabalhador</th><td>' + esc(c.nome) + '<br>CPF ' + esc(c.cpf) + '</td></tr><tr><th>Função e setor</th><td>' + esc(f.nome) + ' · ' + esc(f.setor) + '</td></tr>' +
-      '<tr><th>Riscos ocupacionais (PGR)</th><td>' + f.riscos.map(function (r) { return esc(N.RISCO_GRUPO[r]) + ': ' + esc(N.RISCOS[r]); }).join('<br>') + '</td></tr>' +
-      '<tr><th>Exames realizados</th><td>' + f.exames.map(function (x) { return esc(N.CATALOGO[x].codigo) + ' · ' + esc(N.EXAMES[x]) + ' (' + data(c.agendadoPara || c.aso.data) + ')'; }).join('<br>') + '</td></tr>' +
-      (c.aso.restricoes ? '<tr><th>Restrições</th><td>' + esc(c.aso.restricoes) + '</td></tr>' : '') +
-      (c.aso.obs ? '<tr><th>Observação</th><td>' + esc(c.aso.obs) + '</td></tr>' : '') +
-      (c.aso.validade ? '<tr><th>Validade</th><td>Próximo exame periódico até ' + new Date(c.aso.validade).toLocaleDateString('pt-BR') + '</td></tr>' : '') + '</table>' +
-      '<p>Conclusão: o trabalhador está</p><div class="aso__resultado">' + esc(c.aso.resultado.toUpperCase()) + ' para a função</div>' +
-      '<p style="font-size:12.5px;color:#444">Emitido em ' + new Date(c.aso.data).toLocaleDateString('pt-BR') + '. Médico(a) responsável pelo exame: ' + esc(c.aso.medico) + ', ' + esc(c.aso.crm || 'CRM-SP 123456') + '.</p>' +
-      '<div class="aso__assin"><div>' + esc(c.aso.medico) + '<br>Médico(a) examinador(a)</div><div>' + esc(c.nome) + '<br>Trabalhador(a): recebi a 2ª via</div></div>' +
-      '<p class="aso__ns"><svg class="ns" viewBox="18 18 64 64" aria-hidden="true"><path d="M24 76V24L48.6 71Q51.2 76 56.6 76H60.6C70.1 76 76.6 70.8 76.6 62.8C76.6 55.3 71 51.9 61.4 50.1C52 48.4 47 45.1 47 37.6C47 29.6 53 23.3 61.4 23.3C67.2 23.3 72.2 25.9 75.2 30.4"/></svg>Emitido com Nexus Safe</p></div>';
-  }
+  function asoHtml(c) { return N.asoHtml(c); }
   function abrirAso(c) { $('[data-aso-conteudo]').innerHTML = asoHtml(c); $('[data-modal-aso]').showModal(); }
 
   /* ---------- cadastros ---------- */
@@ -262,6 +250,28 @@
     }).join('') : '<p class="aviso-demo">Nenhuma mensagem ainda.</p>') + '</div></div></div>';
     vista.innerHTML = h;
   }
+
+  /* ---------- suporte de TI (a clínica abre, a Nexus Safe atende) ---------- */
+  var AGENCIA = 'a1';
+  function renderSuporte() {
+    var C = window.Contas, ks = C.carregar().chamados.filter(function (k) { return k.agenciaId === AGENCIA; });
+    var h = '<div class="cab"><div><h1>Suporte de TI</h1><p>Impressora, rede, computador, sistema, backup ou WhatsApp com problema? Abra um chamado e a Nexus Safe responde por aqui.</p></div></div>';
+    h += '<div class="duas-col"><form class="bloco" data-form-suporte novalidate style="display:grid;gap:12px"><h3 style="margin:0">Abrir chamado</h3>' +
+      '<label class="campo">O que aconteceu<input class="entrada" name="assunto" required autocomplete="off" placeholder="Ex.: impressora de ASO não imprime"></label>' +
+      '<div class="acoes-linha"><label class="campo">Tipo<select class="entrada" name="categoria" required>' + C.CATEGORIAS.map(function (c) { return '<option>' + esc(c) + '</option>'; }).join('') + '</select></label>' +
+      '<label class="campo">Está parando o atendimento?<select class="entrada" name="prioridade" required><option value="normal">Não</option><option value="alta">Sim, é urgente</option></select></label></div>' +
+      '<div class="acoes-linha"><button class="botao" type="submit">Abrir chamado</button></div></form>';
+    h += '<div><h2 class="titulo-secao" style="margin-top:0">Seus chamados</h2><div class="msgs">' + (ks.length ? ks.map(function (k) { return C.chamadoHtml(k, false); }).join('') : '<p class="aviso-demo">Nenhum chamado ainda.</p>') + '</div></div></div>';
+    vista.innerHTML = h;
+  }
+  document.addEventListener('submit', function (ev) {
+    if (!ev.target.matches('[data-form-suporte]')) return;
+    ev.preventDefault();
+    if (window.Campos.validar(ev.target).length) return;
+    var fd = new FormData(ev.target);
+    window.Contas.abrirChamado({ agenciaId: AGENCIA, assunto: fd.get('assunto').trim(), categoria: fd.get('categoria'), prioridade: fd.get('prioridade'), por: 'Recepção' });
+    renderSuporte(); toast('Chamado aberto. A Nexus Safe foi avisada.');
+  });
 
   /* ---------- novo candidato ---------- */
   function preencherSelects() {
@@ -322,7 +332,7 @@
     else if (t.matches('[data-ver-aso]') && c) abrirAso(c);
     else if (t.matches('[data-fechar-aso]')) $('[data-modal-aso]').close();
     else if (t.matches('[data-imprimir]')) window.print();
-    else if (t.matches('[data-restaurar]')) { if (confirm('Voltar a demonstração ao estado inicial? O que você fez aqui será apagado.')) { N.restaurar(); filtro = { empresa: '', busca: '', tarefa: '' }; location.hash = '#/quadro'; rota(); toast('Demonstração restaurada'); } }
+    else if (t.matches('[data-restaurar]')) { if (confirm('Voltar a demonstração ao estado inicial? O que você fez aqui será apagado.')) { N.restaurar(); if (window.Contas) window.Contas.restaurar(); filtro = { empresa: '', busca: '', tarefa: '' }; location.hash = '#/quadro'; rota(); toast('Demonstração restaurada'); } }
   });
 
   document.addEventListener('change', function (ev) {
@@ -358,9 +368,10 @@
   document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && !painel.hidden && !document.querySelector('dialog[open]')) fecharPainel(); });
 
   /* volta da ficha em outra aba: atualiza a tela */
-  window.addEventListener('storage', function () { N.recarregar(); rota(); });
+  window.addEventListener('storage', function () { N.recarregar(); if (window.Contas) window.Contas.recarregar(); rota(); });
   window.addEventListener('hashchange', rota);
 
+  if (window.Contas) window.Contas.gravarPerfil({ tipo: 'clinica' });
   $('[data-clinica]').textContent = N.carregar().clinica;
   rota();
 })();

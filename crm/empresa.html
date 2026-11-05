@@ -1,0 +1,73 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Nexus Safe: RH da empresa</title>
+<meta name="description" content="Visão do RH da empresa cliente: exames dos funcionários, etapa de cada um e ASO, sem dado de saúde.">
+<meta name="robots" content="noindex">
+<meta name="theme-color" content="#0A7A5C">
+<link rel="icon" href="../assets/marca.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="../assets/apple-touch-icon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Inter+Tight:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="../assets/base.css">
+<link rel="stylesheet" href="crm.css">
+</head>
+<body>
+<div class="demo-faixa">Modelo de demonstração. Dados fictícios, salvos só neste navegador. <a href="../">Voltar ao plano</a></div>
+
+<div class="app">
+  <aside class="lateral">
+    <a class="marca" href="#"><svg class="ns" viewBox="18 18 64 64" aria-hidden="true"><path d="M24 76V24L48.6 71Q51.2 76 56.6 76H60.6C70.1 76 76.6 70.8 76.6 62.8C76.6 55.3 71 51.9 61.4 50.1C52 48.4 47 45.1 47 37.6C47 29.6 53 23.3 61.4 23.3C67.2 23.3 72.2 25.9 75.2 30.4"/></svg><span>Nexus <i>Safe</i></span></a>
+    <div class="lateral__clinica">RH da empresa<b data-empresa-nome></b></div>
+    <nav class="menu" aria-label="Seções">
+      <a href="#" aria-current="page"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.5"/><path d="M3 20c0-3.3 2.7-6 6-6s6 2.7 6 6"/><path d="M16 4.5a3.5 3.5 0 0 1 0 7M18 14c1.8.8 3 2.7 3 5"/></svg>Funcionários</a>
+    </nav>
+    <div class="lateral__pe">
+      <a href="entrar.html">Trocar de perfil</a>
+    </div>
+  </aside>
+
+  <main class="principal" id="vista" tabindex="-1"></main>
+</div>
+
+<dialog class="modal" data-modal-pedido>
+  <form method="dialog" data-form-pedido novalidate>
+    <h2>Pedir exame</h2>
+    <p style="color:var(--apoio);font-size:14px;margin-top:-6px">A clínica recebe o pedido e o funcionário recebe o link da ficha pelo WhatsApp.</p>
+    <label class="campo">Nome completo<input class="entrada" name="nome" required autocomplete="off" data-campo="nome"></label>
+    <div class="acoes-linha">
+      <label class="campo">CPF<input class="entrada" name="cpf" inputmode="numeric" placeholder="000.000.000-00" required data-campo="cpf"></label>
+      <label class="campo">Celular (WhatsApp)<input class="entrada" name="celular" inputmode="tel" placeholder="(17) 99999-9999" required data-campo="tel"></label>
+    </div>
+    <div class="acoes-linha">
+      <label class="campo">Tipo de exame<select class="entrada" name="tipoExame" required data-sel-tipo></select></label>
+      <label class="campo">Função<select class="entrada" name="funcaoId" required data-sel-funcao></select></label>
+    </div>
+    <div class="modal__acoes">
+      <button class="botao botao--claro" value="cancelar" formnovalidate>Cancelar</button>
+      <button class="botao" value="salvar">Enviar pedido</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="modal modal--aso" data-modal-aso>
+  <div data-aso-conteudo></div>
+  <div class="modal__corpo" style="padding-top:0">
+    <div class="modal__acoes">
+      <button class="botao botao--claro" type="button" data-fechar-aso>Fechar</button>
+      <button class="botao" type="button" data-imprimir>Imprimir ou salvar em PDF</button>
+    </div>
+  </div>
+</dialog>
+
+<div class="toast" data-toast role="status" aria-live="polite"></div>
+
+<script src="campos.js"></script>
+<script src="dados.js"></script>
+<script src="contas.js"></script>
+<script src="empresa.js"></script>
+</body>
+</html>

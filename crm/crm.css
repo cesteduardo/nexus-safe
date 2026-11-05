@@ -168,6 +168,17 @@ textarea.entrada { min-height: 80px; resize: vertical; }
 .toast { position: fixed; left: 50%; bottom: 24px; transform: translate(-50%, 20px); background: var(--tinta); color: #fff; padding: 11px 18px; border-radius: 10px; font-size: 14px; opacity: 0; transition: opacity 200ms ease, transform 200ms ease; z-index: 60; pointer-events: none; max-width: calc(100% - 32px); }
 .toast.visivel { opacity: 1; transform: translate(-50%, 0); }
 
+/* chamados de TI */
+.chamado__assunto { font-weight: 600; color: var(--tinta); }
+.chamado__notas { margin-top: 10px; padding-top: 10px; border-top: 1px solid var(--linha); }
+.chamado__acoes { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.chamado__acoes .entrada { flex: 1 1 200px; min-height: 40px; font-size: 14px; }
+.agora--fixa .agora__item { cursor: default; }
+.agencia__nome { font-weight: 600; color: var(--tinta); }
+.agencia__nome small { display: block; font-weight: 400; color: var(--apoio); font-size: 13px; }
+.tabela tr[data-ir] { cursor: pointer; }
+.tabela tr[data-ir]:hover td { background: #FAFBFA; }
+
 /* telas largas: as 6 etapas cabem sem rolar para o lado */
 @media (min-width: 1200px) {
   .quadro { grid-auto-columns: minmax(0, 1fr); }

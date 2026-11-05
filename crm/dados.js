@@ -242,10 +242,28 @@
 
   function primeiroNome(n) { return String(n || '').split(' ')[0]; }
 
+  /* ---------- ASO (o mesmo para a clínica e para o RH) ---------- */
+  function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
+  function data(iso) { return iso ? new Date(iso).toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) : ''; }
+  function asoHtml(c) {
+    var d = carregar(), f = funcao(c.funcaoId), e = empresa(c.empresaId), N = window.Nexus;
+    return '<div class="aso"><div class="aso__cab"><div><h2>Atestado de Saúde Ocupacional</h2><p>' + esc(d.clinica) + ' · modelo de demonstração</p></div><div style="text-align:right"><p>Tipo de exame</p><b>' + esc(N.nomeTipo(c.tipoExame)) + '</b></div></div>' +
+      '<table><tr><th>Empresa</th><td>' + esc(e.nome) + '<br>CNPJ ' + esc(e.cnpj) + '</td></tr><tr><th>Trabalhador</th><td>' + esc(c.nome) + '<br>CPF ' + esc(c.cpf) + '</td></tr><tr><th>Função e setor</th><td>' + esc(f.nome) + ' · ' + esc(f.setor) + '</td></tr>' +
+      '<tr><th>Riscos ocupacionais (PGR)</th><td>' + f.riscos.map(function (r) { return esc(N.RISCO_GRUPO[r]) + ': ' + esc(N.RISCOS[r]); }).join('<br>') + '</td></tr>' +
+      '<tr><th>Exames realizados</th><td>' + f.exames.map(function (x) { return esc(N.CATALOGO[x].codigo) + ' · ' + esc(N.EXAMES[x]) + ' (' + data(c.agendadoPara || c.aso.data) + ')'; }).join('<br>') + '</td></tr>' +
+      (c.aso.restricoes ? '<tr><th>Restrições</th><td>' + esc(c.aso.restricoes) + '</td></tr>' : '') +
+      (c.aso.obs ? '<tr><th>Observação</th><td>' + esc(c.aso.obs) + '</td></tr>' : '') +
+      (c.aso.validade ? '<tr><th>Validade</th><td>Próximo exame periódico até ' + new Date(c.aso.validade).toLocaleDateString('pt-BR') + '</td></tr>' : '') + '</table>' +
+      '<p>Conclusão: o trabalhador está</p><div class="aso__resultado">' + esc(c.aso.resultado.toUpperCase()) + ' para a função</div>' +
+      '<p style="font-size:12.5px;color:#444">Emitido em ' + new Date(c.aso.data).toLocaleDateString('pt-BR') + '. Médico(a) responsável pelo exame: ' + esc(c.aso.medico) + ', ' + esc(c.aso.crm || 'CRM-SP 123456') + '.</p>' +
+      '<div class="aso__assin"><div>' + esc(c.aso.medico) + '<br>Médico(a) examinador(a)</div><div>' + esc(c.nome) + '<br>Trabalhador(a): recebi a 2ª via</div></div>' +
+      '<p class="aso__ns"><svg class="ns" viewBox="18 18 64 64" aria-hidden="true"><path d="M24 76V24L48.6 71Q51.2 76 56.6 76H60.6C70.1 76 76.6 70.8 76.6 62.8C76.6 55.3 71 51.9 61.4 50.1C52 48.4 47 45.1 47 37.6C47 29.6 53 23.3 61.4 23.3C67.2 23.3 72.2 25.9 75.2 30.4"/></svg>Emitido com Nexus Safe</p></div>';
+  }
+
   window.Nexus = {
     ETAPAS: ETAPAS, RISCOS: RISCOS, RISCO_GRUPO: RISCO_GRUPO, EXAMES: EXAMES, CATALOGO: CATALOGO, TIPOS_EXAME: TIPOS_EXAME, nomeTipo: nomeTipo, preparos: preparos, somarMeses: somarMeses, SAUDE: SAUDE, ESPECIFICAS: ESPECIFICAS, EXPOSICOES: EXPOSICOES, FAMILIA: FAMILIA,
     carregar: carregar, recarregar: recarregar, salvar: salvar, restaurar: restaurar, empresa: empresa, funcao: funcao,
     alertas: alertas, nomeSaude: nomeSaude, nomeEspecifica: nomeEspecifica, enfileirar: enfileirar,
-    token: token, uid: uid, primeiroNome: primeiroNome
+    token: token, uid: uid, primeiroNome: primeiroNome, asoHtml: asoHtml
   };
 })();
