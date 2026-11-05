@@ -98,6 +98,13 @@ try {
   ok(dep.n === antes + 1 && dep.m.automacao === 'falta' && /falta terminar sua ficha|Falta terminar sua ficha/.test(dep.m.texto) && dep.h.length === 1 && /Cobrança da ficha enviada/.test(dep.h[0]), 'cobrar no WhatsApp entra na fila de mensagens e no histórico');
   await page.click('.agora__filtro [data-tarefa=""]'); await page.waitForTimeout(150);
   ok(await page.locator('.card').count() >= 8, 'ver todos devolve o quadro inteiro');
+  await page.click('.card:has-text("Renata Alves Costa") >> nth=0'); await page.waitForTimeout(350);
+  ok(await page.locator('[data-confirmar]').count() === 1 && /Preparo/.test(await page.locator('[data-painel]').innerText()), 'agendado para amanhã mostra "Confirmar presença no WhatsApp" com horário e preparo');
+  const antesC = await page.evaluate(() => JSON.parse(localStorage.getItem('nexus-safe-demo-v5')).mensagens.length);
+  await page.click('[data-confirmar]'); await page.waitForTimeout(250);
+  const depC = await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('nexus-safe-demo-v5')); return { n: d.mensagens.length, m: d.mensagens[0].texto, h: d.candidatos.find(c => c.nome === 'Renata Alves Costa').historico.map(x => x.txt).join('|') }; });
+  ok(depC.n === antesC + 1 && /Responda SIM/.test(depC.m) && /Presença confirmada/.test(depC.h), 'confirmar presença entra na fila de mensagens e no histórico');
+  await page.click('[data-fechar]'); await page.waitForTimeout(300);
   ok(/Parado há 3 dias/.test(await page.locator('.card:has-text("Diego Santos Pereira")').innerText()) && await page.locator('.card:has-text("Ana Beatriz Moreira") [data-parado]').count() === 0, 'cartão parado há mais de 2 dias na etapa mostra o aviso em âmbar');
   ok(await page.evaluate(() => JSON.parse(localStorage.getItem('nexus-safe-demo-v5')).candidatos.every(c => !!c.etapaDesde)), 'todo atendimento guarda etapaDesde');
 

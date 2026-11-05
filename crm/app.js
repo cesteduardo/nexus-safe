@@ -250,6 +250,14 @@
       '<p style="font-size:13px;margin-top:8px">O XML sai pronto com empresa, trabalhador, tipo de exame, resultado, médico e coordenador do PCMSO. É um exemplo para conferir: falta o código de cada exame na Tabela 27 e a matrícula, e a transmissão fica com o sistema da clínica ou da empresa.</p></div>';
   }
 
+  function confirmarHtml(c, f) {
+    var fim = new Date(); fim.setDate(fim.getDate() + 1); fim.setHours(23, 59, 59, 999);
+    if (!c.agendadoPara || new Date(c.agendadoPara) > fim) return '';
+    var prep = N.preparos(f);
+    return '<div class="bloco-confirmar" style="margin-bottom:12px"><p style="font-size:14px">Exame ' + (c.agendadoModo === 'chegada' ? 'por ordem de chegada' : 'às ' + new Date(c.agendadoPara).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })) + '.' + (prep.length ? ' Preparo: ' + esc(prep.join('; ')) + '.' : '') + (c.confirmadoEm ? ' Presença já confirmada em ' + data(c.confirmadoEm, true) + '.' : '') + '</p>' +
+      '<div class="acoes-linha" style="margin-top:8px"><button class="botao botao--claro botao--pequeno" type="button" data-confirmar>Confirmar presença no WhatsApp</button></div></div>';
+  }
+
   function acoesHtml(c, f, medico) {
     var h = '<div class="bloco"><h3>Próximo passo</h3>';
     if (c.etapa === 'enviado' || c.etapa === 'preenchendo') {
@@ -262,7 +270,7 @@
       var v = new Date(sug.getTime() - sug.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
       h += '<p style="margin-bottom:10px">Ficha recebida. Marque o exame: a confirmação sai pelo WhatsApp com as orientações da função.</p><div class="acoes-linha"><label class="campo">Como atende<select class="entrada" data-agenda-modo><option value="hora">Horário marcado</option><option value="chegada">Ordem de chegada (7h às 11h)</option></select></label><label class="campo">Data e hora<input class="entrada" type="datetime-local" value="' + v + '" data-agenda></label><button class="botao" type="button" data-agendar>Agendar exame</button></div>';
     } else if (c.etapa === 'agendado') {
-      h += '<p style="margin-bottom:10px">Exame em ' + quandoExame(c) + '. Quando o candidato for atendido, marque aqui.</p><div class="acoes-linha"><button class="botao" type="button" data-atendido>Marcar como atendido</button></div>';
+      h += '<p style="margin-bottom:10px">Exame em ' + quandoExame(c) + '. Quando o candidato for atendido, marque aqui.</p>' + confirmarHtml(c, f) + '<div class="acoes-linha"><button class="botao" type="button" data-atendido>Marcar como atendido</button></div>';
     } else if (c.etapa === 'atendido' && !medico) {
       h += '<p>Atendido. O ASO é emitido pela equipe médica; quando sair, aparece aqui e o RH é avisado.</p>';
     } else if (c.etapa === 'atendido') {
@@ -437,6 +445,7 @@
       var v = $('[data-agenda]').value; if (!v) return;
       fazer('agendar', c.id, { quando: new Date(v).toISOString(), modo: $('[data-agenda-modo]').value }, 'Exame agendado');
     }
+    else if (t.matches('[data-confirmar]') && c) fazer('confirmar', c.id, {}, 'Confirmação na fila de mensagens');
     else if (t.matches('[data-atendido]') && c) fazer('atendido', c.id, {}, 'Marcado como atendido');
     else if (t.matches('[data-emitir]') && c) {
       fazer('emitirAso', c.id, { resultado: $('[data-aso-resultado]').value, restricoes: $('[data-aso-restricoes]').value, obs: $('[data-aso-obs]').value }, '', function () { abrirAso(candidato(c.id)); });

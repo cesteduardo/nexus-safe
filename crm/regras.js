@@ -128,6 +128,17 @@
     return { mensagens: [{ automacao: 'falta', para: c.nome, texto: 'Oi, ' + primeiroNome(c.nome) + '! Aqui é da ' + ctx.clinica + '. Falta terminar sua ficha para o exame ' + nomeTipo(c.tipoExame).toLowerCase() + '. Leva uns 10 minutos: ' + ctx.linkFicha(c), alvo: c, sempre: true }] };
   };
 
+  ACOES.confirmar = function (ctx, c) {
+    exigirClinica(ctx);
+    if (c.etapa !== 'agendado' || !c.agendadoPara) throw Erro('O exame ainda não foi agendado.');
+    var fim = new Date(ctx.agora); fim.setDate(fim.getDate() + 1); fim.setHours(23, 59, 59, 999);
+    if (new Date(c.agendadoPara) > fim) throw Erro('Só dá para confirmar presença de exame de hoje ou de amanhã.');
+    c.confirmadoEm = ctx.agora;
+    registrar(c, ctx, 'Presença confirmada pelo WhatsApp para ' + quandoExame(c) + '.');
+    var ori = preparos(ctx.funcao(c.funcaoId)).map(function (x) { return x.charAt(0).toLowerCase() + x.slice(1); });
+    return { mensagens: [{ automacao: 'agenda', para: c.nome, texto: 'Oi, ' + primeiroNome(c.nome) + '! Lembrete: seu exame ' + nomeTipo(c.tipoExame).toLowerCase() + ' é ' + quandoExame(c) + ' na ' + ctx.clinica + '. Você consegue vir? Responda SIM para confirmar. Leve RG e carteira de trabalho' + (ori.length ? '; ' + ori.join('; ') : '') + '.', alvo: c, sempre: true }] };
+  };
+
   ACOES.guia = function (ctx, c) { registrar(c, ctx, 'Guia de encaminhamento emitida.'); return { mensagens: [] }; };
 
   ACOES.abrirFicha = function (ctx, c) { exigirMedico(ctx); registrar(c, ctx, 'Ficha aberta por ' + ctx.usuario.nome + '.'); return { mensagens: [] }; };
