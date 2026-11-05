@@ -120,6 +120,14 @@
     return { mensagens: [] };
   };
 
+  ACOES.cobrar = function (ctx, c) {
+    exigirClinica(ctx);
+    if (c.etapa !== 'enviado' && c.etapa !== 'preenchendo') throw Erro('A ficha deste atendimento já chegou.');
+    c.cobradoEm = ctx.agora;
+    registrar(c, ctx, 'Cobrança da ficha enviada pelo WhatsApp.');
+    return { mensagens: [{ automacao: 'falta', para: c.nome, texto: 'Oi, ' + primeiroNome(c.nome) + '! Aqui é da ' + ctx.clinica + '. Falta terminar sua ficha para o exame ' + nomeTipo(c.tipoExame).toLowerCase() + '. Leva uns 10 minutos: ' + ctx.linkFicha(c), alvo: c, sempre: true }] };
+  };
+
   ACOES.guia = function (ctx, c) { registrar(c, ctx, 'Guia de encaminhamento emitida.'); return { mensagens: [] }; };
 
   ACOES.abrirFicha = function (ctx, c) { exigirMedico(ctx); registrar(c, ctx, 'Ficha aberta por ' + ctx.usuario.nome + '.'); return { mensagens: [] }; };

@@ -2,6 +2,7 @@
 
 Uma linha por rodada, a mais recente em cima: data e hora (America/Sao_Paulo), o que mudou, resultado do `npm test`.
 
+- 05/11/2026 19:43 · Botão "Cobrar no WhatsApp" no cartão de quem está na tarefa "Cobrar a ficha": ação `cobrar` em `crm/regras.js` (só a clínica, só com a ficha pendente) registra no histórico e põe a mensagem "falta terminar sua ficha" na fila. Teste: 105 verificações ok. O teste do servidor (wrangler dev local) cai de novo por conexão fechada depois de 48 ok, igual às rodadas anteriores.
 - 05/11/2026 18:42 · Cada atendimento guarda `etapaDesde` (muda em criar, agendar, atendido, ASO e nas etapas da ficha no servidor; versão dos dados 5) e o cartão mostra "Parado há N dias" em âmbar passado 2 dias na mesma etapa. Teste: 103 verificações ok. O teste do servidor (wrangler dev local) cai de novo por conexão fechada depois de 48 ok, igual à rodada anterior.
 - 05/11/2026 17:43 · Ficha: "Ler termo completo" do consentimento LGPD abre e fecha na própria ficha (details, sem sair da página). Teste: 101 verificações ok. O teste do servidor (wrangler dev local) cai no meio por conexão fechada no ambiente, com ou sem esta mudança (48 ok antes da queda, igual na main limpa); a mudança é só de apresentação na ficha.
 - 05/11/2026 16:41 · Painel do atendimento: Tab e Shift+Tab ficam presos dentro do painel aberto (role=dialog) e, ao fechar, o foco volta ao cartão. Só `crm/app.js`. Teste: 98 verificações ok.

@@ -91,6 +91,11 @@ try {
   await page.click('[data-tarefa="cobrar"]'); await page.waitForTimeout(150);
   const cobrar = await page.locator('.card b').allInnerTexts();
   ok(cobrar.length === 3 && !cobrar.includes('Ana Beatriz Moreira') && cobrar.includes('Carlos Eduardo Lima'), 'tarefa "cobrar a ficha" filtra só os links parados');
+  ok(await page.locator('[data-cobrar]').count() === 3, 'botão "Cobrar no WhatsApp" só nos cartões da tarefa cobrar a ficha');
+  const antes = await page.evaluate(() => JSON.parse(localStorage.getItem('nexus-safe-demo-v5')).mensagens.length);
+  await page.locator('[data-cobrar]').first().click(); await page.waitForTimeout(250);
+  const dep = await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('nexus-safe-demo-v5')); return { n: d.mensagens.length, m: d.mensagens[0], h: d.candidatos.filter(c => c.cobradoEm).map(c => c.historico.map(x => x.txt).join('|')) }; });
+  ok(dep.n === antes + 1 && dep.m.automacao === 'falta' && /falta terminar sua ficha|Falta terminar sua ficha/.test(dep.m.texto) && dep.h.length === 1 && /Cobrança da ficha enviada/.test(dep.h[0]), 'cobrar no WhatsApp entra na fila de mensagens e no histórico');
   await page.click('.agora__filtro [data-tarefa=""]'); await page.waitForTimeout(150);
   ok(await page.locator('.card').count() >= 8, 'ver todos devolve o quadro inteiro');
   ok(/Parado há 3 dias/.test(await page.locator('.card:has-text("Diego Santos Pereira")').innerText()) && await page.locator('.card:has-text("Ana Beatriz Moreira") [data-parado]').count() === 0, 'cartão parado há mais de 2 dias na etapa mostra o aviso em âmbar');

@@ -61,6 +61,8 @@ button.agora__item:active:not(:disabled) { transform: scale(.98); }
 .card { display: block; text-align: left; width: 100%; background: var(--branco); border: 0; border-radius: 11px; padding: 12px; box-shadow: 0 1px 2px rgba(15, 31, 27, .08); cursor: pointer; text-decoration: none; color: inherit; transition: box-shadow var(--t) var(--saida), transform var(--t) var(--saida); }
 .card:active { transform: scale(.985); transition-duration: .08s; }
 .card:hover { box-shadow: 0 1px 2px rgba(15, 31, 27, .08), 0 8px 20px -12px rgba(15, 31, 27, .35); transform: translateY(-1px); }
+.card-caixa { display: flex; flex-direction: column; gap: 6px; }
+.card__cobrar { align-self: flex-start; }
 .card b { display: block; font-size: 14.5px; color: var(--tinta); }
 .card__sub { font-size: 13px; color: var(--apoio); margin-top: 2px; }
 .card__meta { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 10px; }

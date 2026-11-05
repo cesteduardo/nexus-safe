@@ -130,8 +130,9 @@
       if (al.fortes.length) meta.push('<span class="selo selo--vermelho">' + al.fortes.length + (al.fortes.length > 1 ? ' pontos' : ' ponto') + ' de atenção</span>');
       else if (al.leves.length) meta.push('<span class="selo selo--ambar">' + al.leves.length + (al.leves.length > 1 ? ' respostas' : ' resposta') + ' "sim"</span>');
     }
-    return '<a class="card" href="#/c/' + c.id + '"><b>' + esc(c.nome) + '</b><div class="card__sub">' + esc(f ? f.nome : '') + ' · ' + esc(e ? e.nome.replace(/ \(fict[íi]ci[ao]\)/, '') : '') + '</div>' +
-      (meta.length ? '<div class="card__meta">' + meta.join('') + '</div>' : '') + '</a>';
+    var cobrar = TAREFAS[0].teste(c) ? '<button class="botao botao--claro botao--pequeno card__cobrar" type="button" data-cobrar="' + c.id + '">Cobrar no WhatsApp</button>' : '';
+    return '<div class="card-caixa"><a class="card" href="#/c/' + c.id + '"><b>' + esc(c.nome) + '</b><div class="card__sub">' + esc(f ? f.nome : '') + ' · ' + esc(e ? e.nome.replace(/ \(fict[íi]ci[ao]\)/, '') : '') + '</div>' +
+      (meta.length ? '<div class="card__meta">' + meta.join('') + '</div>' : '') + '</a>' + cobrar + '</div>';
   }
 
   /* ---------- painel do candidato ---------- */
@@ -444,6 +445,7 @@
     else if (t.matches('[data-ver-aso]') && c) abrirAso(c);
     else if (t.matches('[data-guia]') && c) { $('[data-aso-conteudo]').innerHTML = N.guiaHtml(c); $('[data-modal-aso]').showModal(); fazer('guia', c.id, {}, '', null, true); }
     else if (t.matches('[data-xml]') && c) { N.baixar(N.nomeArquivo(c), N.s2220Xml(c)); toast('XML do S-2220 baixado'); }
+    else if (t.matches('[data-cobrar]')) fazer('cobrar', t.dataset.cobrar, {}, 'Cobrança na fila de mensagens');
     else if (t.matches('[data-avisar-rh]')) fazer('avisarRh', t.dataset.avisarRh, {}, 'Aviso enviado ao RH');
     else if (t.matches('[data-convocar]')) fazer('convocar', t.dataset.convocar, {}, 'Periódico convocado. Link enviado.');
     else if (t.matches('[data-fechar-aso]')) $('[data-modal-aso]').close();
