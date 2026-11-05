@@ -93,6 +93,8 @@ try {
   ok(cobrar.length === 3 && !cobrar.includes('Ana Beatriz Moreira') && cobrar.includes('Carlos Eduardo Lima'), 'tarefa "cobrar a ficha" filtra só os links parados');
   await page.click('.agora__filtro [data-tarefa=""]'); await page.waitForTimeout(150);
   ok(await page.locator('.card').count() >= 8, 'ver todos devolve o quadro inteiro');
+  ok(/Parado há 3 dias/.test(await page.locator('.card:has-text("Diego Santos Pereira")').innerText()) && await page.locator('.card:has-text("Ana Beatriz Moreira") [data-parado]').count() === 0, 'cartão parado há mais de 2 dias na etapa mostra o aviso em âmbar');
+  ok(await page.evaluate(() => JSON.parse(localStorage.getItem('nexus-safe-demo-v5')).candidatos.every(c => !!c.etapaDesde)), 'todo atendimento guarda etapaDesde');
 
   // atendimento com ficha: visão médica x empresa
   await page.click('text=Lucas Henrique Souza'); await page.waitForTimeout(350);

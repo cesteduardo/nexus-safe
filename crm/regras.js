@@ -75,7 +75,7 @@
     var c = {
       id: ctx.novoId(), tipoExame: tipo, nome: nome, cpf: mascaraCpf(d.cpf), celular: mascaraTel(d.celular), empresaId: e.id, funcaoId: f.id,
       admissaoEm: tipo === 'admissional' ? new Date(d.admissaoEm).toISOString() : '', afastadoDesde: tipo === 'retorno_trabalho' ? new Date(d.afastadoDesde).toISOString() : '',
-      etapa: 'enviado', criadoEm: ctx.agora, agendadoPara: '', agendadoModo: '', ficha: null, rascunho: null, aso: null, esocial: null, historico: []
+      etapa: 'enviado', etapaDesde: ctx.agora, criadoEm: ctx.agora, agendadoPara: '', agendadoModo: '', ficha: null, rascunho: null, aso: null, esocial: null, historico: []
     };
     ctx.prepararLink(c);
     registrar(c, ctx, ctx.usuario.tipo === 'rh' ? 'Pedido pelo RH da empresa (' + e.contato + ').' : 'Cadastrado(a) pela recepção.');
@@ -86,7 +86,7 @@
     exigirClinica(ctx);
     if (c.etapa !== 'recebida') throw Erro('Só dá para agendar depois que a ficha chega.');
     if (!dataValida(d && d.quando)) throw Erro('Data do exame inválida.');
-    c.agendadoPara = new Date(d.quando).toISOString(); c.agendadoModo = d.modo === 'chegada' ? 'chegada' : 'hora'; c.etapa = 'agendado';
+    c.agendadoPara = new Date(d.quando).toISOString(); c.agendadoModo = d.modo === 'chegada' ? 'chegada' : 'hora'; c.etapa = 'agendado'; c.etapaDesde = ctx.agora;
     registrar(c, ctx, 'Exame agendado para ' + quandoExame(c) + '.');
     var ori = preparos(ctx.funcao(c.funcaoId)).map(function (x) { return x.charAt(0).toLowerCase() + x.slice(1); });
     return { mensagens: [{ automacao: 'agenda', para: c.nome, texto: 'Oi, ' + primeiroNome(c.nome) + '! Seu exame ' + nomeTipo(c.tipoExame).toLowerCase() + ' está marcado para ' + quandoExame(c) + ' na ' + ctx.clinica + '. Leve RG e carteira de trabalho' + (ori.length ? '; ' + ori.join('; ') : '') + '.', aoEnviar: 'Confirmação enviada pelo WhatsApp.', alvo: c }] };
@@ -95,7 +95,7 @@
   ACOES.atendido = function (ctx, c) {
     exigirClinica(ctx);
     if (c.etapa !== 'agendado') throw Erro('O atendimento ainda não foi agendado.');
-    c.etapa = 'atendido'; registrar(c, ctx, 'Atendido(a) pela equipe médica.');
+    c.etapa = 'atendido'; c.etapaDesde = ctx.agora; registrar(c, ctx, 'Atendido(a) pela equipe médica.');
     return { mensagens: [] };
   };
 
@@ -107,7 +107,7 @@
     if (!res) throw Erro('Aptidão inválida.');
     var f = ctx.funcao(c.funcaoId), e = ctx.empresa(c.empresaId);
     c.aso = { resultado: res, restricoes: res === 'Apto com restrição' ? texto(d.restricoes, 300) : '', medico: ctx.usuario.nome, crm: ctx.usuario.crm || 'CRM-SP 123456', data: ctx.agora, validade: c.tipoExame === 'demissional' ? '' : somarMeses(ctx.agora, f.periodicidade), obs: texto(d.obs, 300) };
-    c.etapa = 'aso'; c.esocial = { status: 'pendente', prazo: prazoS2220(ctx.agora) };
+    c.etapa = 'aso'; c.etapaDesde = ctx.agora; c.esocial = { status: 'pendente', prazo: prazoS2220(ctx.agora) };
     registrar(c, ctx, 'ASO emitido: ' + res + '. S-2220 pendente até ' + dataLonga(c.esocial.prazo) + '.');
     return { mensagens: [{ automacao: 'aso', para: e.contato + ' · ' + semFicticia(e.nome), texto: 'Olá, ' + primeiroNome(e.contato) + '. O ASO ' + nomeTipo(c.tipoExame).toLowerCase() + ' de ' + c.nome + ' (' + f.nome + ') está pronto: ' + res.toUpperCase() + '. O PDF segue anexo. ' + ctx.clinica + '.', aoEnviar: 'Aviso enviado ao RH da empresa.', alvo: c }] };
   };
@@ -136,7 +136,7 @@
     exigirClinica(ctx);
     if (!base.aso || !base.aso.validade) throw Erro('Atendimento sem ASO com validade.');
     if (base.convocadoEm) throw Erro('Periódico já convocado.');
-    var novo = { id: ctx.novoId(), tipoExame: 'periodico', nome: base.nome, cpf: base.cpf, celular: base.celular, empresaId: base.empresaId, funcaoId: base.funcaoId, admissaoEm: '', afastadoDesde: '', etapa: 'enviado', criadoEm: ctx.agora, agendadoPara: '', agendadoModo: '', ficha: null, rascunho: null, aso: null, esocial: null, historico: [] };
+    var novo = { id: ctx.novoId(), tipoExame: 'periodico', nome: base.nome, cpf: base.cpf, celular: base.celular, empresaId: base.empresaId, funcaoId: base.funcaoId, admissaoEm: '', afastadoDesde: '', etapa: 'enviado', etapaDesde: ctx.agora, criadoEm: ctx.agora, agendadoPara: '', agendadoModo: '', ficha: null, rascunho: null, aso: null, esocial: null, historico: [] };
     ctx.prepararLink(novo);
     registrar(novo, ctx, 'Periódico convocado pela clínica (ASO anterior vence em ' + dataLonga(base.aso.validade) + ').');
     base.convocadoEm = ctx.agora; registrar(base, ctx, 'Periódico convocado.');

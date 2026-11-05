@@ -117,6 +117,8 @@
     var al = N.alertas(c.ficha, f);
     var meta = [];
     if (c.tipoExame && c.tipoExame !== 'admissional') meta.push('<span class="selo selo--azul">' + esc(N.nomeTipo(c.tipoExame)) + '</span>');
+    var parado = c.etapa !== 'aso' && c.etapaDesde ? Math.floor((Date.now() - new Date(c.etapaDesde).getTime()) / 864e5) : 0;
+    if (parado > 2) meta.push('<span class="selo selo--ambar" data-parado>Parado há ' + parado + ' dias</span>');
     if (c.etapa === 'enviado') meta.push('<span class="selo">Enviado ' + ha(c.criadoEm) + '</span>');
     if (c.etapa === 'preenchendo') meta.push('<span class="selo selo--azul">Rascunho salvo</span>');
     if (c.etapa === 'agendado' && c.agendadoPara) meta.push('<span class="selo selo--azul">' + data(c.agendadoPara, true) + '</span>');

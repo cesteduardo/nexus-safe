@@ -206,7 +206,7 @@ async function estadoPara(env, u) {
     candidatos.push(c);
   }
   const estado = {
-    versao: 4, clinica: ag.a.nome, endereco: ag.a.endereco, horario: ag.a.horario, pcmso: parse(ag.a.pcmso, {}),
+    versao: 5, clinica: ag.a.nome, endereco: ag.a.endereco, horario: ag.a.horario, pcmso: parse(ag.a.pcmso, {}),
     empresas: u.tipo === 'rh' ? ag.empresas.filter(e => e.id === u.empresa_id) : ag.empresas,
     funcoes: u.tipo === 'rh' ? ag.funcoes.filter(f => f.empresaId === u.empresa_id) : ag.funcoes,
     candidatos, automacoes: [], mensagens: []
@@ -356,7 +356,7 @@ async function ficha(env, req, token, parte) {
     const e = ag.empresas.find(x => x.id === l.empresa_id), f = ag.funcoes.find(x => x.id === l.funcao_id);
     const rasc = reg && reg.rascunho && !reg.enviado_em ? await decifrar(env, reg.rascunho, 'rascunho:' + c.id) : null;
     return json({ estado: {
-      versao: 4, clinica: ag.a.nome, empresas: [{ id: e.id, nome: e.nome }], funcoes: [f], automacoes: [], mensagens: [],
+      versao: 5, clinica: ag.a.nome, empresas: [{ id: e.id, nome: e.nome }], funcoes: [f], automacoes: [], mensagens: [],
       candidatos: [{ id: c.id, token, nome: c.nome, cpf: c.cpf, tipoExame: c.tipoExame, empresaId: e.id, funcaoId: f.id, etapa: c.etapa, historico: [], ficha: reg && reg.enviado_em ? { enviadoEm: reg.enviado_em } : null, rascunho: rasc }]
     } });
   }
@@ -374,7 +374,7 @@ async function ficha(env, req, token, parte) {
     const grava = [env.DB.prepare('INSERT INTO fichas (atendimento_id, rascunho, atualizado_em) VALUES (?1, ?2, ?3) ON CONFLICT(atendimento_id) DO UPDATE SET rascunho = excluded.rascunho, atualizado_em = excluded.atualizado_em').bind(c.id, cifrado, agora)];
     if (c.etapa === 'enviado') {
       hist.push({ em: agora, txt: 'Abriu a ficha e começou a preencher.' });
-      const { id, etapa, token: _t, ficha: _f, rascunho: _r, ...resto } = c; resto.historico = hist;
+      const { id, etapa, token: _t, ficha: _f, rascunho: _r, ...resto } = c; resto.historico = hist; resto.etapaDesde = agora;
       grava.push(env.DB.prepare("UPDATE atendimentos SET etapa = 'preenchendo', dados = ?1, atualizado_em = ?2 WHERE id = ?3 AND etapa = 'enviado'").bind(JSON.stringify(resto), agora, c.id));
     }
     await env.DB.batch(grava);
@@ -385,7 +385,7 @@ async function ficha(env, req, token, parte) {
     R.conferirFicha(st);
     const cifrada = await cifrar(env, st, 'ficha:' + c.id);
     hist.push({ em: agora, txt: 'Ficha enviada pelo candidato.' });
-    const { id, etapa, token: _t, ficha: _f, rascunho: _r, ...resto } = c; resto.historico = hist;
+    const { id, etapa, token: _t, ficha: _f, rascunho: _r, ...resto } = c; resto.historico = hist; resto.etapaDesde = agora;
     const res = await env.DB.batch([
       env.DB.prepare('UPDATE links SET usado_em = ?1 WHERE token_hash = ?2 AND usado_em IS NULL').bind(agora, l.token_hash),
       /* assinatura: data e hora (enviado_em), IP e navegador de quem enviou */

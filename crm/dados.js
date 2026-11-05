@@ -3,7 +3,7 @@
 (function () {
   'use strict';
 
-  var CHAVE = 'nexus-safe-demo-v4';
+  var CHAVE = 'nexus-safe-demo-v5';
 
   var ETAPAS = [
     { id: 'enviado', nome: 'Link enviado' },
@@ -162,7 +162,9 @@
     ];
 
     function cand(o) {
-      return Object.assign({ id: uid(), token: token(), tipoExame: 'admissional', criadoEm: agoraMenos(3), agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] }, o);
+      var c = Object.assign({ id: uid(), token: token(), tipoExame: 'admissional', criadoEm: agoraMenos(3), agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] }, o);
+      if (!c.etapaDesde) c.etapaDesde = (c.historico.length ? c.historico[c.historico.length - 1].em : c.criadoEm);
+      return c;
     }
 
     var saudeLucas = fichaBase().saude; saudeLucas.labirintite = { sim: true, detalhe: 'Crise em 2023, tomou remédio por 1 mês' };
@@ -175,7 +177,7 @@
       cand({ admissaoEm: daquiA(6), nome: 'Ana Beatriz Moreira', cpf: '123.456.789-09', celular: '(17) 99123-4567', empresaId: 'e3', funcaoId: 'f5', etapa: 'enviado', criadoEm: agoraMenos(0, 8), historico: [{ em: agoraMenos(0, 8), txt: 'Cadastrada pela recepção. Link enviado pelo WhatsApp.' }] }),
       cand({ nome: 'Marcos Vinícius Teixeira', tipoExame: 'periodico', cpf: '890.123.456-78', celular: '(17) 99890-1234', empresaId: 'e2', funcaoId: 'f3', etapa: 'enviado', criadoEm: agoraMenos(1, 15), historico: [{ em: agoraMenos(30, 9), txt: 'Aviso automático ao RH: periódico vence em 30 dias.' }, { em: agoraMenos(1, 15), txt: 'Periódico solicitado pelo RH. Link enviado.' }] }),
       cand({ admissaoEm: agoraMenos(1), nome: 'Carlos Eduardo Lima', cpf: '234.567.890-12', celular: '(17) 99234-5678', empresaId: 'e2', funcaoId: 'f3', etapa: 'enviado', criadoEm: agoraMenos(2, 10), historico: [{ em: agoraMenos(2, 10), txt: 'Cadastrado pelo RH da empresa. Link enviado.' }, { em: agoraMenos(1, 10), txt: 'Lembrete automático: falta preencher a ficha.' }] }),
-      cand({ admissaoEm: daquiA(4), nome: 'Diego Santos Pereira', cpf: '345.678.901-23', celular: '(17) 99345-6789', empresaId: 'e1', funcaoId: 'f1', etapa: 'preenchendo', criadoEm: agoraMenos(1, 9), rascunho: { passo: 3 }, historico: [{ em: agoraMenos(1, 9), txt: 'Link enviado.' }, { em: agoraMenos(0, 7), txt: 'Abriu a ficha e começou a preencher.' }] }),
+      cand({ etapaDesde: agoraMenos(3, 9), admissaoEm: daquiA(4), nome: 'Diego Santos Pereira', cpf: '345.678.901-23', celular: '(17) 99345-6789', empresaId: 'e1', funcaoId: 'f1', etapa: 'preenchendo', criadoEm: agoraMenos(1, 9), rascunho: { passo: 3 }, historico: [{ em: agoraMenos(1, 9), txt: 'Link enviado.' }, { em: agoraMenos(0, 7), txt: 'Abriu a ficha e começou a preencher.' }] }),
       cand({ admissaoEm: daquiA(2), nome: 'Lucas Henrique Souza', cpf: '456.789.012-34', celular: '(17) 99456-7890', empresaId: 'e1', funcaoId: 'f2', etapa: 'recebida', criadoEm: agoraMenos(3, 9),
         ficha: fichaBase({ saude: saudeLucas, especificas: { choque: { sim: false }, marcapasso: { sim: false }, medo_altura: { sim: false }, tontura_alt: { sim: true, detalhe: 'Uma vez, em andaime' }, remedio_sono: { sim: false }, ruido_14h: { sim: false }, zumbido: { sim: false }, ouvido: { sim: false } } }),
         historico: [{ em: agoraMenos(3, 9), txt: 'Link enviado.' }, { em: agoraMenos(1, 14), txt: 'Ficha enviada pelo candidato.' }] }),
@@ -216,7 +218,7 @@
       { em: agoraMenos(0, 8), automacao: 'link', para: 'Ana Beatriz Moreira', texto: 'Oi, Ana! Aqui é da Clínica Vida Ocupacional. Antes do seu exame admissional, preencha a ficha neste link (leva uns 10 minutos).' }
     ];
 
-    return { versao: 4, clinica: 'Clínica Vida Ocupacional', endereco: 'Rua das Palmeiras, 450, Centro (endereço fictício)', horario: 'Segunda a sexta, das 7h às 17h. Exames de sangue até as 10h.', pcmso: { coordenador: 'Dr. Ricardo Alves', crm: 'CRM-SP 654321', aprovadoEm: agoraMenos(60, 10) }, empresas: empresas, funcoes: funcoes, candidatos: candidatos, automacoes: automacoes, mensagens: mensagens };
+    return { versao: 5, clinica: 'Clínica Vida Ocupacional', endereco: 'Rua das Palmeiras, 450, Centro (endereço fictício)', horario: 'Segunda a sexta, das 7h às 17h. Exames de sangue até as 10h.', pcmso: { coordenador: 'Dr. Ricardo Alves', crm: 'CRM-SP 654321', aprovadoEm: agoraMenos(60, 10) }, empresas: empresas, funcoes: funcoes, candidatos: candidatos, automacoes: automacoes, mensagens: mensagens };
   }
 
   /* ---------- armazenamento ---------- */
@@ -232,7 +234,7 @@
     if (SERVIDOR) return memoria || { candidatos: [], empresas: [], funcoes: [], automacoes: [], mensagens: [], pcmso: {}, clinica: '' };
     if (memoria) return memoria;
     try { var t = localStorage.getItem(CHAVE); if (t) memoria = JSON.parse(t); } catch (e) { memoria = null; }
-    if (!memoria || memoria.versao !== 4) { memoria = seed(); salvar(); }
+    if (!memoria || memoria.versao !== 5) { memoria = seed(); salvar(); }
     return memoria;
   }
   function salvar() {

@@ -44,7 +44,7 @@ e por último o texto e as imagens do plano.
 
 ## A recepção trabalha pelo quadro
 - [x] Faixa "Para fazer agora" no topo do quadro: cobrar a ficha (link enviado antes de hoje), agendar exame, exames até amanhã, emitir ASO. Cada uma filtra o quadro. As 6 colunas cabem na tela a partir de 1200 px.
-- [ ] Guardar `etapaDesde` em cada atendimento (data em que entrou na etapa atual; subir a versão em `CHAVE` e `versao`) e mostrar no cartão "Parado há N dias" em âmbar quando passar de 2 dias na mesma etapa.
+- [x] Guardar `etapaDesde` em cada atendimento (data em que entrou na etapa atual; subir a versão em `CHAVE` e `versao`) e mostrar no cartão "Parado há N dias" em âmbar quando passar de 2 dias na mesma etapa.
 - [ ] Botão "Cobrar no WhatsApp" no próprio cartão de quem está na tarefa "Cobrar a ficha", com a mensagem "falta terminar sua ficha" pronta. Ao clicar, registra no histórico e entra na fila de mensagens.
 - [ ] No painel, "Próximo passo" de quem está agendado para hoje ou amanhã: botão "Confirmar presença no WhatsApp" com o horário e o preparo.
 - [ ] No celular (até 600 px), o quadro vira uma lista por etapa com abas no topo (Link enviado, Preenchendo...), sem rolagem lateral dentro do quadro.
