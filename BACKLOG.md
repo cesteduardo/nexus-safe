@@ -63,6 +63,15 @@ e por último o texto e as imagens do plano.
 - [ ] Seção "Veja por dentro" com 3 imagens reais do modelo (quadro com a faixa "Para fazer agora", ficha no celular, ASO), geradas por captura de tela do próprio site e salvas em `assets/telas/`.
 - [ ] Revisar o texto do plano inteiro: frases longas, repetição, termos técnicos sem explicação. Sem travessões.
 
+## Servidor (antes de dado real, ver SEGURANCA.md)
+Estes mexem em `servidor/`: rode também o `npm run test:servidor`.
+- [ ] Troca de senha pela própria pessoa: rota `/api/senha` (pede a senha atual, mínimo de 12 caracteres, derruba as outras sessões, registra na auditoria) e um formulário "Trocar senha" nas três telas protegidas, ao lado do Sair. Na demonstração, o formulário avisa que a troca só vale no servidor.
+- [ ] Troca da chave das fichas (rotação): aceitar uma chave nova (`FICHA_CHAVE`) e a antiga (`FICHA_CHAVE_ANTIGA`) ao mesmo tempo, com o número da chave gravado na cifra (`v2:`), e um script `servidor/chave.mjs` que recifra fichas, rascunhos e tokens com a chave nova. Teste: ficha antiga abre depois da troca e, sem a chave antiga, continua abrindo.
+- [ ] **(aguarda o dono)** Escolher onde o backup fica fora do computador (HD externo ou outro serviço de nuvem) e ligar o backup diário das 3h (comandos do systemd no SEGURANCA.md, seção Backup). Testar a restauração uma vez por mês com `node servidor/backup.mjs testar`.
+- [ ] **(aguarda o dono)** Publicar na Cloudflare (SEGURANCA.md, seção "Publicar na Cloudflare"): `npx wrangler login`, criar o banco (`npx wrangler d1 create nexus-safe`) e pôr o `database_id` no `wrangler.jsonc`, aplicar as migrações com `--remote`, criar a `FICHA_CHAVE` com `wrangler secret put` e guardá-la fora do computador, e `npx wrangler deploy`.
+- [ ] **(aguarda o dono)** Agência piloto e médico do trabalho que valida a ficha e o texto da LGPD (decisão em aberto nº 3 do plano). Com isso em mãos: copiar `servidor/piloto.exemplo.json` (fora do Git), preencher com os dados reais e rodar `node servidor/conta.mjs cadastro piloto.json --remote`. Entregar cada senha à pessoa por um caminho seguro.
+- [ ] **(aguarda o dono)** Domínio próprio para o servidor.
+
 ## Esperando decisão do dono
 - [x] Logo: o dono pediu para melhorar o NS de traço contínuo (04/11). A diagonal agora vira a base do S em curva, o miolo do N abriu e as curvas passam um pouco da linha. Trocado em todos os lugares, com og.png e apple-touch-icon novos.
 - [ ] **(aguarda o dono)** Questionário configurável por agência (decisão em aberto nº 2 do plano).
