@@ -200,7 +200,7 @@
     var h = '<div class="bloco"><h3>Ficha preenchida <span class="selo">enviada ' + data(fi.enviadoEm, true) + '</span></h3>';
     h += '<p class="sub">Dados pessoais</p><dl class="dl">' +
       (p.nome_social ? '<dt>Nome social</dt><dd>' + esc(p.nome_social) + '</dd>' : '') +
-      '<dt>Nascimento</dt><dd>' + esc(p.nascimento ? p.nascimento.split('-').reverse().join('/') : '') + '</dd><dt>Sexo</dt><dd>' + esc(p.sexo) + '</dd><dt>Estado civil</dt><dd>' + esc(p.estado_civil) + '</dd><dt>Escolaridade</dt><dd>' + esc(p.escolaridade) + '</dd><dt>Endereço</dt><dd>' + esc(p.endereco) + '</dd><dt>Emergência</dt><dd>' + esc(p.emergencia_nome) + ' ' + esc(p.emergencia_tel) + '</dd><dt>PcD</dt>' + simNao(p.pcd) + '</dl>';
+      '<dt>Nascimento</dt><dd>' + esc(p.nascimento ? p.nascimento.split('-').reverse().join('/') : '') + '</dd><dt>Sexo</dt><dd>' + esc(p.sexo) + '</dd><dt>Estado civil</dt><dd>' + esc(p.estado_civil) + '</dd><dt>Escolaridade</dt><dd>' + esc(p.escolaridade) + '</dd><dt>Endereço</dt><dd>' + esc(p.endereco) + '</dd><dt>Emergência</dt><dd>' + esc(p.emergencia_nome) + (p.emergencia_parentesco ? ' (' + esc(p.emergencia_parentesco.toLowerCase()) + ')' : '') + ' ' + esc(p.emergencia_tel) + '</dd><dt>PcD</dt>' + simNao(p.pcd) + '</dl>';
     h += '<p class="sub">Trabalhos anteriores</p>';
     if (fi.trabalhos && fi.trabalhos.length) h += fi.trabalhos.map(function (t) { return '<dl class="dl" style="margin-bottom:8px"><dt>' + esc(t.empresa) + '</dt><dd>' + esc(t.funcao) + ', ' + esc(t.tempo) + (t.exposicoes && t.exposicoes.length ? '<br><span style="color:var(--apoio)">Exposto a: ' + esc(t.exposicoes.join(', ')) + '</span>' : '') + '<br><span style="color:var(--apoio)">Usava EPI: ' + (t.epi === 'sim' ? 'sim' : t.epi === 'nao' ? 'não' : 'às vezes') + '</span></dd></dl>'; }).join('');
     else h += '<p>Primeiro emprego.</p>';
@@ -232,7 +232,7 @@
       '<p>Conclusão: o trabalhador está</p><div class="aso__resultado">' + esc(c.aso.resultado.toUpperCase()) + ' para a função</div>' +
       '<p style="font-size:12.5px;color:#444">Emitido em ' + new Date(c.aso.data).toLocaleDateString('pt-BR') + '. Médico(a) responsável pelo exame: ' + esc(c.aso.medico) + ', ' + esc(c.aso.crm || 'CRM-SP 123456') + '.</p>' +
       '<div class="aso__assin"><div>' + esc(c.aso.medico) + '<br>Médico(a) examinador(a)</div><div>' + esc(c.nome) + '<br>Trabalhador(a): recebi a 2ª via</div></div>' +
-      '<p class="aso__ns"><svg class="ns" viewBox="18 18 64 64" aria-hidden="true"><path d="M24 76V24L46.5 76H60C69.5 76 76 71 76 63C76 55.5 70.5 52 61 50.2C51.5 48.4 46 45 46 37.2C46 29.5 52 24 61 24C67 24 72 26.6 75 31"/></svg>Emitido com Nexus Safe</p></div>';
+      '<p class="aso__ns"><svg class="ns" viewBox="18 18 64 64" aria-hidden="true"><path d="M24 76V24L48.6 71Q51.2 76 56.6 76H60.6C70.1 76 76.6 70.8 76.6 62.8C76.6 55.3 71 51.9 61.4 50.1C52 48.4 47 45.1 47 37.6C47 29.6 53 23.3 61.4 23.3C67.2 23.3 72.2 25.9 75.2 30.4"/></svg>Emitido com Nexus Safe</p></div>';
   }
   function abrirAso(c) { $('[data-aso-conteudo]').innerHTML = asoHtml(c); $('[data-modal-aso]').showModal(); }
 
@@ -282,8 +282,6 @@
     var f = N.funcao($('[data-sel-funcao]').value);
     $('[data-riscos-funcao]').textContent = f ? 'Riscos: ' + f.riscos.map(function (r) { return N.RISCOS[r]; }).join(', ') + '. A ficha vai incluir as perguntas desses riscos.' : '';
   }
-  function mascaraCpf(v) { v = v.replace(/\D/g, '').slice(0, 11); return v.replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d{1,2})$/, '$1-$2'); }
-  function mascaraTel(v) { v = v.replace(/\D/g, '').slice(0, 11); if (v.length > 6) return '(' + v.slice(0, 2) + ') ' + v.slice(2, v.length - 4) + '-' + v.slice(-4); if (v.length > 2) return '(' + v.slice(0, 2) + ') ' + v.slice(2); return v; }
 
   /* ---------- eventos ---------- */
   document.addEventListener('click', function (ev) {
@@ -294,7 +292,7 @@
     var d = N.carregar();
 
     if (t.matches('[data-tarefa]')) { filtro.tarefa = t.dataset.tarefa === filtro.tarefa ? '' : t.dataset.tarefa; renderQuadro(); }
-    else if (t.matches('[data-novo]')) { $('[data-form-novo]').reset(); preencherSelects(); $('[data-modal-novo]').showModal(); }
+    else if (t.matches('[data-novo]')) { $('[data-form-novo]').reset(); $('[data-form-novo]').querySelectorAll('.campo__erro').forEach(function (x) { x.remove(); }); $('[data-form-novo]').querySelectorAll('.faltando').forEach(function (x) { x.classList.remove('faltando'); }); preencherSelects(); $('[data-modal-novo]').showModal(); }
     else if (t.matches('[data-fechar], [data-veu]')) fecharPainel();
     else if (t.matches('[data-ver]')) { verComo = t.dataset.ver; renderPainel(c); }
     else if (t.matches('[data-copiar]')) {
@@ -342,15 +340,14 @@
       var pos = t.selectionStart; renderQuadro();
       var n = $('[data-filtro-busca]'); n.focus(); try { n.setSelectionRange(pos, pos); } catch (e) {}
     }
-    else if (t.name === 'cpf') t.value = mascaraCpf(t.value);
-    else if (t.name === 'celular') t.value = mascaraTel(t.value);
   });
 
   $('[data-form-novo]').addEventListener('submit', function (ev) {
     if (ev.submitter && ev.submitter.value === 'cancelar') return;
+    if (window.Campos.validar(ev.target).length) { ev.preventDefault(); return; }
     var fd = new FormData(ev.target);
     var d = N.carregar();
-    var c = { id: N.uid(), token: N.token(), tipoExame: fd.get('tipoExame') || 'admissional', nome: fd.get('nome').trim(), cpf: fd.get('cpf'), celular: fd.get('celular'), empresaId: fd.get('empresaId'), funcaoId: fd.get('funcaoId'), etapa: 'enviado', criadoEm: new Date().toISOString(), agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] };
+    var c = { id: N.uid(), token: N.token(), tipoExame: fd.get('tipoExame') || 'admissional', nome: fd.get('nome').trim().replace(/ +/g, ' '), cpf: fd.get('cpf'), celular: fd.get('celular'), empresaId: fd.get('empresaId'), funcaoId: fd.get('funcaoId'), etapa: 'enviado', criadoEm: new Date().toISOString(), agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] };
     registrar(c, 'Cadastrado(a) pela recepção.');
     if (N.enfileirar('link', c.nome, textoLink(c))) registrar(c, 'Link da ficha enviado pelo WhatsApp.');
     d.candidatos.unshift(c); N.salvar();

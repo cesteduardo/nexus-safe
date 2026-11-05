@@ -9,19 +9,21 @@ Site estático publicado no GitHub Pages a partir da branch `main`
   - `dados.js`: catálogos, perguntas, dados de demonstração, regras de alerta. Se mudar o formato dos dados salvos, suba a versão em `CHAVE` e em `versao`.
   - `app.js`: quadro, painel do atendimento (visão médica x empresa), ASO, cadastros, automações.
   - `ficha.html` + `ficha.js`: ficha que o candidato preenche no celular.
-- `marca/`: opções de logo esperando escolha do dono.
+- `marca/`: outras direções de logo, só como referência.
+- `crm/campos.js`: regras de nome, telefone e CPF (padrão GR Brands 2).
 - `PLANO.md`: o plano em texto. `BACKLOG.md`: o que fazer. `HISTORICO.md`: o que foi feito.
 
 ## Regras que não se quebram
 1. **Português do Brasil, sem travessões** (`—`). Reescreva a frase em vez de trocar por vírgula.
-2. **A logo não muda** até o dono escolher uma das opções em `marca/`. Não escolha por ele.
+2. **A logo é o NS de traço contínuo** (`assets/simbolo.svg`, refinado em 04/11 a pedido do dono). Não muda sem pedido dele. A página `marca/` guarda as outras direções só como referência.
 3. **Não decidir pelo dono:** preços, nome, e as "Decisões em aberto" do plano ficam como estão.
 4. **Dado de saúde é sensível (LGPD art. 11):** a visão da empresa cliente nunca mostra resposta de saúde, só cadastro, etapa e ASO. A ficha nunca pergunta gravidez, esterilização ou HIV.
 5. **Exame vem do protocolo do PCMSO**, nunca direto do risco.
 6. **Dados sempre fictícios.** Nada de empresa, pessoa ou CNPJ real.
 7. **Sem cara de site feito em IA:** nada de selos pulsando, ícones girando, rótulos com bolinha, gradiente chamativo. Mudanças visuais pequenas, uma peça por vez.
 8. **Sem dependências no site:** HTML, CSS e JS puro. Bibliotecas só para testes.
-9. **Celular primeiro:** nada pode criar rolagem lateral em 390 px.
+9. **Celular primeiro:** nada pode criar rolagem lateral de 320 a 1920 px.
+10. **Formulários no padrão GR Brands 2:** campo de nome, telefone ou CPF usa `data-campo="nome|tel|cpf"` e `crm/campos.js`; o envio passa por `Campos.validar(form)`.
 
 ## Como testar
 ```
@@ -29,6 +31,7 @@ npm install
 npx playwright install --with-deps chromium   # se o navegador não estiver instalado
 npm test
 ```
+Se o Chromium do Playwright não instalar, use um que já exista: `CHROME=/caminho/do/chrome npm test`.
 O teste sobe um servidor próprio, percorre plano, quadro, visão médica e da empresa, ASO,
 ficha completa no celular e confere a rolagem lateral. Se acrescentar uma função nova, acrescente
 uma verificação em `testes/fluxo.mjs`.

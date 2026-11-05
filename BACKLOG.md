@@ -19,8 +19,9 @@ e por último o texto e as imagens do plano.
 
 ## Correções e base
 - [x] Ficha: salvar o rascunho a cada campo alterado (hoje só salva ao avançar de passo), para não perder nada se o candidato fechar o navegador no meio.
-- [ ] Ficha: validar CPF do contato e data de nascimento (não aceitar data futura nem idade abaixo de 14 anos) com mensagem clara.
-- [ ] Ficha: máscara de telefone no contato de emergência, igual à do cadastro no CRM.
+- [x] Ficha: validar CPF do contato e data de nascimento (não aceitar data futura nem idade abaixo de 14 anos) com mensagem clara.
+- [x] Ficha: máscara de telefone no contato de emergência, igual à do cadastro no CRM.
+- [x] Formulários no padrão GR Brands 2 (`crm/campos.js`): nome só com letras, telefone sem +55 e com DDD 55 preservado, CPF com dígito verificador, limpeza ao digitar e ao colar, erro junto ao campo e foco no primeiro inválido.
 - [ ] Painel do atendimento: prender o foco do teclado dentro do painel aberto e devolver o foco ao cartão ao fechar (acessibilidade).
 - [ ] Ficha: texto completo do consentimento LGPD num "ler termo completo" que abre e fecha, sem sair da ficha.
 
@@ -46,6 +47,6 @@ e por último o texto e as imagens do plano.
 - [ ] Revisar o texto do plano inteiro: frases longas, repetição, termos técnicos sem explicação. Sem travessões.
 
 ## Esperando decisão do dono
-- [ ] **(aguarda o dono)** Trocar a logo pela opção escolhida em `marca/` (topo, CRM, ficha, ASO, favicon, apple-touch-icon, og.png).
+- [x] Logo: o dono pediu para melhorar o NS de traço contínuo (04/11). A diagonal agora vira a base do S em curva, o miolo do N abriu e as curvas passam um pouco da linha. Trocado em todos os lugares, com og.png e apple-touch-icon novos.
 - [ ] **(aguarda o dono)** Questionário configurável por agência (decisão em aberto nº 2 do plano).
 - [ ] **(aguarda o dono)** Valores do comercial.

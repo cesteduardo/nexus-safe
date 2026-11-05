@@ -5,17 +5,19 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>Nexus Safe: opções de logo</title>
 <meta name="robots" content="noindex">
+<link rel="icon" href="../assets/marca.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&family=Inter+Tight:wght@500;600;700;800&family=Playfair+Display:wght@600;700&family=Cormorant+Garamond:wght@600&family=Sora:wght@700&display=swap" rel="stylesheet">
 <style>
   :root { --verde: #0A7A5C; --tinta: #0F1F1B; --apoio: #5A6964; --linha: #DCE3E0; --fundo: #F4F6F5; }
   * { box-sizing: border-box; }
+  html { -webkit-tap-highlight-color: transparent; }
   body { margin: 0; background: var(--fundo); color: var(--tinta); font: 15px/1.5 Inter, system-ui, sans-serif; }
   header { max-width: 1120px; margin: 0 auto; padding: 40px 16px 8px; }
   h1 { font: 700 32px/1.1 "Inter Tight"; letter-spacing: -.02em; margin: 0 0 8px; }
   header p { color: var(--apoio); margin: 0; max-width: 40em; }
-  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 60px; display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(330px, 1fr)); }
+  main { max-width: 1120px; margin: 0 auto; padding: 24px 16px 60px; display: grid; gap: 18px; grid-template-columns: repeat(auto-fill, minmax(min(330px, 100%), 1fr)); }
   .op { background: #fff; border-radius: 18px; box-shadow: inset 0 0 0 1px var(--linha); padding: 22px; display: grid; gap: 18px; }
   .op__cab { display: flex; justify-content: space-between; align-items: baseline; gap: 10px; }
   .op h2 { margin: 0; font: 600 18px "Inter Tight"; }

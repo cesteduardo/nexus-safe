@@ -139,7 +139,7 @@
 
   function fichaBase(over) {
     var f = {
-      pessoais: { nome_social: '', nascimento: '1994-05-12', sexo: 'Masculino', estado_civil: 'Casado(a)', escolaridade: 'Ensino médio completo', endereco: 'Rua das Acácias, 120, Jardim Bela Vista', emergencia_nome: 'Maria (esposa)', emergencia_tel: '(17) 99100-2233', pcd: { sim: false, detalhe: '' } },
+      pessoais: { nome_social: '', nascimento: '1994-05-12', sexo: 'Masculino', estado_civil: 'Casado(a)', escolaridade: 'Ensino médio completo', endereco: 'Rua das Acácias, 120, Jardim Bela Vista', emergencia_nome: 'Maria Souza', emergencia_parentesco: 'Cônjuge', emergencia_tel: '(17) 99100-2233', pcd: { sim: false, detalhe: '' } },
       trabalhos: [{ empresa: 'Serralheria Paulista', funcao: 'Ajudante', tempo: '2 anos', exposicoes: ['Ruído', 'Poeira'], epi: 'sim' }],
       acidentes: { acidente: { sim: false, detalhe: '' }, inss: { sim: false, detalhe: '' }, ocupacional: { sim: false, detalhe: '' } },
       saude: {},
@@ -186,7 +186,7 @@
         ficha: fichaBase({ saude: saudeLucas, especificas: { choque: { sim: false }, marcapasso: { sim: false }, medo_altura: { sim: false }, tontura_alt: { sim: true, detalhe: 'Uma vez, em andaime' }, remedio_sono: { sim: false }, ruido_14h: { sim: false }, zumbido: { sim: false }, ouvido: { sim: false } } }),
         historico: [{ em: agoraMenos(3, 9), txt: 'Link enviado.' }, { em: agoraMenos(1, 14), txt: 'Ficha enviada pelo candidato.' }] }),
       cand({ nome: 'Renata Alves Costa', cpf: '567.890.123-45', celular: '(17) 99567-8901', empresaId: 'e3', funcaoId: 'f4', etapa: 'agendado', criadoEm: agoraMenos(4, 9), agendadoPara: daquiA(1, 8),
-        ficha: fichaBase({ saude: saudeRenata, pessoais: Object.assign(fichaBase().pessoais, { sexo: 'Feminino', estado_civil: 'Solteiro(a)', emergencia_nome: 'Sônia (mãe)' }), trabalhos: [{ empresa: 'Lanchonete Central', funcao: 'Atendente', tempo: '1 ano e meio', exposicoes: ['Calor'], epi: 'sim' }], especificas: { passou_mal_calor: { sim: false }, diarreia: { sim: false }, ferida_mao: { sim: false } } }),
+        ficha: fichaBase({ saude: saudeRenata, pessoais: Object.assign(fichaBase().pessoais, { sexo: 'Feminino', estado_civil: 'Solteiro(a)', emergencia_nome: 'Sônia Costa', emergencia_parentesco: 'Mãe' }), trabalhos: [{ empresa: 'Lanchonete Central', funcao: 'Atendente', tempo: '1 ano e meio', exposicoes: ['Calor'], epi: 'sim' }], especificas: { passou_mal_calor: { sim: false }, diarreia: { sim: false }, ferida_mao: { sim: false } } }),
         historico: [{ em: agoraMenos(4, 9), txt: 'Link enviado.' }, { em: agoraMenos(3, 20), txt: 'Ficha enviada pelo candidato.' }, { em: agoraMenos(2, 11), txt: 'Exame agendado. Confirmação enviada.' }] }),
       cand({ nome: 'José Roberto Nunes', cpf: '678.901.234-56', celular: '(17) 99678-9012', empresaId: 'e4', funcaoId: 'f6', etapa: 'atendido', criadoEm: agoraMenos(6, 9), agendadoPara: agoraMenos(0, 8),
         ficha: fichaBase({ saude: saudeJose, habitos: { fuma: 'sim', fuma_detalhe: '10 cigarros por dia há 15 anos', alcool: 'socialmente', atividade: 'nao' }, trabalhos: [{ empresa: 'Logística Sul', funcao: 'Motorista', tempo: '8 anos', exposicoes: ['Ruído', 'Vibração'], epi: 'sim' }], especificas: { cnh_cde: { sim: true }, oculos_dirigir: { sim: false }, cnh_suspensa: { sim: false }, ruido_14h: { sim: false }, zumbido: { sim: true, detalhe: 'Às vezes, no ouvido esquerdo' }, ouvido: { sim: false } } }),

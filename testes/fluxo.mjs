@@ -68,9 +68,27 @@ try {
 
   // novo atendimento e ficha no celular
   await page.click('[data-novo]');
+  // padrão de formulário: nada vazio, nome só letras, telefone sem +55, CPF válido
+  await page.click('text=Cadastrar e gerar link'); await page.waitForTimeout(150);
+  ok(await page.locator('[data-form-novo] .campo__erro').count() === 3, 'cadastro vazio não envia e marca os 3 campos');
+  await page.type('[name=nome]', 'Eduardo123 Gonçalves');
+  const n1 = await page.inputValue('[name=nome]');
+  await page.fill('[name=nome]', ''); await page.type('[name=nome]', 'Edu@rdo');
+  ok(n1 === 'Eduardo Gonçalves' && await page.inputValue('[name=nome]') === 'Edurdo', 'nome não aceita número nem símbolo ao digitar');
+  await page.fill('[name=nome]', '');
+  await page.type('[name=celular]', 'abc17999998888');
+  ok(await page.inputValue('[name=celular]') === '(17) 99999-8888', 'telefone ignora letras e aplica a máscara');
+  const colar = async (sel, txt) => { await page.fill(sel, ''); await page.focus(sel); await page.evaluate(([sel, txt]) => { const dt = new DataTransfer(); dt.setData('text', txt); document.querySelector(sel).dispatchEvent(new ClipboardEvent('paste', { clipboardData: dt, bubbles: true, cancelable: true })); }, [sel, txt]); return page.inputValue(sel); };
+  ok(await colar('[name=celular]', '+55 17 99999-9999') === '(17) 99999-9999', 'colar +55 remove o código do país');
+  ok(await colar('[name=celular]', '5517999999999') === '(17) 99999-9999', 'colar 55 + DDD + número remove o 55');
+  ok(await colar('[name=celular]', '55999999999') === '(55) 99999-9999', 'DDD 55 é preservado');
+  ok(await colar('[name=nome]', 'Eduardo123 Gonçalves') === 'Eduardo Gonçalves', 'colar nome limpa os números');
   await page.fill('[name=nome]', 'Teste da Silva');
   await page.fill('[name=cpf]', '11122233344');
   await page.fill('[name=celular]', '17999998888');
+  await page.click('text=Cadastrar e gerar link'); await page.waitForTimeout(150);
+  ok(/CPF inválido/.test(await page.locator('[data-form-novo]').innerText()), 'CPF com dígito errado é recusado');
+  await page.fill('[name=cpf]', '52998224725');
   await page.selectOption('[data-sel-empresa]', 'e2');
   await page.click('text=Cadastrar e gerar link'); await page.waitForTimeout(350);
   const link = await page.inputValue('.link-ficha input');
@@ -82,18 +100,28 @@ try {
   await m.click('button[type=submit]');
   await m.click('button[type=submit]');
   ok(/Faltam \d+ itens/.test(await m.locator('[data-erro]').innerText()), 'ficha bloqueia avanço com campos vazios');
+  await m.fill('[name=nascimento]', '2030-01-01');
+  await m.click('button[type=submit]'); await m.waitForTimeout(100);
+  ok(/futuro/.test(await m.locator('.campo__erro').first().innerText()), 'ficha recusa nascimento no futuro');
+  await m.fill('[name=nascimento]', '2020-01-01');
+  await m.click('button[type=submit]'); await m.waitForTimeout(100);
+  ok(/14 anos/.test(await m.locator('form').innerText()), 'ficha recusa idade abaixo de 14 anos');
   await m.fill('[name=nascimento]', '1998-03-02');
   await m.selectOption('[name=sexo]', 'Masculino');
   await m.selectOption('[name=estado_civil]', 'Solteiro(a)');
   await m.selectOption('[name=escolaridade]', 'Ensino médio completo');
   await m.fill('[name=endereco]', 'Rua A, 1');
-  await m.fill('[name=emergencia_nome]', 'Joana (mãe)');
+  await m.fill('[name=emergencia_nome]', 'Joana (mãe) 2');
+  ok(await m.inputValue('[name=emergencia_nome]') === 'Joana mãe ', 'contato de emergência aceita só letras');
+  await m.fill('[name=emergencia_nome]', 'Joana Lima');
+  await m.selectOption('[name=emergencia_parentesco]', 'Mãe');
   await m.fill('[name=emergencia_tel]', '17 99999 0000');
+  ok(await m.inputValue('[name=emergencia_tel]') === '(17) 99999-0000', 'telefone de emergência ganha a máscara');
   const rasc = await m.evaluate(() => {
     const c = window.Nexus.carregar().candidatos.filter((x) => x.rascunho)[0];
     return c && c.rascunho.ficha.pessoais;
   });
-  ok(rasc && rasc.endereco === 'Rua A, 1' && rasc.emergencia_tel === '17 99999 0000', 'ficha salva o rascunho a cada campo, sem avançar de passo');
+  ok(rasc && rasc.endereco === 'Rua A, 1' && rasc.emergencia_tel === '(17) 99999-0000' && rasc.emergencia_parentesco === 'Mãe', 'ficha salva o rascunho a cada campo, sem avançar de passo');
   await m.click('[data-sn=pcd] label:has-text("Não")');
   await m.click('button[type=submit]');
   await m.fill('[name=t0_empresa]', 'Obra X'); await m.fill('[name=t0_funcao]', 'Ajudante'); await m.fill('[name=t0_tempo]', '1 ano');

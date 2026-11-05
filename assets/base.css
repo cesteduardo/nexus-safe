@@ -23,7 +23,7 @@
 }
 
 *, *::before, *::after { box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; scroll-behavior: smooth; }
+html { -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent; scroll-behavior: smooth; }
 body { margin: 0; background: var(--fundo); color: var(--texto); font: 400 16px/1.6 var(--fonte); -webkit-font-smoothing: antialiased; }
 img, svg { display: block; max-width: 100%; }
 a { color: var(--verde); }
@@ -32,7 +32,7 @@ p { margin: 0; }
 button, input, select, textarea { font: inherit; color: inherit; }
 :focus-visible { outline: 2px solid var(--verde); outline-offset: 2px; }
 
-.marca { display: inline-flex; align-items: center; gap: 10px; text-decoration: none; color: var(--tinta); font-family: var(--fonte-titulo); font-weight: 700; font-size: 18px; letter-spacing: -.02em; }
+.marca { display: inline-flex; align-items: center; min-height: 44px; gap: 10px; text-decoration: none; color: var(--tinta); font-family: var(--fonte-titulo); font-weight: 700; font-size: 18px; letter-spacing: -.02em; }
 .marca .ns { width: 30px; height: 30px; }
 .marca span { white-space: nowrap; }
 .marca i { font-style: normal; font-weight: 500; }

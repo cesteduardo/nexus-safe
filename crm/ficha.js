@@ -14,13 +14,13 @@
   }
 
   var empresa = N.empresa(c.empresaId), funcao = N.funcao(c.funcaoId);
-  var SELO = '<p class="selo-ns">Ficha protegida por <svg class="ns" viewBox="18 18 64 64" aria-hidden="true"><path d="M24 76V24L46.5 76H60C69.5 76 76 71 76 63C76 55.5 70.5 52 61 50.2C51.5 48.4 46 45 46 37.2C46 29.5 52 24 61 24C67 24 72 26.6 75 31"/></svg><b>Nexus Safe</b></p>';
+  var SELO = '<p class="selo-ns">Ficha protegida por <svg class="ns" viewBox="18 18 64 64" aria-hidden="true"><path d="M24 76V24L48.6 71Q51.2 76 56.6 76H60.6C70.1 76 76.6 70.8 76.6 62.8C76.6 55.3 71 51.9 61.4 50.1C52 48.4 47 45.1 47 37.6C47 29.6 53 23.3 61.4 23.3C67.2 23.3 72.2 25.9 75.2 30.4"/></svg><b>Nexus Safe</b></p>';
   var primeiro = N.primeiroNome(c.nome);
 
   if (c.ficha) { telaFinal(true); return; }
 
   var st = (c.rascunho && c.rascunho.ficha) ? c.rascunho.ficha : {
-    pessoais: { nome_social: '', nascimento: '', sexo: '', estado_civil: '', escolaridade: '', endereco: '', emergencia_nome: '', emergencia_tel: '', pcd: null },
+    pessoais: { nome_social: '', nascimento: '', sexo: '', estado_civil: '', escolaridade: '', endereco: '', emergencia_nome: '', emergencia_parentesco: '', emergencia_tel: '', pcd: null },
     primeiroEmprego: false,
     trabalhos: [{ empresa: '', funcao: '', tempo: '', exposicoes: [], epi: '' }],
     acidentes: {}, saude: {}, cirurgias: '', remedios: '', alergias: '', oculos: '',
@@ -69,15 +69,16 @@
       return '<h1>Seus dados</h1>' +
         '<div class="grupo">' +
         '<label class="campo">Nome completo<input class="entrada" value="' + esc(c.nome) + '" readonly></label>' +
-        '<label class="campo">Nome social <small>(opcional)</small><input class="entrada" name="nome_social" value="' + esc(p.nome_social) + '"></label>' +
+        '<label class="campo">Nome social <small>(opcional)</small><input class="entrada" name="nome_social" value="' + esc(p.nome_social) + '" data-campo="nome" data-opcional autocomplete="off"></label>' +
         '<div class="duas"><label class="campo">CPF<input class="entrada" value="' + esc(c.cpf) + '" readonly></label>' +
-        '<label class="campo">Nascimento<input class="entrada" type="date" name="nascimento" value="' + esc(p.nascimento) + '" required></label></div>' +
+        '<label class="campo">Nascimento<input class="entrada" type="date" name="nascimento" value="' + esc(p.nascimento) + '" required data-nascimento></label></div>' +
         '<div class="duas"><label class="campo">Sexo' + select('sexo', ['Feminino', 'Masculino'], p.sexo) + '</label>' +
         '<label class="campo">Estado civil' + select('estado_civil', ['Solteiro(a)', 'Casado(a)', 'União estável', 'Divorciado(a)', 'Viúvo(a)'], p.estado_civil) + '</label></div>' +
         '<label class="campo">Escolaridade' + select('escolaridade', ['Fundamental incompleto', 'Fundamental completo', 'Ensino médio incompleto', 'Ensino médio completo', 'Superior incompleto', 'Superior completo'], p.escolaridade) + '</label>' +
         '<label class="campo">Endereço<input class="entrada" name="endereco" value="' + esc(p.endereco) + '" autocomplete="street-address" placeholder="Rua, número, bairro"></label>' +
-        '<div class="caixa"><h3>Contato de emergência</h3><label class="campo">Nome e parentesco<input class="entrada" name="emergencia_nome" value="' + esc(p.emergencia_nome) + '" placeholder="Ex.: Maria (mãe)"></label>' +
-        '<label class="campo">Telefone<input class="entrada" name="emergencia_tel" inputmode="tel" value="' + esc(p.emergencia_tel) + '"></label></div>' +
+        '<div class="caixa"><h3>Contato de emergência</h3><div class="duas"><label class="campo">Nome<input class="entrada" name="emergencia_nome" value="' + esc(p.emergencia_nome) + '" placeholder="Ex.: Maria Souza" data-campo="nome" autocomplete="off"></label>' +
+        '<label class="campo">Parentesco' + select('emergencia_parentesco', ['Mãe', 'Pai', 'Cônjuge', 'Filho(a)', 'Irmão(ã)', 'Outro'], p.emergencia_parentesco) + '</label></div>' +
+        '<label class="campo">Telefone<input class="entrada" name="emergencia_tel" inputmode="tel" placeholder="(17) 99999-9999" value="' + esc(p.emergencia_tel) + '" data-campo="tel"></label></div>' +
         sn('pcd', 'Você é pessoa com deficiência (PcD)?', p.pcd, 'Qual?') +
         '</div>';
     },
@@ -148,8 +149,8 @@
     inicio: function () { return []; },
     dados: function (f) {
       var p = st.pessoais, faltam = [];
-      ['nome_social', 'nascimento', 'sexo', 'estado_civil', 'escolaridade', 'endereco', 'emergencia_nome', 'emergencia_tel'].forEach(function (k) { p[k] = val(f, k); });
-      ['nascimento', 'sexo', 'estado_civil', 'escolaridade', 'endereco', 'emergencia_nome', 'emergencia_tel'].forEach(function (k) { if (!p[k]) faltam.push(f.querySelector('[name="' + k + '"]').closest('.campo')); });
+      ['nome_social', 'nascimento', 'sexo', 'estado_civil', 'escolaridade', 'endereco', 'emergencia_nome', 'emergencia_parentesco', 'emergencia_tel'].forEach(function (k) { p[k] = val(f, k); });
+      ['nascimento', 'sexo', 'estado_civil', 'escolaridade', 'endereco', 'emergencia_nome', 'emergencia_parentesco', 'emergencia_tel'].forEach(function (k) { if (!p[k]) faltam.push(f.querySelector('[name="' + k + '"]').closest('.campo')); });
       p.pcd = lerSn(f, 'pcd'); if (!p.pcd) faltam.push(f.querySelector('[data-sn="pcd"]'));
       return faltam;
     },
@@ -243,6 +244,7 @@
     var f = ev.target, nome = PASSOS[passo];
     f.querySelectorAll('.faltando').forEach(function (x) { x.classList.remove('faltando'); });
     var faltam = COLETA[nome](f).filter(Boolean);
+    window.Campos.validar(f).forEach(function (el) { var cx = el.closest('.campo') || el; if (faltam.indexOf(cx) < 0) faltam.push(cx); });
     var erro = f.querySelector('[data-erro]');
     if (faltam.length) {
       faltam.forEach(function (x) { x.classList.add('faltando'); });

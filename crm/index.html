@@ -20,7 +20,7 @@
 
 <div class="app">
   <aside class="lateral">
-    <a class="marca" href="#/quadro"><svg class="ns" viewBox="18 18 64 64" aria-hidden="true"><path d="M24 76V24L46.5 76H60C69.5 76 76 71 76 63C76 55.5 70.5 52 61 50.2C51.5 48.4 46 45 46 37.2C46 29.5 52 24 61 24C67 24 72 26.6 75 31"/></svg><span>Nexus <i>Safe</i></span></a>
+    <a class="marca" href="#/quadro"><svg class="ns" viewBox="18 18 64 64" aria-hidden="true"><path d="M24 76V24L48.6 71Q51.2 76 56.6 76H60.6C70.1 76 76.6 70.8 76.6 62.8C76.6 55.3 71 51.9 61.4 50.1C52 48.4 47 45.1 47 37.6C47 29.6 53 23.3 61.4 23.3C67.2 23.3 72.2 25.9 75.2 30.4"/></svg><span>Nexus <i>Safe</i></span></a>
     <div class="lateral__clinica">Agência<b data-clinica></b></div>
     <nav class="menu" aria-label="Seções">
       <a href="#/quadro" data-rota="quadro"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="4" width="5" height="16" rx="1.5"/><rect x="10" y="4" width="5" height="11" rx="1.5"/><rect x="17" y="4" width="4" height="7" rx="1.5"/></svg>Atendimentos</a>
@@ -40,13 +40,13 @@
 <section class="painel" data-painel aria-label="Candidato" hidden></section>
 
 <dialog class="modal" data-modal-novo>
-  <form method="dialog" data-form-novo>
+  <form method="dialog" data-form-novo novalidate>
     <h2>Novo atendimento</h2>
     <p style="color:var(--apoio);font-size:14px;margin-top:-6px">Ao salvar, o sistema gera o link da ficha e prepara a mensagem de WhatsApp.</p>
-    <label class="campo">Nome completo<input class="entrada" name="nome" required autocomplete="off"></label>
+    <label class="campo">Nome completo<input class="entrada" name="nome" required autocomplete="off" data-campo="nome"></label>
     <div class="acoes-linha">
-      <label class="campo">CPF<input class="entrada" name="cpf" inputmode="numeric" placeholder="000.000.000-00" required></label>
-      <label class="campo">Celular (WhatsApp)<input class="entrada" name="celular" inputmode="tel" placeholder="(17) 99999-9999" required></label>
+      <label class="campo">CPF<input class="entrada" name="cpf" inputmode="numeric" placeholder="000.000.000-00" required data-campo="cpf"></label>
+      <label class="campo">Celular (WhatsApp)<input class="entrada" name="celular" inputmode="tel" placeholder="(17) 99999-9999" required data-campo="tel"></label>
     </div>
     <label class="campo">Tipo de exame<select class="entrada" name="tipoExame" data-sel-tipo></select></label>
     <label class="campo">Empresa<select class="entrada" name="empresaId" required data-sel-empresa></select></label>
@@ -70,6 +70,7 @@
 
 <div class="toast" data-toast role="status" aria-live="polite"></div>
 
+<script src="campos.js"></script>
 <script src="dados.js"></script>
 <script src="app.js"></script>
 </body>

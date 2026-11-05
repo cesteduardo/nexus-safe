@@ -2,6 +2,7 @@
 
 Uma linha por rodada, a mais recente em cima: data e hora (America/Sao_Paulo), o que mudou, resultado do `npm test`.
 
+- 04/11/2026 23:58 · Varredura geral. Logo NS refinada (curva na base, miolo do N aberto) em todos os lugares, og.png e ícone novos. Formulários no padrão GR Brands 2 com `crm/campos.js`: nome, telefone (+55 e DDD 55), CPF válido, nascimento sem data futura e com idade mínima de 14 anos, contato de emergência com parentesco. Sem rolagem lateral de 320 a 1920 px, sem marcador azul ao tocar, chaves das automações com 44 px de toque, ícone na página de opções de logo. Teste: 34 verificações ok.
 - 04/11/2026 23:47 · Plano de 04/11 no BACKLOG.md (a recepção trabalha pelo quadro; cada promessa do plano ganha uma tela). Faixa "Para fazer agora" no quadro com 4 tarefas que filtram, e as 6 colunas cabendo a partir de 1200 px. Teste: 22 verificações ok.
 - 04/11/2026 23:38 · Ficha salva o rascunho a cada campo alterado, não só ao avançar de passo. Teste: 18 verificações ok.
 - 03/11/2026 14:00 · Teste automático (`npm test`), regras (`CLAUDE.md`) e backlog criados. Teste: 17 verificações ok.
