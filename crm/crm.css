@@ -262,3 +262,12 @@ button.agora__item:active:not(:disabled) { transform: scale(.98); }
   .modal--aso { position: absolute; inset: 0; width: 100%; box-shadow: none; border: 0; }
   .modal--aso .modal__acoes { display: none; }
 }
+
+@media (max-width: 600px) {
+  .rolagem--cartoes .tabela { min-width: 0; background: none; box-shadow: none; border-radius: 0; }
+  .tabela--cartoes thead { display: none; }
+  .tabela--cartoes, .tabela--cartoes tbody, .tabela--cartoes tr, .tabela--cartoes td { display: block; width: 100%; }
+  .tabela--cartoes tr { background: var(--branco); border-radius: 13px; box-shadow: inset 0 0 0 1px var(--linha); margin-bottom: 12px; padding: 4px 0; }
+  .tabela--cartoes td { border-bottom: 0; padding: 8px 14px; }
+  .tabela--cartoes td[data-rotulo]::before { content: attr(data-rotulo); display: block; font-size: 12px; text-transform: uppercase; letter-spacing: .05em; color: var(--apoio); font-weight: 600; margin-bottom: 3px; }
+}

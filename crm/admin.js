@@ -39,14 +39,14 @@
     var h = '<div class="cab"><div><h1>Agências clientes</h1><p>O que cada agência contratou, como está usando e o que está pendente no suporte.</p></div>' +
       '<div class="cab__acoes"><button class="botao" type="button" data-novo-chamado>+ Novo chamado</button></div></div>';
     h += '<div class="agora agora--fixa">' + resumo.map(function (r) { return '<div class="agora__item"><b>' + r[0] + '</b><span>' + esc(r[1]) + '<small>' + esc(r[2]) + '</small></span></div>'; }).join('') + '</div>';
-    h += '<div class="rolagem"><table class="tabela"><thead><tr><th>Agência</th><th>Serviços</th><th>Situação</th><th>Uso no mês</th><th>Chamados</th></tr></thead><tbody>' +
+    h += '<div class="rolagem rolagem--cartoes"><table class="tabela tabela--cartoes"><thead><tr><th>Agência</th><th>Serviços</th><th>Situação</th><th>Uso no mês</th><th>Chamados</th></tr></thead><tbody>' +
       d.agencias.map(function (a) {
         var u = C.uso(a), k = abertos(a.id).length;
         return '<tr data-ir="#/a/' + a.id + '"><td><a class="agencia__nome" href="#/a/' + a.id + '">' + esc(a.nome) + '</a><small style="display:block;color:var(--apoio);font-size:13px">' + esc(a.cidade) + '</small></td>' +
-          '<td><div class="chips">' + a.servicos.map(function (s) { return '<span class="selo">' + esc(C.SERVICOS[s]) + '</span>'; }).join('') + '</div></td>' +
-          '<td><span class="selo ' + COR_SITUACAO[a.situacao] + '">' + NOME_SITUACAO[a.situacao] + '</span></td>' +
-          '<td>' + u.fichas + ' fichas<br><span style="color:var(--apoio)">' + u.asos + ' ASOs · ' + u.mensagens + ' mensagens</span></td>' +
-          '<td>' + (k ? '<span class="selo selo--ambar">' + k + ' em aberto</span>' : '<span style="color:var(--apoio)">Nenhum</span>') + '</td></tr>';
+          '<td data-rotulo="Serviços"><div class="chips">' + a.servicos.map(function (s) { return '<span class="selo">' + esc(C.SERVICOS[s]) + '</span>'; }).join('') + '</div></td>' +
+          '<td data-rotulo="Situação"><span class="selo ' + COR_SITUACAO[a.situacao] + '">' + NOME_SITUACAO[a.situacao] + '</span></td>' +
+          '<td data-rotulo="Uso no mês">' + u.fichas + ' fichas<br><span style="color:var(--apoio)">' + u.asos + ' ASOs · ' + u.mensagens + ' mensagens</span></td>' +
+          '<td data-rotulo="Chamados">' + (k ? '<span class="selo selo--ambar">' + k + ' em aberto</span>' : '<span style="color:var(--apoio)">Nenhum</span>') + '</td></tr>';
       }).join('') + '</tbody></table></div>';
     h += '<p class="aviso-demo" style="margin-top:16px">A Nexus Safe opera a plataforma, mas não abre fichas nem respostas de saúde das agências. Os números acima são contagens. Na versão real, um acesso de suporte a uma ficha só acontece com autorização da agência e fica registrado.</p>';
     vista.innerHTML = h;

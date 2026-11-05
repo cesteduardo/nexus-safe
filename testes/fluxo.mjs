@@ -228,6 +228,11 @@ try {
   ok(/admin\.html/.test(page.url()) && await page.locator('tbody tr').count() === 3, 'administração lista as 3 agências');
   const adm = await page.locator('body').innerText();
   ok(!/ponto de atenção|resposta "sim"|Convulsão/i.test(adm), 'administração não vê dado de saúde');
+  await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(150);
+  const cab = await page.locator('.tabela--cartoes thead').evaluate(e => getComputedStyle(e).display);
+  const larg = await page.locator('.tabela--cartoes tbody tr').first().evaluate(e => e.getBoundingClientRect().width);
+  ok(cab === 'none' && larg > 300 && await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth), 'administração no celular: agências viram cartões sem rolagem lateral');
+  await page.setViewportSize({ width: 1280, height: 800 });
   await page.click('text=Clínica Vida Ocupacional'); await page.waitForTimeout(350);
   ok(/Uso no mês/.test(await page.locator('[data-painel]').innerText()), 'painel da agência mostra contrato e uso');
   await page.click('[data-fechar]'); await page.waitForTimeout(300);

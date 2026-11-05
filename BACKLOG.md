@@ -30,7 +30,7 @@ e por último o texto e as imagens do plano.
 - [x] Login de verdade no modelo (`crm/entrar.html`): contas admin, clinica (recepção), medico e uma de RH por empresa, senha 123; páginas protegidas, Sair, RH preso à própria empresa. Painéis abrem em pop-up no centro (folha de baixo no celular).
 - [x] Três perfis com tela de entrada (`crm/entrar.html`): administração da Nexus Safe (agências, contrato, uso, chamados de TI), clínica (o CRM, com aba de suporte) e RH da empresa (só os próprios funcionários, pedido de exame e ASO). Nenhum dos dois de fora vê dado de saúde.
 - [x] Perfis dentro da clínica: recepção vê cadastro, etapa e agenda; só a equipe médica vê a ficha e os pontos de atenção. Trocar o botão "Equipe médica / Empresa cliente" do painel pelo perfil de quem entrou.
-- [ ] Administração no celular: a tabela de agências vira uma lista de cartões até 600 px.
+- [x] Administração no celular: a tabela de agências vira uma lista de cartões até 600 px.
 - [ ] Administração: cadastrar agência nova (nome, cidade, contato com telefone no padrão, serviços, situação).
 - [ ] Plano (index.html): seção curta "Três perfis" com o que cada um vê, ligando para `crm/entrar.html`.
 
