@@ -184,7 +184,7 @@
       if (c.ficha) {
         var al = N.alertas(c.ficha, f);
         h += '<div class="bloco"><h3>Pontos de atenção</h3>' + (al.fortes.length + al.leves.length ? '<ul class="atencao">' + al.fortes.map(function (t) { return '<li class="forte">' + esc(t) + '</li>'; }).join('') + al.leves.map(function (t) { return '<li class="leve">' + esc(t) + '</li>'; }).join('') + '</ul>' : '<p>Nenhuma resposta "sim" na ficha.</p>') + '</div>';
-        h += fichaHtml(c.ficha, f);
+        h += fichaHtml(c.ficha, f, c.fichaAssinatura);
       } else {
         h += '<div class="bloco"><h3>Ficha</h3><p>' + (c.etapa === 'preenchendo' ? 'O candidato está preenchendo. O rascunho fica salvo no celular dele até o envio.' : 'A ficha ainda não foi preenchida.') + '</p></div>';
       }
@@ -256,9 +256,10 @@
 
   function simNao(o) { return o && o.sim ? '<dd class="sim">Sim' + (o.detalhe ? ': ' + esc(o.detalhe) : '') + '</dd>' : '<dd>Não</dd>'; }
 
-  function fichaHtml(fi, f) {
+  /* ass: no servidor, a hora do envio vem do relógio do servidor e o IP de quem assinou */
+  function fichaHtml(fi, f, ass) {
     var p = fi.pessoais || {};
-    var h = '<div class="bloco"><h3>Ficha preenchida <span class="selo">enviada ' + data(fi.enviadoEm, true) + '</span></h3>';
+    var h = '<div class="bloco"><h3>Ficha preenchida <span class="selo">enviada ' + data(ass && ass.em || fi.enviadoEm, true) + (ass && ass.ip ? ' · IP ' + esc(ass.ip) : '') + '</span></h3>';
     h += '<p class="sub">Dados pessoais</p><dl class="dl">' +
       (p.nome_social ? '<dt>Nome social</dt><dd>' + esc(p.nome_social) + '</dd>' : '') +
       '<dt>Nascimento</dt><dd>' + esc(p.nascimento ? p.nascimento.split('-').reverse().join('/') : '') + '</dd><dt>Sexo</dt><dd>' + esc(p.sexo) + '</dd><dt>Estado civil</dt><dd>' + esc(p.estado_civil) + '</dd><dt>Escolaridade</dt><dd>' + esc(p.escolaridade) + '</dd><dt>Endereço</dt><dd>' + esc(p.endereco) + '</dd><dt>Emergência</dt><dd>' + esc(p.emergencia_nome) + (p.emergencia_parentesco ? ' (' + esc(p.emergencia_parentesco.toLowerCase()) + ')' : '') + ' ' + esc(p.emergencia_tel) + '</dd><dt>PcD</dt>' + simNao(p.pcd) + '</dl>';

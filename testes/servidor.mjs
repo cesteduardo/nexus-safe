@@ -4,7 +4,9 @@
 // Zera o banco LOCAL com os dados da demonstração antes de começar. Nunca aponte para o banco de produção.
 // Sai com código 1 se qualquer verificação falhar.
 import { execFileSync } from 'node:child_process';
-import path from 'node:path';
+import { writeFileSync, readFileSync, rmSync, mkdtempSync, readdirSync, statSync } from 'node:fs';
+import { tmpdir } from 'node:os';
+import path, { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { chromium } from 'playwright';
 
@@ -14,12 +16,13 @@ if (!/^http:\/\/(127\.0\.0\.1|localhost)(:\d+)?$/.test(B)) { console.error('Este
 
 const falhas = [];
 const ok = (cond, msg) => { if (!cond) falhas.push(msg); console.log((cond ? 'ok   ' : 'FALHA') + ' ' + msg); };
-const sh = (cmd, args) => execFileSync(cmd, args, { cwd: RAIZ, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] });
+const sh = (cmd, args, env = {}) => execFileSync(cmd, args, { cwd: RAIZ, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'], env: { ...process.env, CI: 'true', ...env } });
+const shFalha = (cmd, args, env) => { try { sh(cmd, args, env); return ''; } catch (e) { return String(e.stderr || '') + String(e.stdout || ''); } };
 const sql = q => JSON.parse(sh('npx', ['wrangler', 'd1', 'execute', 'nexus-safe', '--local', '--json', '--command', q]))[0].results;
 
 // banco zerado com a demonstração; guarda os links abertos que a semente imprime
 const saida = sh('node', ['servidor/semente.mjs']);
-sh('npx', ['wrangler', 'd1', 'execute', 'nexus-safe', '--local', '--file', 'servidor/esquema.sql']);
+sh('npx', ['wrangler', 'd1', 'migrations', 'apply', 'nexus-safe', '--local']);
 sh('npx', ['wrangler', 'd1', 'execute', 'nexus-safe', '--local', '--file', 'servidor/.semente.sql']);
 const LINKS = Object.fromEntries([...saida.matchAll(/^ {2}(.+): ([A-Za-z0-9_-]{40,})$/gm)].map(m => [m[1], m[2]]));
 ok(Object.keys(LINKS).length === 6, 'semente gera o banco com 6 links de ficha em aberto');
@@ -96,8 +99,11 @@ ok((await chamar(`/api/ficha/${tkAna}/enviar`, { corpo: { ficha: fichaOk } })).s
 ok((await chamar(`/api/ficha/${tkAna}/enviar`, { corpo: { ficha: fichaOk } })).status === 409, 'a mesma ficha não é enviada duas vezes');
 const guardada = sql(`SELECT f.ficha FROM fichas f JOIN atendimentos a ON a.id = f.atendimento_id WHERE a.dados LIKE '%Ana Beatriz%'`)[0].ficha;
 ok(/^v1:/.test(guardada) && !/Rua B|pressao|Controlada/.test(guardada), 'ficha fica cifrada no banco');
+const ass = sql(`SELECT f.assinatura_ip, f.assinatura_agente, f.enviado_em FROM fichas f JOIN atendimentos a ON a.id = f.atendimento_id WHERE a.dados LIKE '%Ana Beatriz%'`)[0];
+ok(ass.assinatura_ip && ass.enviado_em && ass.assinatura_agente !== null, 'assinatura da ficha grava data, hora, IP e navegador');
 const anaMed = (await estado(medico)).candidatos.find(c => c.nome === 'Ana Beatriz Moreira');
 ok(anaMed.etapa === 'recebida' && anaMed.ficha.saude.pressao.detalhe === 'Controlada', 'médico recebe a ficha enviada');
+ok(anaMed.fichaAssinatura && anaMed.fichaAssinatura.ip === ass.assinatura_ip, 'médico vê de que IP a ficha foi assinada');
 ok(!temSaude((await estado(recepcao)).candidatos.find(c => c.nome === 'Ana Beatriz Moreira')), 'recepção continua sem ver a ficha enviada');
 
 // sair e bloqueio por tentativas
@@ -105,6 +111,47 @@ await chamar('/api/sair', { cookie: admin, corpo: {} });
 ok((await chamar('/api/estado', { cookie: admin })).status === 401, 'depois de sair, a sessão não vale mais');
 for (let i = 0; i < 5; i++) await chamar('/api/entrar', { corpo: { usuario: 'rh.transportes', senha: 'errada' } });
 ok((await chamar('/api/entrar', { corpo: { usuario: 'rh.transportes', senha: '123' } })).status === 429, 'cinco senhas erradas bloqueiam a conta por 15 minutos');
+
+/* ---------- cadastro de verdade (servidor/conta.mjs) ---------- */
+const cad = sh('node', ['servidor/conta.mjs', 'cadastro', 'servidor/piloto.exemplo.json']);
+const SENHAS = Object.fromEntries([...cad.matchAll(/^ {2}([a-z0-9._-]+): ([A-Za-z0-9]{16})$/gm)].map(m => [m[1], m[2]]));
+ok(Object.keys(SENHAS).length === 4, 'cadastro do piloto cria 4 contas com senha aleatória de 16 caracteres');
+ok(!/[A-Za-z0-9]{16}/.test(sh('node', ['servidor/conta.mjs', 'cadastro', 'servidor/piloto.exemplo.json']).split('\n').filter(l => /^ {2}/.test(l)).join('')), 'rodar o cadastro de novo não troca senha de ninguém');
+const recPiloto = await entrar('recepcao.piloto', SENHAS['recepcao.piloto']), rhCer = await entrar('rh.ceramica', SENHAS['rh.ceramica']);
+const ePil = recPiloto && await estado(recPiloto);
+ok(ePil && ePil.clinica === 'Clínica Exemplo Ocupacional (fictícia)' && ePil.candidatos.length === 0 && ePil.empresas.length === 2 && ePil.automacoes.length === 6, 'recepção do piloto entra e vê só a própria agência, com as automações');
+ok(!(await estado(recepcao)).empresas.some(e => /^piloto-/.test(e.id)), 'a clínica da demonstração não vê as empresas do piloto');
+const novoPil = await acao(rhCer, 'criar', '', { tipoExame: 'admissional', nome: 'Pedro Teste Lima', cpf: '529.982.247-25', celular: '(17) 99777-1212', empresaId: 'piloto-ceramica', funcaoId: 'piloto-forneiro', admissaoEm: new Date(Date.now() + 5 * 864e5).toISOString() });
+ok(novoPil.status === 200 && (await estado(recPiloto)).candidatos.some(c => c.nome === 'Pedro Teste Lima') && !(await estado(recepcao)).candidatos.some(c => c.nome === 'Pedro Teste Lima'), 'pedido do RH do piloto chega só à clínica do piloto');
+ok((await acao(rhCer, 'criar', '', { tipoExame: 'periodico', nome: 'Outro Teste Lima', cpf: '529.982.247-25', celular: '(17) 99777-1212', empresaId: 'piloto-laticinio', funcaoId: 'piloto-ordenha' })).status === 403, 'RH da cerâmica não pede exame para o laticínio');
+const ruim = join(tmpdir(), `nexus-ruim-${process.pid}.json`);
+writeFileSync(ruim, JSON.stringify({ agencia: { ...JSON.parse(readFileSync(join(RAIZ, 'servidor/piloto.exemplo.json'), 'utf8')).agencia, id: 'outra' }, empresas: [], usuarios: [{ login: 'clinica', nome: 'Tomada', tipo: 'clinica', papel: 'recepcao' }] }));
+ok(/outro vínculo/.test(shFalha('node', ['servidor/conta.mjs', 'cadastro', ruim])) && sql("SELECT agencia_id FROM usuarios WHERE login = 'clinica'")[0].agencia_id === 'a1', 'conta de uma agência não passa para outra pelo cadastro');
+writeFileSync(ruim, JSON.stringify({ agencia: { ...JSON.parse(readFileSync(join(RAIZ, 'servidor/piloto.exemplo.json'), 'utf8')).agencia, id: 'outra' }, empresas: [{ id: 'x1', nome: 'X', cnpj: '11.111.111/1111-11', contato: 'Y', tel: '(17) 99999-0000', grauRisco: 2, funcoes: [{ id: 'x1f', nome: 'Z', setor: 'W', riscos: ['ruido'], exames: ['audiometria'], periodicidade: 12 }] }], usuarios: [] }));
+const errCad = shFalha('node', ['servidor/conta.mjs', 'cadastro', ruim]);
+ok(/CNPJ inválido/.test(errCad) && /exame clínico/.test(errCad) && sql("SELECT COUNT(*) AS n FROM agencias WHERE id = 'outra'")[0].n === 0, 'cadastro com erro não grava nada e diz o que corrigir');
+rmSync(ruim, { force: true });
+const troca = sh('node', ['servidor/conta.mjs', 'senha', 'rh.ceramica']).match(/: ([A-Za-z0-9]{16})/)[1];
+ok((await chamar('/api/estado', { cookie: rhCer })).status === 401 && !(await entrar('rh.ceramica', SENHAS['rh.ceramica'])) && await entrar('rh.ceramica', troca), 'senha nova derruba a sessão aberta e a antiga para de valer');
+sh('node', ['servidor/conta.mjs', 'desativar', 'dp.laticinio']);
+ok(!(await entrar('dp.laticinio', SENHAS['dp.laticinio'])), 'conta desativada não entra');
+sh('node', ['servidor/conta.mjs', 'reativar', 'dp.laticinio']);
+ok(!!(await entrar('dp.laticinio', SENHAS['dp.laticinio'])), 'conta reativada volta a entrar');
+
+/* ---------- backup cifrado (servidor/backup.mjs) ---------- */
+const pastaBk = mkdtempSync(join(tmpdir(), 'nexus-bk-teste-'));
+try {
+  const SENHA_BK = { NEXUS_BACKUP_SENHA: 'senha-de-backup-so-do-teste' };
+  ok(/16 caracteres/.test(shFalha('node', ['servidor/backup.mjs', 'fazer', '--pasta', pastaBk], { NEXUS_BACKUP_SENHA: 'curta' })), 'backup recusa senha curta');
+  sh('node', ['servidor/backup.mjs', 'fazer', '--pasta', pastaBk], SENHA_BK);
+  const arqBk = join(pastaBk, readdirSync(pastaBk).find(f => f.endsWith('.nsbak')));
+  const bruto = readFileSync(arqBk, 'latin1');
+  ok(statSync(arqBk).mode % 0o1000 === 0o600 && !/Lucas Henrique|Pedro Teste|pbkdf2|Rua B/.test(bruto), 'backup sai cifrado e só o dono lê o arquivo');
+  ok(/Restauração conferida/.test(sh('node', ['servidor/backup.mjs', 'testar', arqBk], SENHA_BK)), 'backup restaura num banco descartável e confere tabela por tabela');
+  ok(/senha errada/.test(shFalha('node', ['servidor/backup.mjs', 'testar', arqBk], { NEXUS_BACKUP_SENHA: 'senha-errada-do-teste-xx' })), 'backup não abre com a senha errada');
+  const alterado = join(pastaBk, 'alterado.nsbak'), b = readFileSync(arqBk); b[b.length - 40] ^= 1; writeFileSync(alterado, b);
+  ok(/arquivo alterado/.test(shFalha('node', ['servidor/backup.mjs', 'testar', alterado], SENHA_BK)), 'backup alterado é recusado');
+} finally { rmSync(pastaBk, { recursive: true, force: true }); }
 
 /* ---------- navegador ---------- */
 const b = await chromium.launch(process.env.CHROME ? { executablePath: process.env.CHROME } : {});

@@ -1,5 +1,5 @@
--- Nexus Safe · banco D1 (SQLite). Rodar uma vez em banco novo:
---   npx wrangler d1 execute nexus-safe --local --file servidor/esquema.sql
+-- Nexus Safe · banco D1 (SQLite), migração 1: as tabelas.
+-- Aplicar todas as migrações: npx wrangler d1 migrations apply nexus-safe --local   (ou --remote)
 -- Datas em texto ISO 8601 (UTC). Ficha, rascunho e token do link ficam cifrados (AES-GCM) pelo Worker.
 
 CREATE TABLE IF NOT EXISTS agencias (

@@ -4,7 +4,8 @@ Site estático publicado no GitHub Pages a partir da branch `main`
 (https://cesteduardo.github.io/nexus-safe/). Cada push na `main` vai direto para o ar.
 
 O mesmo site também roda como servidor (Cloudflare Worker + D1, ainda não publicado): `servidor/index.js`,
-`servidor/esquema.sql`, `servidor/semente.mjs` e `wrangler.jsonc`. O `crm/modo.js` diz em qual modo a página está.
+`servidor/migracoes/` (tabelas), `servidor/semente.mjs` (dados de teste), `servidor/conta.mjs` (agência e contas de verdade),
+`servidor/backup.mjs` (backup cifrado) e `wrangler.jsonc`. O `crm/modo.js` diz em qual modo a página está.
 Detalhes, passo a passo e o que falta em `SEGURANCA.md`.
 
 ## O que é

@@ -184,7 +184,7 @@ async function estadoPara(env, u) {
   const ag = await agenciaDados(env, agId);
   const medico = u.tipo === 'clinica' && u.papel === 'medico';
   const filtro = u.tipo === 'rh' ? 'a.empresa_id = ?2' : '?2 = ?2';
-  const linhas = (await env.DB.prepare(`SELECT a.id, a.etapa, a.dados, a.atualizado_em, f.ficha, f.enviado_em, l.token_cifrado
+  const linhas = (await env.DB.prepare(`SELECT a.id, a.etapa, a.dados, a.atualizado_em, f.ficha, f.enviado_em, f.assinatura_ip, l.token_cifrado
       FROM atendimentos a
       LEFT JOIN fichas f ON f.atendimento_id = a.id
       LEFT JOIN links l ON l.atendimento_id = a.id AND l.revogado = 0 AND l.usado_em IS NULL AND l.expira_em > ?3
@@ -197,7 +197,10 @@ async function estadoPara(env, u) {
     c.ficha = null; c.rascunho = null;
     if (l.token_cifrado && (c.etapa === 'enviado' || c.etapa === 'preenchendo')) c.token = (await decifrar(env, l.token_cifrado, 'token:' + l.id)).t;
     /* a ficha só sai para a equipe médica, e só enquanto o exame está em andamento */
-    if (medico && l.ficha && ['recebida', 'agendado', 'atendido'].includes(c.etapa)) c.ficha = await decifrar(env, l.ficha, 'ficha:' + l.id);
+    if (medico && l.ficha && ['recebida', 'agendado', 'atendido'].includes(c.etapa)) {
+      c.ficha = await decifrar(env, l.ficha, 'ficha:' + l.id);
+      c.fichaAssinatura = { em: l.enviado_em, ip: l.assinatura_ip || '' };
+    }
     else if (medico && l.enviado_em) c.fichaArquivada = l.enviado_em;
     if (u.tipo === 'rh') delete c.historico;
     candidatos.push(c);
@@ -385,7 +388,9 @@ async function ficha(env, req, token, parte) {
     const { id, etapa, token: _t, ficha: _f, rascunho: _r, ...resto } = c; resto.historico = hist;
     const res = await env.DB.batch([
       env.DB.prepare('UPDATE links SET usado_em = ?1 WHERE token_hash = ?2 AND usado_em IS NULL').bind(agora, l.token_hash),
-      env.DB.prepare('INSERT INTO fichas (atendimento_id, ficha, rascunho, enviado_em, atualizado_em) VALUES (?1, ?2, NULL, ?3, ?3) ON CONFLICT(atendimento_id) DO UPDATE SET ficha = excluded.ficha, rascunho = NULL, enviado_em = excluded.enviado_em, atualizado_em = excluded.atualizado_em').bind(c.id, cifrada, agora),
+      /* assinatura: data e hora (enviado_em), IP e navegador de quem enviou */
+      env.DB.prepare('INSERT INTO fichas (atendimento_id, ficha, rascunho, enviado_em, atualizado_em, assinatura_ip, assinatura_agente) VALUES (?1, ?2, NULL, ?3, ?3, ?4, ?5) ON CONFLICT(atendimento_id) DO UPDATE SET ficha = excluded.ficha, rascunho = NULL, enviado_em = excluded.enviado_em, atualizado_em = excluded.atualizado_em, assinatura_ip = excluded.assinatura_ip, assinatura_agente = excluded.assinatura_agente')
+        .bind(c.id, cifrada, agora, ip(req), R.texto(req.headers.get('user-agent'), 300)),
       env.DB.prepare("UPDATE atendimentos SET etapa = 'recebida', dados = ?1, atualizado_em = ?2 WHERE id = ?3 AND etapa IN ('enviado', 'preenchendo')").bind(JSON.stringify(resto), agora, c.id)
     ]);
     if (res[0].meta.changes === 0) return erro('Esta ficha já foi enviada.', 409);

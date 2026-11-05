@@ -14,7 +14,8 @@
       "binding": "DB",
       "database_name": "nexus-safe",
       // trocar pelo id que o "npx wrangler d1 create nexus-safe" devolver
-      "database_id": "00000000-0000-0000-0000-000000000000"
+      "database_id": "00000000-0000-0000-0000-000000000000",
+      "migrations_dir": "servidor/migracoes"
     }
   ],
   "observability": { "enabled": true }

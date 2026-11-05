@@ -1,60 +1,25 @@
 /* Nexus Safe · dados iniciais do banco, tirados da própria demonstração (crm/dados.js e crm/contas.js).
    Gera servidor/.semente.sql (fora do Git): agências, empresas, funções, atendimentos com a ficha já cifrada,
    automações, mensagens, chamados e as contas com senha em PBKDF2.
+   É só para teste: os dados são fictícios. Agência e contas de verdade entram pelo servidor/conta.mjs.
 
    Uso:   node servidor/semente.mjs                 (senha das contas: 123, só para teste local)
           NEXUS_SENHA='...' node servidor/semente.mjs
    Depois: npx wrangler d1 execute nexus-safe --local --file servidor/.semente.sql
 
    A chave das fichas vem de FICHA_CHAVE (variável de ambiente) ou do arquivo .dev.vars. */
-import { readFileSync, writeFileSync } from 'node:fs';
-import { fileURLToPath } from 'node:url';
-import { dirname, join } from 'node:path';
-import vm from 'node:vm';
-import { webcrypto as crypto } from 'node:crypto';
+import { writeFileSync } from 'node:fs';
+import { join } from 'node:path';
+import { RAIZ, carregarScripts, b64url, aleatorio, sha256, hashSenha, cifrar, insercao } from './ferramentas.mjs';
 
-const RAIZ = join(dirname(fileURLToPath(import.meta.url)), '..');
 const LINK_DIAS = 7;
-
-/* ---------- carrega os scripts do navegador num contexto isolado ---------- */
-const ctx = { console, Date, Math, JSON, URL, URLSearchParams, setTimeout, clearTimeout };
-ctx.window = ctx; ctx.globalThis = ctx;
-vm.createContext(ctx);
-for (const f of ['crm/regras.js', 'crm/dados.js', 'crm/contas.js']) vm.runInContext(readFileSync(join(RAIZ, f), 'utf8'), ctx, { filename: f });
+const ctx = carregarScripts();
 const demo = ctx.Nexus.restaurar();
 const contas = ctx.Contas.restaurar();
 const USUARIOS = ctx.Contas.USUARIOS;
 
-/* ---------- chave e cripto (mesmo formato do servidor/index.js) ---------- */
-function lerChave() {
-  if (process.env.FICHA_CHAVE) return process.env.FICHA_CHAVE.trim();
-  try { const m = readFileSync(join(RAIZ, '.dev.vars'), 'utf8').match(/^FICHA_CHAVE=(.+)$/m); if (m) return m[1].trim(); } catch { /* sem arquivo */ }
-  throw new Error('Defina FICHA_CHAVE ou crie o .dev.vars (veja SEGURANCA.md).');
-}
-const enc = new TextEncoder();
-const b64 = buf => Buffer.from(buf).toString('base64');
-const b64url = buf => b64(buf).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
-const aleatorio = n => crypto.getRandomValues(new Uint8Array(n));
-const sha256 = async txt => b64url(await crypto.subtle.digest('SHA-256', enc.encode(txt)));
-const bruta = Buffer.from(lerChave(), 'base64');
-if (bruta.length !== 32) throw new Error('FICHA_CHAVE precisa ter 32 bytes em base64.');
-const chave = await crypto.subtle.importKey('raw', bruta, 'AES-GCM', false, ['encrypt']);
-async function cifrar(obj, ad) {
-  const iv = aleatorio(12);
-  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: enc.encode(ad) }, chave, enc.encode(JSON.stringify(obj)));
-  return `v1:${b64(iv)}:${b64(ct)}`;
-}
-async function hashSenha(senha, iter = 100000) {
-  const sal = aleatorio(16);
-  const k = await crypto.subtle.importKey('raw', enc.encode(senha), 'PBKDF2', false, ['deriveBits']);
-  const bits = await crypto.subtle.deriveBits({ name: 'PBKDF2', hash: 'SHA-256', salt: sal, iterations: iter }, k, 256);
-  return `pbkdf2$${iter}$${b64(sal)}$${b64(bits)}`;
-}
-
-/* ---------- SQL ---------- */
-const q = v => v === null || v === undefined ? 'NULL' : typeof v === 'number' ? String(v) : `'${String(v).replace(/'/g, "''")}'`;
 const linhas = [];
-const inserir = (tabela, o) => linhas.push(`INSERT INTO ${tabela} (${Object.keys(o).join(', ')}) VALUES (${Object.values(o).map(q).join(', ')});`);
+const inserir = (tabela, o) => linhas.push(insercao(tabela, o));
 const agora = new Date().toISOString();
 const AG = 'a1'; /* a agência com o CRM ao vivo na demonstração */
 

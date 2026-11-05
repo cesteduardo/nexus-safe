@@ -1,0 +1,45 @@
+{
+  "agencia": {
+    "id": "piloto",
+    "nome": "Clínica Exemplo Ocupacional (fictícia)",
+    "cidade": "Mirassol, SP",
+    "contato": "Dr. Henrique Prado",
+    "tel": "(17) 99300-7070",
+    "situacao": "implantacao",
+    "servicos": ["suporte", "plataforma"],
+    "endereco": "Avenida das Flores, 900, Centro (endereço fictício)",
+    "horario": "Segunda a sexta, das 7h às 16h. Exames de sangue até as 9h.",
+    "pcmso": { "coordenador": "Dr. Henrique Prado", "crm": "CRM-SP 765432", "aprovadoEm": "2026-10-01" }
+  },
+  "empresas": [
+    {
+      "id": "piloto-ceramica",
+      "nome": "Cerâmica Pôr do Sol (fictícia)",
+      "cnpj": "99.887.766/0001-05",
+      "contato": "Luciana (RH)",
+      "tel": "(17) 99200-7171",
+      "grauRisco": 3,
+      "funcoes": [
+        { "id": "piloto-forneiro", "nome": "Forneiro", "setor": "Forno", "riscos": ["calor", "poeira", "ruido"], "exames": ["clinico", "audiometria", "espirometria", "raiox"], "periodicidade": 12 },
+        { "id": "piloto-auxiliar", "nome": "Auxiliar administrativo", "setor": "Escritório", "riscos": ["ergonomico"], "exames": ["clinico"], "periodicidade": 24 }
+      ]
+    },
+    {
+      "id": "piloto-laticinio",
+      "nome": "Laticínio Vale Verde (fictício)",
+      "cnpj": "88.776.655/0001-05",
+      "contato": "Rodrigo (DP)",
+      "tel": "(17) 99200-7272",
+      "grauRisco": 3,
+      "funcoes": [
+        { "id": "piloto-ordenha", "nome": "Operador de envase", "setor": "Envase", "riscos": ["alimentos", "ruido"], "exames": ["clinico", "audiometria", "hemograma", "parasitologico"], "periodicidade": 12 }
+      ]
+    }
+  ],
+  "usuarios": [
+    { "login": "recepcao.piloto", "nome": "Recepção Exemplo", "tipo": "clinica", "papel": "recepcao" },
+    { "login": "dr.henrique", "nome": "Dr. Henrique Prado", "tipo": "clinica", "papel": "medico", "crm": "CRM-SP 765432" },
+    { "login": "rh.ceramica", "nome": "Luciana (RH)", "tipo": "rh", "empresa": "piloto-ceramica" },
+    { "login": "dp.laticinio", "nome": "Rodrigo (DP)", "tipo": "rh", "empresa": "piloto-laticinio" }
+  ]
+}

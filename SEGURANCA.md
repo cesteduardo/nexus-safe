@@ -23,6 +23,7 @@ O site tem dois modos, com as mesmas telas e as mesmas regras (`crm/regras.js`):
 - O token tem 32 bytes aleatórios. O banco guarda o hash, mais uma cópia cifrada para a recepção poder reenviar o mesmo link.
 - O link expira em 7 dias, trava depois do envio e tem limite de acessos por IP.
 - O rascunho é salvo no servidor a cada campo alterado, para o candidato continuar de onde parou.
+- No envio, o servidor grava a assinatura: data e hora do relógio dele, IP e navegador de quem enviou. A equipe médica vê a data e o IP junto da ficha.
 
 **Ficha cifrada.** A ficha e o rascunho são gravados com AES-GCM. A chave `FICHA_CHAVE` fica fora do código e do banco. Cada registro é amarrado ao próprio atendimento, então uma ficha copiada para outro atendimento não abre.
 
@@ -37,7 +38,7 @@ Tudo isso é conferido pelo `npm run test:servidor` (veja abaixo).
 ```
 npm install
 node -e "console.log('FICHA_CHAVE=' + require('crypto').randomBytes(32).toString('base64'))" > .dev.vars
-npx wrangler d1 execute nexus-safe --local --file servidor/esquema.sql
+npx wrangler d1 migrations apply nexus-safe --local
 node servidor/semente.mjs
 npx wrangler d1 execute nexus-safe --local --file servidor/.semente.sql
 npx wrangler dev --port 8790 --ip 127.0.0.1
@@ -59,20 +60,69 @@ Ainda não foi publicado. Para subir:
 
 ```
 npx wrangler d1 create nexus-safe          # copie o database_id para o wrangler.jsonc
-npx wrangler d1 execute nexus-safe --remote --file servidor/esquema.sql
+npx wrangler d1 migrations apply nexus-safe --remote
 node -e "console.log(require('crypto').randomBytes(32).toString('base64'))" | npx wrangler secret put FICHA_CHAVE
 npx wrangler deploy
 ```
 
 Guarde a `FICHA_CHAVE` num lugar seguro fora do computador. Sem ela, nenhuma ficha gravada volta a abrir.
 
+Mudança de tabela depois de publicado: crie `servidor/migracoes/000N_o-que-muda.sql` e rode `npx wrangler d1 migrations apply nexus-safe --remote`. Nunca edite uma migração que já foi aplicada.
+
+## Cadastrar a agência piloto e as contas
+
+Copie `servidor/piloto.exemplo.json`, troque pelos dados reais da agência, das empresas, das funções (riscos e exames do protocolo do PCMSO) e das pessoas, e rode:
+
+```
+node servidor/conta.mjs cadastro piloto.json --remote
+```
+
+- O script confere o arquivo inteiro antes de gravar: CNPJ com dígito, telefone, CRM, riscos e exames que o sistema conhece, exame clínico em todo protocolo (NR-7). Com qualquer erro, nada é gravado.
+- Cada conta nova ganha uma senha aleatória de 16 caracteres, que aparece **só nessa tela**. Entregue cada uma à pessoa por um caminho seguro e não guarde em arquivo.
+- Rodar o mesmo arquivo de novo atualiza nomes, empresas e protocolos, mas não troca senha. Uma conta que já existe não muda de agência nem de empresa.
+- Guarde o JSON da agência fora do Git: ele tem nome, CNPJ e telefone de cliente.
+
+Senha esquecida, saída de funcionário e volta:
+
+```
+node servidor/conta.mjs senha <login> --remote       # senha nova; as sessões abertas caem
+node servidor/conta.mjs desativar <login> --remote   # não entra mais
+node servidor/conta.mjs reativar <login> --remote
+```
+
+Tudo isso fica na tabela `auditoria`.
+
+## Backup
+
+```
+read -sx NEXUS_BACKUP_SENHA                       # no fish; no bash: read -rs NEXUS_BACKUP_SENHA; export NEXUS_BACKUP_SENHA
+node servidor/backup.mjs fazer --remote            # grava ~/Backups/Nexus Safe/nexus-safe-AAAAMMDD-HHMM.nsbak
+node servidor/backup.mjs testar <arquivo.nsbak>    # restaura num banco descartável e confere tabela por tabela
+```
+
+- O arquivo sai cifrado com AES-256-GCM, com a chave tirada da senha de backup (scrypt). Senha errada ou arquivo alterado: não abre.
+- Dentro dele, as fichas continuam cifradas também com a `FICHA_CHAVE`. Para restaurar uma ficha são precisas **as duas**: a senha do backup e a `FICHA_CHAVE`. Guarde as duas, separadas uma da outra e longe dos backups.
+- O cabeçalho do arquivo mostra, sem cifra, a data e quantos registros cada tabela tinha. Nenhum nome, nenhuma resposta.
+- Restauração de verdade: `node servidor/backup.mjs abrir <arquivo.nsbak> banco.sql`, depois `npx wrangler d1 execute nexus-safe --remote --file banco.sql` num banco novo, e apague o `banco.sql` em seguida.
+
+Para rodar todo dia, um temporizador do systemd do próprio usuário (comandos para você rodar; o script não mexe no sistema). O caminho do Node é o desta máquina (`which node`):
+
+```
+mkdir -p ~/.config/systemd/user
+printf '[Service]\nType=oneshot\nWorkingDirectory=%h/www/Nexus Safe\nEnvironmentFile=%h/.config/nexus-safe-backup.env\nEnvironment=PATH=%h/.local/lib/node/bin:/usr/bin:/bin\nExecStart=%h/.local/lib/node/bin/node servidor/backup.mjs fazer --remote\n' > ~/.config/systemd/user/nexus-backup.service
+printf '[Timer]\nOnCalendar=*-*-* 03:00\nPersistent=true\n[Install]\nWantedBy=timers.target\n' > ~/.config/systemd/user/nexus-backup.timer
+printf 'NEXUS_BACKUP_SENHA=troque-por-uma-senha-longa\n' > ~/.config/nexus-safe-backup.env && chmod 600 ~/.config/nexus-safe-backup.env
+systemctl --user daemon-reload && systemctl --user enable --now nexus-backup.timer
+```
+
+Isso grava no computador. Para ficar **fora** dele também, a pasta `~/Backups/Nexus Safe` precisa ir para um segundo lugar (HD externo, outro serviço de nuvem). Essa escolha é sua.
+
 ## O que ainda falta antes de dado real
 
-1. **Contas reais.** A `semente.mjs` só serve para teste: ela usa os dados fictícios. Falta uma forma de cadastrar a agência piloto, as empresas, as funções e as contas com senha de cada pessoa.
-2. **Backup diário cifrado fora da Cloudflare**, com teste de restauração (o plano promete). O D1 tem o Time Travel de 30 dias, mas isso não substitui o backup.
+1. **Onde o backup fica fora do computador** e quem testa a restauração todo mês (o script já faz backup e teste; falta escolher o segundo lugar e ligar o temporizador).
+2. **A pessoa trocar a própria senha** pela tela. Hoje a troca é pelo `conta.mjs senha`, feita pela Nexus Safe.
 3. **Guarda de 20 anos (NR-7).** Nada é apagado hoje, mas falta a regra de arquivamento e de quem acessa a ficha arquivada depois do ASO.
 4. **WhatsApp de verdade.** As mensagens só entram na fila da tabela `mensagens`. Nada é enviado.
-5. **Assinatura da ficha com IP.** O plano pede data, hora e IP no fechamento. Hoje o servidor grava a data do envio, mas não o IP junto da ficha.
-6. **Troca da chave das fichas** (rotação), sem perder as fichas antigas.
-7. **Domínio próprio e HTTPS**: a Cloudflare dá o HTTPS, mas o domínio ainda não existe.
-8. Revisão do texto da LGPD e do questionário pelo médico do trabalho da agência piloto (decisão em aberto nº 3 do plano).
+5. **Troca da chave das fichas** (rotação), sem perder as fichas antigas.
+6. **Domínio próprio e HTTPS**: a Cloudflare dá o HTTPS, mas o domínio ainda não existe.
+7. Revisão do texto da LGPD e do questionário pelo médico do trabalho da agência piloto (decisão em aberto nº 3 do plano).
