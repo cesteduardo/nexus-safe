@@ -140,6 +140,12 @@ window.Nexus.pronto(function () {
       return '<h1>Quase pronto</h1><p>Confira e assine para enviar.</p>' +
         '<label class="check"><input type="checkbox" name="declaro" required>Declaro que as informações desta ficha são verdadeiras.</label>' +
         '<label class="check"><input type="checkbox" name="lgpd" required>Autorizo a ' + esc(d.clinica) + ' a usar estas informações de saúde só para o meu exame ocupacional, com acesso restrito à equipe médica (LGPD).</label>' +
+        '<details class="termo"><summary>Ler termo completo</summary><div class="termo__texto">' +
+          '<p><b>Finalidade.</b> As informações de saúde desta ficha servem só para a avaliação do seu exame ocupacional (admissional, periódico, retorno, mudança de riscos ou demissional) e para a emissão do ASO.</p>' +
+          '<p><b>Quem acessa.</b> Somente a equipe médica da ' + esc(d.clinica) + '. A empresa que contratou o exame recebe apenas o resultado do ASO (apto ou inapto), nunca as suas respostas.</p>' +
+          '<p><b>Por quanto tempo.</b> A ficha fica guardada pelo prazo que a norma de saúde ocupacional exige para o prontuário.</p>' +
+          '<p><b>Seus direitos.</b> Você pode pedir à clínica uma cópia, a correção ou a explicação sobre o uso dos seus dados, e retirar esta autorização quando quiser, nos termos da LGPD (Lei 13.709/2018).</p>' +
+          '</div></details>' +
         '<div class="campo">Sua assinatura<div class="tela"><canvas data-assinatura aria-label="Assine com o dedo"></canvas><span></span><small>Assine com o dedo</small></div><button type="button" class="link-texto" data-limpar>Limpar assinatura</button></div>';
     }
   };

@@ -40,7 +40,7 @@ e por último o texto e as imagens do plano.
 - [x] Ficha: máscara de telefone no contato de emergência, igual à do cadastro no CRM.
 - [x] Formulários no padrão GR Brands 2 (`crm/campos.js`): nome só com letras, telefone sem +55 e com DDD 55 preservado, CPF com dígito verificador, limpeza ao digitar e ao colar, erro junto ao campo e foco no primeiro inválido.
 - [x] Painel do atendimento: prender o foco do teclado dentro do painel aberto e devolver o foco ao cartão ao fechar (acessibilidade).
-- [ ] Ficha: texto completo do consentimento LGPD num "ler termo completo" que abre e fecha, sem sair da ficha.
+- [x] Ficha: texto completo do consentimento LGPD num "ler termo completo" que abre e fecha, sem sair da ficha.
 
 ## A recepção trabalha pelo quadro
 - [x] Faixa "Para fazer agora" no topo do quadro: cobrar a ficha (link enviado antes de hoje), agendar exame, exames até amanhã, emitir ASO. Cada uma filtra o quadro. As 6 colunas cabem na tela a partir de 1200 px.

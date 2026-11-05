@@ -198,6 +198,11 @@ try {
   const sns = await m.locator('[data-sn^="e_"]').count();
   for (let i = 0; i < sns; i++) await m.locator('[data-sn^="e_"]').nth(i).locator('label:has-text("Não")').click();
   await m.click('button[type=submit]');
+  ok(!(await m.locator('.termo__texto').isVisible()), 'termo LGPD começa fechado');
+  await m.click('.termo summary');
+  ok(/Seus direitos/.test(await m.locator('.termo__texto').innerText()) && /ficha\.html/.test(m.url()), 'termo LGPD abre sem sair da ficha');
+  await m.click('.termo summary');
+  ok(!(await m.locator('.termo__texto').isVisible()), 'termo LGPD fecha de novo');
   await m.check('[name=declaro]'); await m.check('[name=lgpd]');
   const bx = await m.locator('[data-assinatura]').boundingBox();
   await m.mouse.move(bx.x + 30, bx.y + 100); await m.mouse.down();
