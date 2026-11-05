@@ -155,6 +155,22 @@
     var k = { id: 'k' + Date.now().toString(36), agenciaId: dados.agenciaId, assunto: dados.assunto, descricao: dados.descricao || '', categoria: dados.categoria, prioridade: dados.prioridade || 'normal', canal: dados.canal || 'Portal', situacao: 'aberto', abertoEm: new Date().toISOString(), por: dados.por, responsavel: '', primeiraRespostaEm: '', resolvidoEm: '', mensagens: [], avaliacao: null };
     d.chamados.unshift(k); salvar(); return k;
   }
+  var SITUACOES_AG = ['ativa', 'implantacao', 'teste'];
+  /* Agência nova (só no modelo: no servidor, agências reais entram por servidor/conta.mjs). Devolve { erro } ou { agencia }. */
+  function criarAgencia(dados) {
+    var nome = String(dados.nome || '').trim(), cidade = String(dados.cidade || '').trim(), contato = String(dados.contato || '').trim(), tel = String(dados.tel || '').trim();
+    var servicos = (dados.servicos || []).filter(function (x) { return SERVICOS[x]; });
+    if (nome.length < 3) return { erro: 'Informe o nome da agência.' };
+    if (!cidade) return { erro: 'Informe a cidade.' };
+    if (contato.length < 2) return { erro: 'Informe o nome do contato.' };
+    if (typeof window !== 'undefined' && window.Campos && !window.Campos.telValido(tel)) return { erro: 'Telefone do contato inválido.' };
+    if (!servicos.length) return { erro: 'Escolha ao menos um serviço.' };
+    if (SITUACOES_AG.indexOf(dados.situacao) < 0) return { erro: 'Escolha a situação.' };
+    var d = carregar();
+    if (d.agencias.some(function (a) { return a.nome.toLowerCase() === nome.toLowerCase(); })) return { erro: 'Já existe uma agência com esse nome.' };
+    var a = { id: 'a' + Date.now().toString(36), nome: nome, cidade: cidade, contato: contato, tel: tel, desde: new Date().toISOString(), situacao: dados.situacao, servicos: servicos, usuarios: 1, uso: { fichas: 0, asos: 0, mensagens: 0 } };
+    d.agencias.push(a); salvar(); return { agencia: a };
+  }
   /* lado: 'nexus' (suporte) ou 'clinica'. acao: 'responder' | 'pedir' (aguardando a clínica) | 'resolver' | 'reabrir' */
   function registrar(id, lado, autor, txt, acao) {
     var k = chamado(id); if (!k) return null;
@@ -246,7 +262,7 @@
     PERFIS: PERFIS, SERVICOS: SERVICOS, CATEGORIAS: CATEGORIAS, SITUACOES: SITUACOES, PRIORIDADES: PRIORIDADES, CANAIS: CANAIS, EQUIPE: EQUIPE,
     lerPerfil: lerPerfil, gravarPerfil: gravarPerfil, USUARIOS: USUARIOS, entrar: entrar, sair: sair, exigir: exigir, destino: destino,
     carregar: carregar, salvar: salvar, restaurar: restaurar, recarregar: recarregar, agencia: agencia, chamado: chamado, uso: uso,
-    abrirChamado: abrirChamado, registrar: registrar, escalonar: escalonar, atribuir: atribuir, NIVEL2: NIVEL2, avaliar: avaliar, prazo: prazo, duracao: duracao, indicadores: indicadores,
+    abrirChamado: abrirChamado, criarAgencia: criarAgencia, registrar: registrar, escalonar: escalonar, atribuir: atribuir, NIVEL2: NIVEL2, avaliar: avaliar, prazo: prazo, duracao: duracao, indicadores: indicadores,
     chamadoHtml: chamadoHtml, esc: esc, dataHora: dataHora, usar: usar
   };
 

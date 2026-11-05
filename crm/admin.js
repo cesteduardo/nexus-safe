@@ -37,7 +37,7 @@
       [tot.mensagens, 'Mensagens de WhatsApp', 'Enviadas pelas automações no mês']
     ];
     var h = '<div class="cab"><div><h1>Agências clientes</h1><p>O que cada agência contratou, como está usando e o que está pendente no suporte.</p></div>' +
-      '<div class="cab__acoes"><button class="botao" type="button" data-novo-chamado>+ Novo chamado</button></div></div>';
+      '<div class="cab__acoes">' + (N.SERVIDOR ? '' : '<button class="botao botao--claro" type="button" data-nova-agencia>+ Nova agência</button>') + '<button class="botao" type="button" data-novo-chamado>+ Novo chamado</button></div></div>';
     h += '<div class="agora agora--fixa">' + resumo.map(function (r) { return '<div class="agora__item"><b>' + r[0] + '</b><span>' + esc(r[1]) + '<small>' + esc(r[2]) + '</small></span></div>'; }).join('') + '</div>';
     h += '<div class="rolagem rolagem--cartoes"><table class="tabela tabela--cartoes"><thead><tr><th>Agência</th><th>Serviços</th><th>Situação</th><th>Uso no mês</th><th>Chamados</th></tr></thead><tbody>' +
       d.agencias.map(function (a) {
@@ -125,6 +125,7 @@
   document.addEventListener('click', function (ev) {
     var t = ev.target.closest('button, a, tr[data-ir], [data-veu]'); if (!t) return;
     if (t.matches('tr[data-ir]') && !ev.target.closest('a')) location.hash = t.dataset.ir;
+    else if (t.matches('[data-nova-agencia]')) { var f = $('[data-form-agencia]'); f.reset(); f.querySelector('[data-erro-agencia]').textContent = ''; $('[data-modal-agencia]').showModal(); }
     else if (t.matches('[data-novo-chamado]')) novoChamado(t.dataset.novoChamado);
     else if (t.matches('[data-fechar], [data-veu]')) fecharPainel();
     else if (t.matches('[data-filtro-chamado]')) { filtroChamados = t.dataset.filtroChamado; renderChamados(); }
@@ -150,6 +151,16 @@
     var fd = new FormData(ev.target);
     C.abrirChamado({ agenciaId: fd.get('agenciaId'), assunto: fd.get('assunto').trim(), descricao: fd.get('descricao').trim(), categoria: fd.get('categoria'), prioridade: fd.get('prioridade'), canal: fd.get('canal'), por: 'Aberto pela Nexus Safe' });
     toast('Chamado aberto'); redesenhar();
+  });
+
+  $('[data-form-agencia]').addEventListener('submit', function (ev) {
+    if (ev.submitter && ev.submitter.value === 'cancelar') return;
+    ev.preventDefault();
+    var f = ev.target, erro = f.querySelector('[data-erro-agencia]');
+    if (window.Campos.validar(f).length) { erro.textContent = ''; return; }
+    var fd = new FormData(f), r = C.criarAgencia({ nome: fd.get('nome'), cidade: fd.get('cidade'), contato: fd.get('contato'), tel: fd.get('tel'), situacao: fd.get('situacao'), servicos: fd.getAll('servicos') });
+    if (r.erro) { erro.textContent = r.erro; return; }
+    $('[data-modal-agencia]').close(); toast('Agência cadastrada'); redesenhar();
   });
 
   document.addEventListener('keydown', function (ev) { if (ev.key === 'Escape' && !painel.hidden && !document.querySelector('dialog[open]')) fecharPainel(); });

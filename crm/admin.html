@@ -58,6 +58,27 @@
   </form>
 </dialog>
 
+<dialog class="modal" data-modal-agencia>
+  <form method="dialog" data-form-agencia novalidate>
+    <h2>Nova agência</h2>
+    <label class="campo">Nome da agência<input class="entrada" name="nome" required autocomplete="off" placeholder="Ex.: Clínica Exemplo Ocupacional"></label>
+    <label class="campo">Cidade<input class="entrada" name="cidade" required autocomplete="off" placeholder="Ex.: Votuporanga, SP"></label>
+    <div class="acoes-linha">
+      <label class="campo">Contato<input class="entrada" name="contato" required autocomplete="off" data-campo="nome" placeholder="Ex.: Maria Souza"></label>
+      <label class="campo">Telefone<input class="entrada" name="tel" required inputmode="tel" data-campo="tel" placeholder="(17) 99999-9999"></label>
+    </div>
+    <fieldset class="campo" style="border:0;padding:0;margin:0"><legend>Serviços contratados</legend>
+      <div class="chips"><label><input type="checkbox" name="servicos" value="suporte" checked> Suporte de TI</label><label><input type="checkbox" name="servicos" value="automacoes"> Automações de WhatsApp</label><label><input type="checkbox" name="servicos" value="plataforma"> Plataforma Nexus Safe</label></div>
+    </fieldset>
+    <label class="campo">Situação<select class="entrada" name="situacao" required><option value="teste">Teste grátis</option><option value="implantacao">Em implantação</option><option value="ativa">Ativa</option></select></label>
+    <p class="erro-linha" data-erro-agencia role="alert" style="color:#b3261e;font-size:14px;margin:0"></p>
+    <div class="modal__acoes">
+      <button class="botao botao--claro" value="cancelar" formnovalidate>Cancelar</button>
+      <button class="botao" value="salvar">Cadastrar</button>
+    </div>
+  </form>
+</dialog>
+
 <div class="toast" data-toast role="status" aria-live="polite"></div>
 
 <script src="campos.js"></script>
