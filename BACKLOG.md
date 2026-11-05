@@ -5,7 +5,7 @@ marque com `[x]` e anote em `HISTORICO.md`. Item grande demais para uma hora: di
 subitens aqui mesmo e faça só o primeiro. Itens com **(aguarda o dono)** não se fazem sozinhos: pule.
 
 ## Correções e base
-- [ ] Ficha: salvar o rascunho a cada campo alterado (hoje só salva ao avançar de passo), para não perder nada se o candidato fechar o navegador no meio.
+- [x] Ficha: salvar o rascunho a cada campo alterado (hoje só salva ao avançar de passo), para não perder nada se o candidato fechar o navegador no meio.
 - [ ] Ficha: validar CPF do contato e data de nascimento (não aceitar data futura nem idade abaixo de 14 anos) com mensagem clara.
 - [ ] Ficha: máscara de telefone no contato de emergência, igual à do cadastro no CRM.
 - [ ] Painel do atendimento: prender o foco do teclado dentro do painel aberto e devolver o foco ao cartão ao fechar (acessibilidade).

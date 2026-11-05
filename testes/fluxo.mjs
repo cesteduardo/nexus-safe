@@ -81,6 +81,11 @@ try {
   await m.fill('[name=endereco]', 'Rua A, 1');
   await m.fill('[name=emergencia_nome]', 'Joana (mãe)');
   await m.fill('[name=emergencia_tel]', '17 99999 0000');
+  const rasc = await m.evaluate(() => {
+    const c = window.Nexus.carregar().candidatos.filter((x) => x.rascunho)[0];
+    return c && c.rascunho.ficha.pessoais;
+  });
+  ok(rasc && rasc.endereco === 'Rua A, 1' && rasc.emergencia_tel === '17 99999 0000', 'ficha salva o rascunho a cada campo, sem avançar de passo');
   await m.click('[data-sn=pcd] label:has-text("Não")');
   await m.click('button[type=submit]');
   await m.fill('[name=t0_empresa]', 'Obra X'); await m.fill('[name=t0_funcao]', 'Ajudante'); await m.fill('[name=t0_tempo]', '1 ano');

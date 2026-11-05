@@ -285,5 +285,14 @@
     var cx = t.closest('.faltando'); if (cx) cx.classList.remove('faltando');
   });
 
+  /* rascunho a cada campo alterado, para não perder nada se o navegador fechar */
+  function guardarCampo(ev) {
+    var f = raiz.querySelector('form'), nome = PASSOS[passo];
+    if (!f || nome === 'inicio' || nome === 'fim' || !f.contains(ev.target)) return;
+    try { COLETA[nome](f, true); guardarRascunho(); } catch (e) { /* segue sem salvar */ }
+  }
+  raiz.addEventListener('input', guardarCampo);
+  raiz.addEventListener('change', guardarCampo);
+
   render();
 })();
