@@ -65,7 +65,7 @@ e por último o texto e as imagens do plano.
 
 ## Servidor (antes de dado real, ver SEGURANCA.md)
 Estes mexem em `servidor/`: rode também o `npm run test:servidor`.
-- [ ] Troca de senha pela própria pessoa: rota `/api/senha` (pede a senha atual, mínimo de 12 caracteres, derruba as outras sessões, registra na auditoria) e um formulário "Trocar senha" nas três telas protegidas, ao lado do Sair. Na demonstração, o formulário avisa que a troca só vale no servidor.
+- [x] Troca de senha pela própria pessoa: rota `/api/senha` (pede a senha atual, mínimo de 12 caracteres, derruba as outras sessões, registra na auditoria) e um formulário "Trocar senha" nas três telas protegidas, ao lado do Sair. Na demonstração, o formulário avisa que a troca só vale no servidor.
 - [ ] Troca da chave das fichas (rotação): aceitar uma chave nova (`FICHA_CHAVE`) e a antiga (`FICHA_CHAVE_ANTIGA`) ao mesmo tempo, com o número da chave gravado na cifra (`v2:`), e um script `servidor/chave.mjs` que recifra fichas, rascunhos e tokens com a chave nova. Teste: ficha antiga abre depois da troca e, sem a chave antiga, continua abrindo.
 - [ ] **(aguarda o dono)** Escolher onde o backup fica fora do computador (HD externo ou outro serviço de nuvem) e ligar o backup diário das 3h (comandos do systemd no SEGURANCA.md, seção Backup). Testar a restauração uma vez por mês com `node servidor/backup.mjs testar`.
 - [ ] **(aguarda o dono)** Publicar na Cloudflare (SEGURANCA.md, seção "Publicar na Cloudflare"): `npx wrangler login`, criar o banco (`npx wrangler d1 create nexus-safe`) e pôr o `database_id` no `wrangler.jsonc`, aplicar as migrações com `--remote`, criar a `FICHA_CHAVE` com `wrangler secret put` e guardá-la fora do computador, e `npx wrangler deploy`.

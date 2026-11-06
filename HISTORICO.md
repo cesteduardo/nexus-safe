@@ -2,6 +2,7 @@
 
 Uma linha por rodada, a mais recente em cima: data e hora (America/Sao_Paulo), o que mudou, resultado do `npm test`.
 
+- 06/11/2026 06:48 · Troca de senha pela própria pessoa: rota /api/senha (senha atual, mínimo de 12 caracteres, derruba as outras sessões, auditoria) e botão "Trocar senha" nas três telas protegidas; na demonstração o formulário avisa que só vale no servidor. Teste: 137 verificações ok. Teste do servidor: as 9 verificações novas passam; neste ambiente a suíte do servidor para na linha 148 (o wrangler dev derruba a conexão depois do conta.mjs), o mesmo que acontece sem esta mudança.
 - 06/11/2026 05:43 · Revisão do texto do plano: frases longas divididas, NR-7, anamnese e HTTPS explicados, VPS e ERP trocados por termos claros. Teste: 134 verificações ok.
 - 06/11/2026 04:42 · Plano ganhou "Veja por dentro" na seção da plataforma, com 3 capturas do modelo (quadro, ficha no celular, ASO) em assets/telas/, geradas por testes/telas.mjs. Teste: 133 verificações ok.
 - 06/11/2026 03:48 · Cadastros: a clínica cria empresa (recepção) e função com riscos, protocolo do PCMSO e periodicidade (só a equipe médica), guardadas no localStorage; regras em CADASTROS de regras.js, fora de ACOES (o servidor ainda não grava). Teste do servidor: o wrangler dev derruba a conexão depois do cadastro do piloto no ambiente (55 ok antes; o mesmo acontece sem esta mudança). Teste: 132 verificações ok.

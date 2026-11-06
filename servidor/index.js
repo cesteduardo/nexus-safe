@@ -148,6 +148,25 @@ async function sair(env, req) {
   return json({ ok: true }, 200, { 'set-cookie': cookieSessao('', 0) });
 }
 
+/* Troca de senha pela própria pessoa: pede a atual, mínimo de 12 caracteres, derruba as outras sessões. */
+async function trocarSenha(env, req, u) {
+  const corpo = await lerJson(req);
+  const atual = String(corpo.atual || '').slice(0, 200), nova = String(corpo.nova || '').slice(0, 200);
+  if (!atual || !nova) return erro('Informe a senha atual e a nova.');
+  if (!(await limite(env, 'senha-u:' + u.id, 5, 900))) return erro('Muitas tentativas. Espere 15 minutos.', 429);
+  const linha = await env.DB.prepare('SELECT senha FROM usuarios WHERE id = ?1').bind(u.id).first();
+  if (!linha || !(await conferirSenha(atual, linha.senha))) { await auditar(env, u.id, 'senha-falhou', '', req); return erro('A senha atual está incorreta.', 403); }
+  if (nova.length < 12) return erro('A senha nova precisa ter pelo menos 12 caracteres.');
+  if (nova === atual) return erro('A senha nova precisa ser diferente da atual.');
+  const atualId = await sha256(lerCookie(req, COOKIE));
+  await env.DB.batch([
+    env.DB.prepare('UPDATE usuarios SET senha = ?1, falhas = 0, bloqueado_ate = NULL WHERE id = ?2').bind(await hashSenha(nova), u.id),
+    env.DB.prepare('DELETE FROM sessoes WHERE usuario_id = ?1 AND id != ?2').bind(u.id, atualId)
+  ]);
+  await auditar(env, u.id, 'senha-trocada', '', req);
+  return json({ ok: true });
+}
+
 async function auditar(env, usuarioId, acao, alvo, req) {
   await env.DB.prepare('INSERT INTO auditoria (em, usuario_id, acao, alvo, ip) VALUES (?1, ?2, ?3, ?4, ?5)')
     .bind(new Date().toISOString(), usuarioId || null, acao, alvo || '', req ? ip(req) : '').run();
@@ -421,6 +440,7 @@ async function rotaApi(req, env) {
   const u = await usuarioDaSessao(env, req);
   if (!u) return erro('Entre de novo.', 401);
   if (p === '/api/eu') return json({ perfil: perfilPublico(u) });
+  if (p === '/api/senha' && req.method === 'POST') return trocarSenha(env, req, u);
   if (p === '/api/estado' && req.method === 'GET') return json({ estado: await estadoPara(env, u) });
   if (p === '/api/acao' && req.method === 'POST') {
     if (!(await limite(env, 'acao-u:' + u.id, 240, 60))) return erro('Muitas ações seguidas. Espere um minuto.', 429);

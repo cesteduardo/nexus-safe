@@ -368,6 +368,15 @@ try {
   await page.click('[data-ver-aso]'); await page.waitForTimeout(200);
   ok(/Atestado de Saúde Ocupacional/.test(await page.locator('[data-aso-conteudo]').innerText()), 'RH abre o ASO');
   await page.click('[data-fechar-aso]');
+  await page.click('[data-trocar-senha]'); await page.waitForTimeout(150);
+  ok(await page.locator('[data-modal-senha][open]').count() === 1, 'RH abre o formulário "Trocar senha" ao lado do Sair');
+  await page.fill('[data-modal-senha] [name=atual]', '123'); await page.fill('[data-modal-senha] [name=nova]', 'curta'); await page.fill('[data-modal-senha] [name=repete]', 'curta');
+  await page.click('[data-modal-senha] button[value=salvar]'); await page.waitForTimeout(100);
+  ok(/pelo menos 12/.test(await page.locator('[data-erro-senha]').innerText()), 'troca de senha recusa senha com menos de 12 caracteres');
+  await page.fill('[data-modal-senha] [name=nova]', 'SenhaLonga12345'); await page.fill('[data-modal-senha] [name=repete]', 'SenhaLonga12345');
+  await page.click('[data-modal-senha] button[value=salvar]'); await page.waitForTimeout(100);
+  ok(/só funciona no servidor/.test(await page.locator('[data-erro-senha]').innerText()), 'na demonstração, o formulário avisa que a troca só vale no servidor');
+  await page.click('[data-modal-senha] button[value=cancelar]');
   await page.click('[data-pedir]');
   await page.fill('[data-form-pedido] [name=nome]', 'Rafael Moura');
   await page.fill('[data-form-pedido] [name=cpf]', '52998224725');

@@ -121,6 +121,19 @@ ok(anaMed.etapa === 'recebida' && anaMed.ficha.saude.pressao.detalhe === 'Contro
 ok(anaMed.fichaAssinatura && anaMed.fichaAssinatura.ip === ass.assinatura_ip, 'médico vê de que IP a ficha foi assinada');
 ok(!temSaude((await estado(recepcao)).candidatos.find(c => c.nome === 'Ana Beatriz Moreira')), 'recepção continua sem ver a ficha enviada');
 
+// troca de senha pela própria pessoa
+{
+  const a = await entrar('rh.transportes'), b = await entrar('rh.transportes');
+  const nova = 'SenhaNovaSegura42';
+  ok((await chamar('/api/senha', { cookie: a, corpo: { atual: 'errada', nova } })).status === 403, 'troca de senha com a senha atual errada é negada');
+  ok((await chamar('/api/senha', { cookie: a, corpo: { atual: '123', nova: 'curta' } })).status === 400, 'senha nova com menos de 12 caracteres é recusada');
+  ok((await chamar('/api/senha', { corpo: { atual: '123', nova } })).status === 401, 'trocar senha exige sessão');
+  ok((await chamar('/api/senha', { cookie: a, corpo: { atual: '123', nova }, origem: 'https://outro-site.example' })).status === 403, 'troca de senha vinda de outro site é barrada');
+  ok((await chamar('/api/senha', { cookie: a, corpo: { atual: '123', nova } })).status === 200, 'troca de senha com a atual certa funciona');
+  ok((await chamar('/api/estado', { cookie: a })).status === 200 && (await chamar('/api/estado', { cookie: b })).status === 401, 'a troca derruba as outras sessões e mantém a atual');
+  ok(!(await entrar('rh.transportes', '123')) && !!(await entrar('rh.transportes', nova)), 'a senha antiga para de valer e a nova entra');
+  ok(sql("SELECT COUNT(*) AS n FROM auditoria WHERE acao = 'senha-trocada'")[0].n >= 1, 'a troca de senha fica na auditoria');
+}
 // sair e bloqueio por tentativas
 await chamar('/api/sair', { cookie: admin, corpo: {} });
 ok((await chamar('/api/estado', { cookie: admin })).status === 401, 'depois de sair, a sessão não vale mais');
