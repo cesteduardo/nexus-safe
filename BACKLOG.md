@@ -61,7 +61,7 @@ e por último o texto e as imagens do plano.
 
 ## Plano (index.html)
 - [x] Seção "Veja por dentro" com 3 imagens reais do modelo (quadro com a faixa "Para fazer agora", ficha no celular, ASO), geradas por captura de tela do próprio site e salvas em `assets/telas/`.
-- [ ] Revisar o texto do plano inteiro: frases longas, repetição, termos técnicos sem explicação. Sem travessões.
+- [x] Revisar o texto do plano inteiro: frases longas, repetição, termos técnicos sem explicação. Sem travessões.
 
 ## Servidor (antes de dado real, ver SEGURANCA.md)
 Estes mexem em `servidor/`: rode também o `npm run test:servidor`.

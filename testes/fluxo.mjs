@@ -39,6 +39,8 @@ try {
   ok(await page.locator('#perfis').count() === 1 && await page.locator('#plataforma a[href="crm/entrar.html"]').count() === 1, 'plano tem a seção "Três perfis" ligando para a entrada');
   const telas = await page.evaluate(async () => { const im = [...document.querySelectorAll('#veja-por-dentro ~ .telas img')]; im.forEach(x => { x.loading = 'eager'; }); await Promise.all(im.map(x => x.complete ? 0 : new Promise(r => { x.onload = x.onerror = r; }))); return im.map(x => x.naturalWidth); });
   ok(telas.length === 3 && telas.every(w => w > 300), 'plano tem "Veja por dentro" com 3 capturas de tela que carregam');
+  const textoPlano = await page.evaluate(() => document.body.innerText);
+  ok(!textoPlano.includes('\u2014') && !/\bVPS\b|\bERP\b/.test(textoPlano), 'plano sem travessão e sem sigla técnica solta (VPS, ERP)');
 
   // login: sem conta não entra; senha errada avisa; cada usuário cai no próprio perfil
   const logar = async (pg, usuario, senha = '123') => {
