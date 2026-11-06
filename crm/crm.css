@@ -235,7 +235,17 @@ button.agora__item:active:not(:disabled) { transform: scale(.98); }
   .quadro { grid-auto-columns: minmax(0, 1fr); }
   .card .selo { white-space: normal; }
 }
+.abas-etapa { display: none; }
 @media (max-width: 600px) {
+  .abas-etapa { display: flex; gap: 6px; overflow-x: auto; margin-bottom: 10px; padding-bottom: 2px; }
+  .abas-etapa__item { flex: 0 0 auto; display: inline-flex; align-items: center; gap: 6px; min-height: 40px; padding: 6px 12px; font: inherit; font-size: 13.5px; font-weight: 600; color: var(--apoio); background: var(--branco); border: 1px solid var(--linha); border-radius: 999px; cursor: pointer; transition: border-color var(--t) var(--ease), background-color var(--t) var(--ease), transform var(--t-rapido) var(--ease); }
+  .abas-etapa__item span { font-size: 12.5px; font-weight: 500; }
+  .abas-etapa__item[aria-pressed="true"] { color: var(--tinta); background: #ECF0EE; border-color: var(--tinta); }
+  .abas-etapa__item:active { transform: scale(.97); }
+  .quadro { display: block; overflow: visible; }
+  .coluna { display: none; min-height: 0; }
+  .coluna--ativa { display: flex; }
+  .coluna__cab { display: none; }
   .agora { grid-template-columns: repeat(2, minmax(0, 1fr)); }
   .agora__item small { display: none; }
   .agora__item { min-height: 56px; }

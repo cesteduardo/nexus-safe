@@ -5,7 +5,7 @@
   var vista = $('#vista');
   var painel = $('[data-painel]');
   var veu = $('[data-veu]');
-  var filtro = { empresa: '', busca: '', tarefa: '' };
+  var filtro = { empresa: '', busca: '', tarefa: '', etapa: '' };
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function data(iso, comHora) {
@@ -97,9 +97,18 @@
         '<b>' + n + '</b><span>' + esc(t.nome) + '<small>' + esc(n ? t.dica : 'Nada pendente') + '</small></span></button>';
     }).join('') + '</div>';
     var opts = '<option value="">Todas as empresas</option>' + d.empresas.map(function (e) { return '<option value="' + e.id + '"' + (filtro.empresa === e.id ? ' selected' : '') + '>' + esc(e.nome) + '</option>'; }).join('');
+    var etapaAtiva = filtro.etapa;
+    if (!N.ETAPAS.some(function (et) { return et.id === etapaAtiva; })) {
+      var prim = N.ETAPAS.filter(function (et) { return lista.some(function (c) { return c.etapa === et.id; }); })[0];
+      etapaAtiva = (prim || N.ETAPAS[0]).id;
+    }
+    var abas = '<div class="abas-etapa" role="group" aria-label="Etapa">' + N.ETAPAS.map(function (et) {
+      var n = lista.filter(function (c) { return c.etapa === et.id; }).length;
+      return '<button type="button" class="abas-etapa__item" data-etapa="' + et.id + '" aria-pressed="' + (et.id === etapaAtiva) + '">' + esc(et.nome) + '<span>' + n + '</span></button>';
+    }).join('') + '</div>';
     var colunas = N.ETAPAS.map(function (et) {
       var itens = lista.filter(function (c) { return c.etapa === et.id; });
-      return '<section class="coluna" aria-label="' + esc(et.nome) + '"><div class="coluna__cab">' + esc(et.nome) + '<span>' + itens.length + '</span></div>' +
+      return '<section class="coluna' + (et.id === etapaAtiva ? ' coluna--ativa' : '') + '" aria-label="' + esc(et.nome) + '"><div class="coluna__cab">' + esc(et.nome) + '<span>' + itens.length + '</span></div>' +
         (itens.length ? itens.map(cardHtml).join('') : '<p class="coluna__vazia">Nenhum candidato</p>') + '</section>';
     }).join('');
     vista.innerHTML =
@@ -109,7 +118,7 @@
       (ativa ? '<p class="agora__filtro">Mostrando só: <b>' + esc(ativa.nome) + '</b> <button type="button" class="link" data-tarefa="">Ver todos</button></p>' : '') +
       '<div class="filtros"><select class="entrada" data-filtro-empresa aria-label="Filtrar por empresa">' + opts + '</select>' +
       '<input class="entrada" type="search" placeholder="Buscar por nome ou CPF" value="' + esc(filtro.busca) + '" data-filtro-busca aria-label="Buscar"></div>' +
-      '<div class="quadro">' + colunas + '</div>';
+      abas + '<div class="quadro">' + colunas + '</div>';
   }
 
   function cardHtml(c) {
@@ -434,7 +443,8 @@
     var c = id ? candidato(id) : null;
     var d = N.carregar();
 
-    if (t.matches('[data-tarefa]')) { filtro.tarefa = t.dataset.tarefa === filtro.tarefa ? '' : t.dataset.tarefa; renderQuadro(); }
+    if (t.matches('[data-etapa]')) { filtro.etapa = t.dataset.etapa; renderQuadro(); }
+    else if (t.matches('[data-tarefa]')) { filtro.tarefa = t.dataset.tarefa === filtro.tarefa ? '' : t.dataset.tarefa; renderQuadro(); }
     else if (t.matches('[data-novo]')) { $('[data-form-novo]').reset(); $('[data-form-novo]').querySelectorAll('.campo__erro').forEach(function (x) { x.remove(); }); $('[data-form-novo]').querySelectorAll('.faltando').forEach(function (x) { x.classList.remove('faltando'); }); preencherSelects(); $('[data-modal-novo]').showModal(); }
     else if (t.matches('[data-fechar], [data-veu]')) fecharPainel();
     else if (t.matches('[data-copiar]')) {

@@ -238,6 +238,17 @@ try {
   await m.goto(B + 'crm/ficha.html?t=naoexiste'); await m.waitForTimeout(150);
   ok(/Link inválido/.test(await m.locator('h1').innerText()), 'link inválido mostra aviso');
 
+  // quadro no celular: abas por etapa, uma coluna por vez, sem rolagem lateral
+  await page.goto(B + 'crm/#/quadro'); await page.waitForTimeout(250);
+  await page.setViewportSize({ width: 390, height: 844 }); await page.waitForTimeout(150);
+  ok(await page.locator('.abas-etapa__item').count() === 6 && await page.locator('.coluna:visible').count() === 1, 'quadro no celular: abas por etapa e só uma coluna visível');
+  const outra = page.locator('.abas-etapa__item[aria-pressed=false]').nth(1);
+  const nomeOutra = (await outra.getAttribute('data-etapa'));
+  await outra.click(); await page.waitForTimeout(100);
+  ok(await page.locator('.abas-etapa__item[data-etapa=' + nomeOutra + ']').getAttribute('aria-pressed') === 'true' && await page.locator('.coluna:visible').count() === 1 && await page.evaluate(() => document.documentElement.scrollWidth <= innerWidth && document.querySelector('.quadro').scrollWidth <= document.querySelector('.quadro').clientWidth), 'quadro no celular: trocar de aba mostra outra etapa sem rolagem lateral');
+  await page.setViewportSize({ width: 1280, height: 800 }); await page.waitForTimeout(150);
+  ok(await page.locator('.abas-etapa').isHidden() && await page.locator('.coluna:visible').count() === 6, 'quadro no computador: abas escondidas e 6 colunas');
+
   // perfis: administração (Nexus Safe), clínica e RH
   await page.goto(B + 'crm/entrar.html'); await page.waitForTimeout(250);
   ok(await page.locator('[data-usar]').count() === 7, 'tela de entrada lista as contas de demonstração');

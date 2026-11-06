@@ -47,7 +47,7 @@ e por último o texto e as imagens do plano.
 - [x] Guardar `etapaDesde` em cada atendimento (data em que entrou na etapa atual; subir a versão em `CHAVE` e `versao`) e mostrar no cartão "Parado há N dias" em âmbar quando passar de 2 dias na mesma etapa.
 - [x] Botão "Cobrar no WhatsApp" no próprio cartão de quem está na tarefa "Cobrar a ficha", com a mensagem "falta terminar sua ficha" pronta. Ao clicar, registra no histórico e entra na fila de mensagens.
 - [x] No painel, "Próximo passo" de quem está agendado para hoje ou amanhã: botão "Confirmar presença no WhatsApp" com o horário e o preparo.
-- [ ] No celular (até 600 px), o quadro vira uma lista por etapa com abas no topo (Link enviado, Preenchendo...), sem rolagem lateral dentro do quadro.
+- [x] No celular (até 600 px), o quadro vira uma lista por etapa com abas no topo (Link enviado, Preenchendo...), sem rolagem lateral dentro do quadro.
 - [ ] Quadro: filtro por tipo de exame (admissional, periódico, retorno, mudança de riscos, demissional).
 
 ## Mostrar o que o plano promete
