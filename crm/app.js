@@ -221,7 +221,7 @@
       if (c.ficha) {
         var al = N.alertas(c.ficha, f);
         h += '<div class="bloco"><h3>Pontos de atenção</h3>' + (al.fortes.length + al.leves.length ? '<ul class="atencao">' + al.fortes.map(function (t) { return '<li class="forte">' + esc(t) + '</li>'; }).join('') + al.leves.map(function (t) { return '<li class="leve">' + esc(t) + '</li>'; }).join('') + '</ul>' : '<p>Nenhuma resposta "sim" na ficha.</p>') + '</div>';
-        h += fichaHtml(c.ficha, f, c.fichaAssinatura);
+        h += fichaHtml(c.ficha, f, c.fichaAssinatura).replace(/<\/div>$/, '<div class="acoes-linha" style="margin-top:12px"><button class="botao botao--claro botao--pequeno" type="button" data-imprimir-ficha>Imprimir ficha</button></div></div>');
       } else {
         h += '<div class="bloco"><h3>Ficha</h3><p>' + (c.etapa === 'preenchendo' ? 'O candidato está preenchendo. O rascunho fica salvo no celular dele até o envio.' : 'A ficha ainda não foi preenchida.') + '</p></div>';
       }
@@ -503,6 +503,7 @@
     else if (t.matches('[data-cobrar]')) fazer('cobrar', t.dataset.cobrar, {}, 'Cobrança na fila de mensagens');
     else if (t.matches('[data-avisar-rh]')) fazer('avisarRh', t.dataset.avisarRh, {}, 'Aviso enviado ao RH');
     else if (t.matches('[data-convocar]')) fazer('convocar', t.dataset.convocar, {}, 'Periódico convocado. Link enviado.');
+    else if (t.matches('[data-imprimir-ficha]') && c && ehMedico()) { $('[data-aso-conteudo]').innerHTML = N.fichaImpressaHtml(c); $('[data-modal-aso]').showModal(); }
     else if (t.matches('[data-fechar-aso]')) $('[data-modal-aso]').close();
     else if (t.matches('[data-imprimir]')) window.print();
     else if (t.matches('[data-restaurar]') && !N.SERVIDOR) { if (confirm('Voltar a demonstração ao estado inicial? O que você fez aqui será apagado.')) { N.restaurar(); if (window.Contas) window.Contas.restaurar(); filtro = { empresa: '', busca: '', tarefa: '', etapa: '', tipo: '' }; location.hash = '#/quadro'; rota(); toast('Demonstração restaurada'); } }

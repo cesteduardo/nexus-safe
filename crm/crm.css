@@ -156,6 +156,7 @@ button.agora__item:active:not(:disabled) { transform: scale(.98); }
 .aso td, .aso th { border: 1px solid #bbb; padding: 6px 8px; text-align: left; vertical-align: top; font-size: 13px; }
 .aso th { background: #f2f2f2; width: 30%; font-weight: 600; }
 .aso__resultado { font-size: 16px; font-weight: 700; padding: 10px 12px; border: 2px solid #111; display: inline-block; margin: 6px 0 18px; }
+.ficha-imp h3 { font-size: 13px; margin: 12px 0 6px; color: #111; }
 .aso__assin { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-top: 40px; text-align: center; font-size: 12.5px; }
 .aso__assin div { border-top: 1px solid #111; padding-top: 6px; }
 .aso__ns { display: flex; align-items: center; justify-content: flex-end; gap: 6px; margin-top: 26px; font-size: 11.5px; color: #777; }

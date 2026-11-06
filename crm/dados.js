@@ -338,6 +338,31 @@
       '<p class="aso__ns"><svg class="ns" viewBox="15 15 70 70" aria-hidden="true"><path class="ns__a" d="M22 64V34a12 12 0 0 1 12-12h30"/><path class="ns__b" d="M78 36v30a12 12 0 0 1-12 12H36"/><rect class="ns__c" x="42" y="42" width="16" height="16" rx="4"/></svg>Emitido com Nexus Safe</p></div>';
   }
 
+  /* ---------- ficha preenchida para imprimir (só a equipe médica chama isto) ---------- */
+  function fichaImpressaHtml(c) {
+    var d = carregar(), f = funcao(c.funcaoId), e = empresa(c.empresaId), fi = c.ficha || {}, p = fi.pessoais || {};
+    var sn = function (o) { return o && o.sim ? '<b>Sim</b>' + (o.detalhe ? ': ' + esc(o.detalhe) : '') : 'Não'; };
+    var lin = function (r, v) { return '<tr><th>' + esc(r) + '</th><td>' + v + '</td></tr>'; };
+    var a = fi.acidentes || {}, hb = fi.habitos || {}, esp = fi.especificas || {}, ass = c.fichaAssinatura || {};
+    var chaves = [];
+    f.riscos.forEach(function (r) { (ESPECIFICAS[r] || []).forEach(function (q) { if (chaves.indexOf(q[0]) < 0) chaves.push(q[0]); }); });
+    var trab = fi.trabalhos && fi.trabalhos.length ? fi.trabalhos.map(function (t) { return esc(t.empresa) + ', ' + esc(t.funcao) + ', ' + esc(t.tempo) + (t.exposicoes && t.exposicoes.length ? '. Exposto a: ' + esc(t.exposicoes.join(', ')) : '') + '. EPI: ' + (t.epi === 'sim' ? 'sim' : t.epi === 'nao' ? 'não' : 'às vezes'); }).join('<br>') : 'Primeiro emprego';
+    return '<div class="aso ficha-imp"><div class="aso__cab"><div><h2>Ficha de saúde ocupacional</h2><p>' + esc(d.clinica) + ' · uso exclusivo da equipe médica</p></div><div style="text-align:right"><p>Tipo de exame</p><b>' + esc(nomeTipo(c.tipoExame)) + '</b></div></div>' +
+      '<table>' + lin('Trabalhador', esc(c.nome) + '<br>CPF ' + esc(c.cpf)) + lin('Empresa', esc(e.nome) + '<br>CNPJ ' + esc(e.cnpj)) + lin('Função e setor', esc(f.nome) + ' · ' + esc(f.setor)) + '</table>' +
+      '<h3>Dados pessoais</h3><table>' + (p.nome_social ? lin('Nome social', esc(p.nome_social)) : '') +
+      lin('Nascimento', esc(p.nascimento ? p.nascimento.split('-').reverse().join('/') : '')) + lin('Sexo', esc(p.sexo)) + lin('Estado civil', esc(p.estado_civil)) + lin('Escolaridade', esc(p.escolaridade)) + lin('Endereço', esc(p.endereco)) +
+      lin('Emergência', esc(p.emergencia_nome) + (p.emergencia_parentesco ? ' (' + esc(p.emergencia_parentesco.toLowerCase()) + ')' : '') + ' ' + esc(p.emergencia_tel)) + lin('PcD', sn(p.pcd)) + '</table>' +
+      '<h3>Trabalhos anteriores e acidentes</h3><table>' + lin('Trabalhos anteriores', trab) + lin('Acidente de trabalho', sn(a.acidente)) + lin('Afastamento INSS', sn(a.inss)) + lin('Doença ocupacional', sn(a.ocupacional)) + '</table>' +
+      '<h3>Saúde</h3><table>' + SAUDE.map(function (s) { return lin(s[1], sn((fi.saude || {})[s[0]])); }).join('') +
+      lin('Cirurgias', esc(fi.cirurgias || 'Nenhuma')) + lin('Remédios', esc(fi.remedios || 'Nenhum')) + lin('Alergias', esc(fi.alergias || 'Nenhuma')) + lin('Usa óculos ou lente', fi.oculos === 'sim' ? 'Sim' : 'Não') + '</table>' +
+      '<h3>Hábitos e família</h3><table>' + lin('Fuma', hb.fuma === 'sim' ? 'Sim' + (hb.fuma_detalhe ? ': ' + esc(hb.fuma_detalhe) : '') : hb.fuma === 'parou' ? 'Parou' : 'Não') + lin('Álcool', esc(hb.alcool)) + lin('Atividade física', hb.atividade === 'sim' ? 'Sim' : 'Não') + lin('Família', esc((fi.familia || []).join(', ') || 'Nada informado')) + '</table>' +
+      (chaves.length ? '<h3>Sobre a função</h3><table>' + chaves.map(function (k) { return lin(nomeEspecifica(k), sn(esp[k])); }).join('') + '</table>' : '') +
+      '<p style="font-size:12.5px;color:#444">O candidato declarou que as informações são verdadeiras e aceitou o tratamento dos dados de saúde pela clínica, enviando a ficha em ' + (ass.em || fi.enviadoEm ? new Date(ass.em || fi.enviadoEm).toLocaleDateString('pt-BR') : '') + '.</p>' +
+      (fi.assinatura ? '<img class="assinatura" src="' + esc(fi.assinatura) + '" alt="Assinatura do candidato" style="max-height:80px">' : '') +
+      '<p style="font-size:12px;color:#444;margin-top:10px">Dado de saúde é sensível (LGPD, art. 11). Guarde esta folha só no prontuário e não entregue à empresa.</p>' +
+      '<p class="aso__ns">Emitido com Nexus Safe</p></div>';
+  }
+
   /* ---------- guia de encaminhamento (o RH entrega ao funcionário) ---------- */
   function guiaHtml(c) {
     var d = carregar(), f = funcao(c.funcaoId), e = empresa(c.empresaId), N = window.Nexus, prep = preparos(f);
@@ -402,6 +427,6 @@
     ETAPAS: ETAPAS, RISCOS: RISCOS, RISCO_GRUPO: RISCO_GRUPO, EXAMES: EXAMES, CATALOGO: CATALOGO, TIPOS_EXAME: TIPOS_EXAME, nomeTipo: nomeTipo, preparos: preparos, somarMeses: somarMeses, SAUDE: SAUDE, ESPECIFICAS: ESPECIFICAS, EXPOSICOES: EXPOSICOES, FAMILIA: FAMILIA,
     carregar: carregar, recarregar: recarregar, salvar: salvar, restaurar: restaurar, empresa: empresa, funcao: funcao,
     alertas: alertas, nomeSaude: nomeSaude, nomeEspecifica: nomeEspecifica, enfileirar: enfileirar,
-    token: token, uid: uid, primeiroNome: primeiroNome, SERVIDOR: SERVIDOR, api: api, pronto: pronto, acao: acao, enviarFicha: enviarFicha, asoHtml: asoHtml, guiaHtml: guiaHtml, s2220Xml: s2220Xml, baixar: baixar, nomeArquivo: nomeArquivo, prazoS2220: prazoS2220, limiteDispensa: limiteDispensa
+    token: token, uid: uid, primeiroNome: primeiroNome, SERVIDOR: SERVIDOR, api: api, pronto: pronto, acao: acao, enviarFicha: enviarFicha, asoHtml: asoHtml, guiaHtml: guiaHtml, fichaImpressaHtml: fichaImpressaHtml, s2220Xml: s2220Xml, baixar: baixar, nomeArquivo: nomeArquivo, prazoS2220: prazoS2220, limiteDispensa: limiteDispensa
   };
 })();

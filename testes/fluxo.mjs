@@ -133,10 +133,15 @@ try {
   ok(await page.locator('.atencao .forte').count() > 0, 'visão médica mostra pontos de atenção');
   ok(/Ficha aberta por Dra\. Camila Rocha/.test(await page.locator('[data-painel]').innerText()), 'abrir a ficha fica registrado no histórico');
   ok(await page.evaluate(() => { const p = document.querySelector('[data-painel]'), c = p.querySelector('.painel__corpo'); return getComputedStyle(p).overflowY === 'hidden' && getComputedStyle(c).overflowY === 'auto' && parseFloat(getComputedStyle(c).borderBottomWidth) >= 18; }), 'pop-up rola só o corpo: a barra de rolagem não passa pelos cantos');
+  await page.click('[data-imprimir-ficha]'); await page.waitForTimeout(200);
+  const impr = await page.locator('[data-aso-conteudo]').innerText();
+  ok(/Ficha de saúde ocupacional/.test(impr) && /Lucas Henrique Souza/.test(impr) && /uso exclusivo da equipe médica/.test(impr), 'visão médica imprime a ficha preenchida');
+  await page.click('[data-fechar-aso]');
   await page.click('[data-fechar]'); await page.waitForTimeout(350);
   await logar(page, 'clinica');
   await page.click('text=Lucas Henrique Souza'); await page.waitForTimeout(350);
   ok(await page.locator('.atencao').count() === 0 && await page.locator('.bloco--trava').count() === 1, 'recepção não vê respostas de saúde');
+  ok(await page.locator('[data-imprimir-ficha]').count() === 0, 'recepção não tem o botão de imprimir a ficha');
   ok(await page.locator('.card .selo--vermelho', { hasText: 'atenção' }).count() === 0, 'cartão da recepção não mostra pontos de atenção');
   await page.click('[data-fechar]'); await page.waitForTimeout(350);
   await logar(page, 'medico');
