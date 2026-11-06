@@ -67,6 +67,46 @@
   </form>
 </dialog>
 
+<dialog class="modal" data-modal-empresa>
+  <form method="dialog" data-form-empresa novalidate>
+    <h2>Nova empresa cliente</h2>
+    <label class="campo">Nome da empresa<input class="entrada" name="nome" required autocomplete="off" placeholder="Ex.: Oficina Exemplo (fictícia)"></label>
+    <div class="acoes-linha">
+      <label class="campo">CNPJ<input class="entrada" name="cnpj" required inputmode="numeric" maxlength="18" placeholder="00.000.000/0000-00"></label>
+      <label class="campo">Grau de risco (NR-4)<select class="entrada" name="grauRisco"><option>1</option><option>2</option><option selected>3</option><option>4</option></select></label>
+    </div>
+    <div class="acoes-linha">
+      <label class="campo">Contato<input class="entrada" name="contato" required autocomplete="off" data-campo="nome" placeholder="Ex.: Maria Souza"></label>
+      <label class="campo">Telefone<input class="entrada" name="tel" required inputmode="tel" data-campo="tel" placeholder="(17) 99999-9999"></label>
+    </div>
+    <p class="erro-linha" data-erro-empresa role="alert" style="color:#b3261e;font-size:14px;margin:0"></p>
+    <div class="modal__acoes">
+      <button class="botao botao--claro" value="cancelar" formnovalidate>Cancelar</button>
+      <button class="botao" value="salvar">Cadastrar empresa</button>
+    </div>
+  </form>
+</dialog>
+
+<dialog class="modal" data-modal-funcao>
+  <form method="dialog" data-form-funcao novalidate>
+    <h2>Nova função</h2>
+    <p style="color:var(--apoio);font-size:14px;margin-top:-6px">Os exames vêm do protocolo do PCMSO, aprovado pelo médico coordenador, e não direto do risco.</p>
+    <label class="campo">Empresa<select class="entrada" name="empresaId" required data-sel-empresa-funcao></select></label>
+    <div class="acoes-linha">
+      <label class="campo">Função<input class="entrada" name="nome" required autocomplete="off" placeholder="Ex.: Torneiro mecânico"></label>
+      <label class="campo">Setor<input class="entrada" name="setor" required autocomplete="off" placeholder="Ex.: Usinagem"></label>
+    </div>
+    <fieldset class="campo" style="border:0;padding:0;margin:0"><legend>Riscos (PGR)</legend><div class="chips" data-riscos-opcoes></div></fieldset>
+    <fieldset class="campo" style="border:0;padding:0;margin:0"><legend>Exames do protocolo (PCMSO)</legend><div class="chips" data-exames-opcoes></div></fieldset>
+    <label class="campo">Periódico a cada<select class="entrada" name="periodicidade"><option value="6">6 meses</option><option value="12" selected>12 meses</option><option value="24">24 meses</option></select></label>
+    <p class="erro-linha" data-erro-funcao role="alert" style="color:#b3261e;font-size:14px;margin:0"></p>
+    <div class="modal__acoes">
+      <button class="botao botao--claro" value="cancelar" formnovalidate>Cancelar</button>
+      <button class="botao" value="salvar">Cadastrar função</button>
+    </div>
+  </form>
+</dialog>
+
 <dialog class="modal modal--aso" data-modal-aso>
   <div data-aso-conteudo></div>
   <div class="modal__corpo" style="padding-top:0">

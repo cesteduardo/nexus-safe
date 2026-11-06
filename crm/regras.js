@@ -178,6 +178,35 @@
   function exigirClinica(ctx) { if (ctx.usuario.tipo !== 'clinica') throw Erro('Só a clínica faz isso.', 403); }
   function exigirMedico(ctx) { if (ctx.usuario.tipo !== 'clinica' || ctx.usuario.papel !== 'medico') throw Erro('Só a equipe médica faz isso.', 403); }
 
+  /* Cadastros da clínica (só no modelo, guardados no navegador). Não ficam em ACOES: o servidor ainda não grava empresa nem função por aqui.
+     Empresa: recepção ou equipe médica. Função com riscos e protocolo: só a equipe médica, porque o exame vem do protocolo do PCMSO. */
+  var CADASTROS = {};
+  function cnpjMascara(v) { v = digitos(v).slice(0, 14); return v.replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d)/, '$1-$2'); }
+  CADASTROS.criarEmpresa = function (ctx, d) {
+    exigirClinica(ctx); d = d || {};
+    var nome = texto(d.nome, 120).replace(/ +/g, ' '), contato = texto(d.contato, 120).replace(/ +/g, ' '), cnpj = digitos(d.cnpj);
+    if (nome.length < 2 || /[<>]/.test(nome)) throw Erro('Nome da empresa inválido.');
+    if (cnpj.length !== 14 || /^(\d)\1{13}$/.test(cnpj)) throw Erro('CNPJ inválido.');
+    if (!nomeValido(contato.replace(/\s*\([^)]*\)\s*$/, ''))) throw Erro('Nome do contato inválido.');
+    if (!telValido(d.tel)) throw Erro('Telefone inválido.');
+    var grau = Number(d.grauRisco); if ([1, 2, 3, 4].indexOf(grau) < 0) throw Erro('Grau de risco inválido.');
+    if (ctx.empresas.some(function (e) { return digitos(e.cnpj) === cnpj; })) throw Erro('Já existe empresa com este CNPJ.');
+    return { empresa: { id: ctx.novoId(), nome: nome, cnpj: cnpjMascara(cnpj), contato: contato, tel: mascaraTel(d.tel), grauRisco: grau } };
+  };
+  CADASTROS.criarFuncao = function (ctx, d) {
+    exigirMedico(ctx); d = d || {};
+    var e = ctx.empresa(d.empresaId); if (!e) throw Erro('Empresa não encontrada.', 404);
+    var nome = texto(d.nome, 80).replace(/ +/g, ' '), setor = texto(d.setor, 80).replace(/ +/g, ' ');
+    if (nome.length < 2 || /[<>]/.test(nome)) throw Erro('Nome da função inválido.');
+    if (setor.length < 2 || /[<>]/.test(setor)) throw Erro('Setor inválido.');
+    var riscos = (d.riscos || []).filter(function (r, i, a) { return ctx.riscos.indexOf(r) >= 0 && a.indexOf(r) === i; });
+    var exames = (d.exames || []).filter(function (x, i, a) { return CATALOGO[x] && a.indexOf(x) === i; });
+    if (exames.indexOf('clinico') < 0) throw Erro('O protocolo precisa da avaliação clínica ocupacional.');
+    var per = Number(d.periodicidade); if ([6, 12, 24].indexOf(per) < 0) throw Erro('Periodicidade inválida.');
+    if (ctx.funcoes.some(function (f) { return f.empresaId === e.id && f.nome.toLowerCase() === nome.toLowerCase(); })) throw Erro('Esta empresa já tem esta função.');
+    return { funcao: { id: ctx.novoId(), empresaId: e.id, nome: nome, setor: setor, riscos: riscos, exames: exames, periodicidade: per } };
+  };
+
   /* Ação que cria (criar) não tem alvo; as outras mudam um atendimento que já existe. */
   var SEM_ALVO = { criar: true };
 
@@ -195,7 +224,7 @@
   }
 
   raiz.NexusRegras = {
-    ACOES: ACOES, SEM_ALVO: SEM_ALVO, TIPOS: TIPOS, Erro: Erro,
+    ACOES: ACOES, CADASTROS: CADASTROS, SEM_ALVO: SEM_ALVO, TIPOS: TIPOS, Erro: Erro,
     nomeValido: nomeValido, telValido: telValido, cpfValido: cpfValido, mascaraCpf: mascaraCpf, mascaraTel: mascaraTel, digitos: digitos, texto: texto,
     quandoExame: quandoExame, prazoS2220: prazoS2220, somarMeses: somarMeses, nomeTipo: nomeTipo, textoLink: textoLink, conferirFicha: conferirFicha, LINK_DIAS: LINK_DIAS, linkExpirado: linkExpirado
   , CATALOGO: CATALOGO

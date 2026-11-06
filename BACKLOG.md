@@ -57,7 +57,7 @@ e por último o texto e as imagens do plano.
 - [x] Agenda do dia: aba "Agenda" com os exames agendados por horário e o preparo de cada um.
 - [x] Versão para imprimir da ficha preenchida (só na visão médica), no mesmo padrão do ASO.
 - [x] Automações: botão "Rodar automações agora" que gera na fila o lembrete da véspera para quem tem exame amanhã e o aviso de periódico para ASO vencendo em 30 dias.
-- [ ] Cadastros: permitir criar empresa e função (com riscos e protocolo de exames) no modelo, guardando no localStorage.
+- [x] Cadastros: permitir criar empresa e função (com riscos e protocolo de exames) no modelo, guardando no localStorage.
 
 ## Plano (index.html)
 - [ ] Seção "Veja por dentro" com 3 imagens reais do modelo (quadro com a faixa "Para fazer agora", ficha no celular, ASO), geradas por captura de tela do próprio site e salvas em `assets/telas/`.

@@ -374,6 +374,39 @@ try {
   await logar(page, 'clinica');
   ok(await page.locator('.card', { hasText: 'Rafael Moura' }).count() === 1, 'pedido do RH chega no quadro da clínica');
 
+  // cadastros: criar empresa (recepção) e função (equipe médica)
+  await page.goto(B + 'crm/#/cadastros'); await page.waitForTimeout(250);
+  ok(await page.locator('[data-nova-funcao]').count() === 0, 'recepção não vê o botão de nova função');
+  await page.click('[data-nova-empresa]');
+  await page.click('[data-form-empresa] button[value=salvar]'); await page.waitForTimeout(150);
+  ok(await page.locator('[data-modal-empresa]').evaluate(e => e.open) && await page.locator('[data-form-empresa] .campo__erro').count() >= 3, 'empresa nova: formulário vazio não cadastra');
+  await page.fill('[data-form-empresa] [name=nome]', 'Oficina Pinheiro (fictícia)');
+  await page.fill('[data-form-empresa] [name=cnpj]', '56789012000134');
+  await page.fill('[data-form-empresa] [name=contato]', 'Sandra Pinheiro');
+  await page.fill('[data-form-empresa] [name=tel]', '17991234567');
+  ok(await page.inputValue('[data-form-empresa] [name=cnpj]') === '56.789.012/0001-34', 'CNPJ ganha máscara ao digitar');
+  await page.click('[data-form-empresa] button[value=salvar]'); await page.waitForTimeout(250);
+  ok(/Oficina Pinheiro/.test(await page.locator('#vista').innerText()), 'empresa nova aparece em Empresas e funções');
+  await page.click('[data-nova-empresa]'); await page.fill('[data-form-empresa] [name=nome]', 'Outra Oficina');
+  await page.fill('[data-form-empresa] [name=cnpj]', '56789012000134'); await page.fill('[data-form-empresa] [name=contato]', 'Ana Lima'); await page.fill('[data-form-empresa] [name=tel]', '17991234567');
+  await page.click('[data-form-empresa] button[value=salvar]'); await page.waitForTimeout(200);
+  ok(/Já existe/.test(await page.locator('[data-erro-empresa]').innerText()), 'CNPJ repetido é recusado');
+  await page.click('[data-form-empresa] button[value=cancelar]'); await page.waitForTimeout(150);
+  await logar(page, 'medico');
+  await page.goto(B + 'crm/#/cadastros'); await page.waitForTimeout(250);
+  await page.click('[data-nova-funcao]');
+  await page.selectOption('[data-form-funcao] [name=empresaId]', { label: 'Oficina Pinheiro (fictícia)' });
+  await page.fill('[data-form-funcao] [name=nome]', 'Torneiro mecânico'); await page.fill('[data-form-funcao] [name=setor]', 'Usinagem');
+  await page.check('[data-form-funcao] [name=riscos][value=ruido]'); await page.check('[data-form-funcao] [name=exames][value=audiometria]');
+  await page.selectOption('[data-form-funcao] [name=periodicidade]', '6');
+  await page.click('[data-form-funcao] button[value=salvar]'); await page.waitForTimeout(250);
+  const linhaF = await page.locator('#vista tr', { hasText: 'Torneiro mecânico' }).innerText();
+  ok(/Ruído/.test(linhaF) && /Audiometria/.test(linhaF) && /6 meses/.test(linhaF), 'função nova mostra riscos, protocolo e periodicidade');
+  await page.goto(B + 'crm/'); await page.waitForTimeout(250);
+  await page.click('[data-novo]'); await page.selectOption('[data-sel-empresa]', { label: 'Oficina Pinheiro (fictícia)' });
+  ok(await page.locator('[data-sel-funcao] option', { hasText: 'Torneiro mecânico' }).count() === 1, 'empresa e função novas aparecem no novo atendimento');
+  await page.click('[data-form-novo] button[value=cancelar]'); await page.waitForTimeout(150);
+
   // celular sem rolagem lateral
   for (const u of ['', 'crm/', 'crm/#/cadastros', 'crm/#/automacoes', 'crm/#/suporte', 'crm/#/agenda', 'crm/#/periodicos', 'crm/entrar.html', 'crm/admin.html', 'crm/admin.html#/chamados', 'crm/empresa.html?e=e1', 'marca/']) {
     const conta = /admin/.test(u) ? 'admin' : /empresa/.test(u) ? 'rh.metalurgica' : /crm\/(#|$)/.test(u) ? 'medico' : '';

@@ -337,14 +337,38 @@
   /* ---------- cadastros ---------- */
   function renderCadastros() {
     var d = N.carregar();
-    var h = '<div class="cab"><div><h1>Empresas e funções</h1><p>Cada função diz quais riscos tem e quais exames pede. É isso que monta a ficha e o ASO.</p></div></div>';
+    var h = '<div class="cab"><div><h1>Empresas e funções</h1><p>Cada função diz quais riscos tem e quais exames pede. É isso que monta a ficha e o ASO.</p></div><div class="cab__acoes"><button class="botao botao--claro" type="button" data-nova-empresa>+ Empresa</button>' + (ehMedico() ? '<button class="botao" type="button" data-nova-funcao>+ Função</button>' : '') + '</div></div>';
     h += '<div class="rolagem"><table class="tabela"><thead><tr><th>Empresa cliente</th><th>CNPJ</th><th>Contato</th><th>Candidatos</th></tr></thead><tbody>' +
       d.empresas.map(function (e) { var n = d.candidatos.filter(function (c) { return c.empresaId === e.id; }).length; return '<tr><td><b>' + esc(e.nome) + '</b></td><td>' + esc(e.cnpj) + '</td><td>' + esc(e.contato) + '<br><span style="color:var(--apoio)">' + esc(e.tel) + '</span></td><td>' + n + '</td></tr>'; }).join('') + '</tbody></table></div>';
     h += '<h2 class="titulo-secao">Funções</h2><div class="rolagem"><table class="tabela"><thead><tr><th>Função</th><th>Empresa</th><th>Riscos (PGR)</th><th>Protocolo do PCMSO</th></tr></thead><tbody>' +
       d.funcoes.map(function (f) { var e = N.empresa(f.empresaId); return '<tr><td><b>' + esc(f.nome) + '</b><br><span style="color:var(--apoio)">' + esc(f.setor) + '</span></td><td>' + esc(e.nome) + '</td><td><div class="chips">' + f.riscos.map(function (r) { return '<span class="selo selo--ambar">' + esc(N.RISCO_GRUPO[r]) + ': ' + esc(N.RISCOS[r]) + '</span>'; }).join('') + '</div></td><td><div class="chips">' + f.exames.map(function (x) { return '<span class="selo">' + esc(N.EXAMES[x]) + '</span>'; }).join('') + '</div><span style="font-size:13px;color:var(--apoio)">Periódico a cada ' + f.periodicidade + ' meses</span></td></tr>'; }).join('') + '</tbody></table></div>';
-    h += '<p class="aviso-demo" style="margin-top:16px">Como no SST: o exame não sai direto do risco. Ele vem do protocolo do PCMSO, aprovado pelo médico coordenador (' + esc(d.pcmso.coordenador) + '). Na versão real, a clínica cadastra e edita empresas, funções e protocolos aqui; no modelo, a lista é fixa.</p>';
+    h += '<p class="aviso-demo" style="margin-top:16px">Como no SST: o exame não sai direto do risco. Ele vem do protocolo do PCMSO, aprovado pelo médico coordenador (' + esc(d.pcmso.coordenador) + '). No modelo, o que você cadastra aqui fica só neste navegador. A recepção cadastra empresas; as funções, com riscos e protocolo, são da equipe médica.</p>';
     vista.innerHTML = h;
   }
+
+  /* cadastro de empresa e função (no modelo, só neste navegador) */
+  function abrirForm(sel, erro) { var f = $(sel); f.reset(); f.querySelectorAll('.campo__erro').forEach(function (x) { x.remove(); }); f.querySelector(erro).textContent = ''; return f; }
+  document.addEventListener('click', function (ev) {
+    var t = ev.target.closest('[data-nova-empresa], [data-nova-funcao]'); if (!t) return;
+    if (t.matches('[data-nova-empresa]')) { abrirForm('[data-form-empresa]', '[data-erro-empresa]'); $('[data-modal-empresa]').showModal(); return; }
+    var f = abrirForm('[data-form-funcao]', '[data-erro-funcao]'), d = N.carregar();
+    f.querySelector('[data-sel-empresa-funcao]').innerHTML = d.empresas.map(function (e) { return '<option value="' + e.id + '">' + esc(e.nome) + '</option>'; }).join('');
+    f.querySelector('[data-riscos-opcoes]').innerHTML = Object.keys(N.RISCOS).map(function (k) { return '<label><input type="checkbox" name="riscos" value="' + k + '"> ' + esc(N.RISCO_GRUPO[k]) + ': ' + esc(N.RISCOS[k]) + '</label>'; }).join('');
+    f.querySelector('[data-exames-opcoes]').innerHTML = Object.keys(N.EXAMES).map(function (k) { return '<label><input type="checkbox" name="exames" value="' + k + '"' + (k === 'clinico' ? ' checked' : '') + '> ' + esc(N.EXAMES[k]) + '</label>'; }).join('');
+    $('[data-modal-funcao]').showModal();
+  });
+  document.addEventListener('input', function (ev) { if (ev.target.matches('[data-form-empresa] [name=cnpj]')) { var v = ev.target.value.replace(/\D/g, '').slice(0, 14); ev.target.value = v.replace(/(\d{2})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1.$2').replace(/(\d{3})(\d)/, '$1/$2').replace(/(\d{4})(\d)/, '$1-$2'); } });
+  document.addEventListener('submit', function (ev) {
+    var f = ev.target, ehE = f.matches('[data-form-empresa]'), ehF = f.matches('[data-form-funcao]');
+    if (!ehE && !ehF) return;
+    if (ev.submitter && ev.submitter.value === 'cancelar') return;
+    var erro = f.querySelector(ehE ? '[data-erro-empresa]' : '[data-erro-funcao]');
+    if (window.Campos.validar(f).length) { ev.preventDefault(); erro.textContent = ''; return; }
+    var fd = new FormData(f), dados = ehE ? { nome: fd.get('nome'), cnpj: fd.get('cnpj'), contato: fd.get('contato'), tel: fd.get('tel'), grauRisco: fd.get('grauRisco') }
+      : { empresaId: fd.get('empresaId'), nome: fd.get('nome'), setor: fd.get('setor'), riscos: fd.getAll('riscos'), exames: fd.getAll('exames'), periodicidade: fd.get('periodicidade') };
+    ev.preventDefault();
+    N.cadastrar(ehE ? 'criarEmpresa' : 'criarFuncao', dados).then(function () { f.closest('dialog').close(); renderCadastros(); toast(ehE ? 'Empresa cadastrada' : 'Função cadastrada'); }, function (e) { erro.textContent = e && e.message ? e.message : 'Não foi possível cadastrar.'; });
+  });
 
   /* ---------- automações ---------- */
   /* Quem tem exame amanhã (sem lembrete) e quem tem ASO vencendo em até 30 dias (sem aviso ao RH nem convocação). */

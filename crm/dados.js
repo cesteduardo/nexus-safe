@@ -302,6 +302,19 @@
       return Promise.resolve({ novoId: r.novo ? r.novo.id : '' });
     } catch (e) { return Promise.reject(e); }
   }
+  /* Cadastro de empresa e função (regras.js, CADASTROS). Só no modelo: no servidor ainda não grava. */
+  function cadastrar(nome, dados) {
+    if (SERVIDOR) return Promise.reject(new Error('O cadastro de empresa e função ainda não existe no servidor.'));
+    try {
+      var R = window.NexusRegras, d = carregar(), ctx = contexto(d);
+      ctx.empresas = d.empresas; ctx.funcoes = d.funcoes; ctx.riscos = Object.keys(RISCOS);
+      var r = R.CADASTROS[nome](ctx, dados || {});
+      if (r.empresa) d.empresas.push(r.empresa);
+      if (r.funcao) d.funcoes.push(r.funcao);
+      salvar();
+      return Promise.resolve({ id: (r.empresa || r.funcao).id });
+    } catch (e) { return Promise.reject(e); }
+  }
   function recarregar() { memoria = null; return carregar(); }
   function restaurar() { memoria = seed(); salvar(); return memoria; }
 
@@ -427,6 +440,6 @@
     ETAPAS: ETAPAS, RISCOS: RISCOS, RISCO_GRUPO: RISCO_GRUPO, EXAMES: EXAMES, CATALOGO: CATALOGO, TIPOS_EXAME: TIPOS_EXAME, nomeTipo: nomeTipo, preparos: preparos, somarMeses: somarMeses, SAUDE: SAUDE, ESPECIFICAS: ESPECIFICAS, EXPOSICOES: EXPOSICOES, FAMILIA: FAMILIA,
     carregar: carregar, recarregar: recarregar, salvar: salvar, restaurar: restaurar, empresa: empresa, funcao: funcao,
     alertas: alertas, nomeSaude: nomeSaude, nomeEspecifica: nomeEspecifica, enfileirar: enfileirar,
-    token: token, uid: uid, primeiroNome: primeiroNome, SERVIDOR: SERVIDOR, api: api, pronto: pronto, acao: acao, enviarFicha: enviarFicha, asoHtml: asoHtml, guiaHtml: guiaHtml, fichaImpressaHtml: fichaImpressaHtml, s2220Xml: s2220Xml, baixar: baixar, nomeArquivo: nomeArquivo, prazoS2220: prazoS2220, limiteDispensa: limiteDispensa
+    token: token, uid: uid, primeiroNome: primeiroNome, SERVIDOR: SERVIDOR, api: api, pronto: pronto, acao: acao, cadastrar: cadastrar, enviarFicha: enviarFicha, asoHtml: asoHtml, guiaHtml: guiaHtml, fichaImpressaHtml: fichaImpressaHtml, s2220Xml: s2220Xml, baixar: baixar, nomeArquivo: nomeArquivo, prazoS2220: prazoS2220, limiteDispensa: limiteDispensa
   };
 })();
