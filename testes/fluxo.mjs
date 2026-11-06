@@ -92,9 +92,9 @@ try {
   const cobrar = await page.locator('.card b').allInnerTexts();
   ok(cobrar.length === 3 && !cobrar.includes('Ana Beatriz Moreira') && cobrar.includes('Carlos Eduardo Lima'), 'tarefa "cobrar a ficha" filtra só os links parados');
   ok(await page.locator('[data-cobrar]').count() === 3, 'botão "Cobrar no WhatsApp" só nos cartões da tarefa cobrar a ficha');
-  const antes = await page.evaluate(() => JSON.parse(localStorage.getItem('nexus-safe-demo-v5')).mensagens.length);
+  const antes = await page.evaluate(() => JSON.parse(localStorage.getItem('nexus-safe-demo-v6')).mensagens.length);
   await page.locator('[data-cobrar]').first().click(); await page.waitForTimeout(250);
-  const dep = await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('nexus-safe-demo-v5')); return { n: d.mensagens.length, m: d.mensagens[0], h: d.candidatos.filter(c => c.cobradoEm).map(c => c.historico.map(x => x.txt).join('|')) }; });
+  const dep = await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('nexus-safe-demo-v6')); return { n: d.mensagens.length, m: d.mensagens[0], h: d.candidatos.filter(c => c.cobradoEm).map(c => c.historico.map(x => x.txt).join('|')) }; });
   ok(dep.n === antes + 1 && dep.m.automacao === 'falta' && /falta terminar sua ficha|Falta terminar sua ficha/.test(dep.m.texto) && dep.h.length === 1 && /Cobrança da ficha enviada/.test(dep.h[0]), 'cobrar no WhatsApp entra na fila de mensagens e no histórico');
   await page.click('.agora__filtro [data-tarefa=""]'); await page.waitForTimeout(150);
   ok(await page.locator('.card').count() >= 8, 'ver todos devolve o quadro inteiro');
@@ -104,13 +104,29 @@ try {
   ok(await page.locator('.card').count() >= 8, 'tipo "todos" devolve o quadro inteiro');
   await page.click('.card:has-text("Renata Alves Costa") >> nth=0'); await page.waitForTimeout(350);
   ok(await page.locator('[data-confirmar]').count() === 1 && /Preparo/.test(await page.locator('[data-painel]').innerText()), 'agendado para amanhã mostra "Confirmar presença no WhatsApp" com horário e preparo');
-  const antesC = await page.evaluate(() => JSON.parse(localStorage.getItem('nexus-safe-demo-v5')).mensagens.length);
+  const antesC = await page.evaluate(() => JSON.parse(localStorage.getItem('nexus-safe-demo-v6')).mensagens.length);
   await page.click('[data-confirmar]'); await page.waitForTimeout(250);
-  const depC = await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('nexus-safe-demo-v5')); return { n: d.mensagens.length, m: d.mensagens[0].texto, h: d.candidatos.find(c => c.nome === 'Renata Alves Costa').historico.map(x => x.txt).join('|') }; });
+  const depC = await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('nexus-safe-demo-v6')); return { n: d.mensagens.length, m: d.mensagens[0].texto, h: d.candidatos.find(c => c.nome === 'Renata Alves Costa').historico.map(x => x.txt).join('|') }; });
   ok(depC.n === antesC + 1 && /Responda SIM/.test(depC.m) && /Presença confirmada/.test(depC.h), 'confirmar presença entra na fila de mensagens e no histórico');
   await page.click('[data-fechar]'); await page.waitForTimeout(300);
+  // link da ficha vale 7 dias: vencido pede novo link e o antigo deixa de valer
+  const velho = await page.evaluate(() => { const k = 'nexus-safe-demo-v6', d = JSON.parse(localStorage.getItem(k)); const c = d.candidatos.find(x => x.nome === 'Carlos Eduardo Lima'); const dias = Math.round((new Date(c.expiraEm) - new Date(c.criadoEm)) / 864e5); const tk = c.token; c.expiraEm = new Date(Date.now() - 864e5).toISOString(); localStorage.setItem(k, JSON.stringify(d)); return { tk, dias }; });
+  ok(velho.dias === 7, 'todo link de ficha guarda expiraEm de 7 dias');
+  const ex = await ctx.newPage(); await ex.goto(B + 'crm/ficha.html?t=' + velho.tk); await ex.waitForTimeout(250);
+  ok(/Link expirado, peça outro à clínica/.test(await ex.locator('body').innerText()) && await ex.locator('[name=nascimento]').count() === 0, 'ficha com link vencido mostra "Link expirado, peça outro à clínica"');
+  await ex.close();
+  await page.reload(); await page.waitForTimeout(400);
+  await page.click('.card:has-text("Carlos Eduardo Lima")'); await page.waitForTimeout(350);
+  ok(await page.locator('[data-link-expirado]').count() === 1 && await page.locator('.link-ficha').count() === 0, 'painel avisa que o link venceu e esconde o link antigo');
+  await page.click('[data-novo-link]'); await page.waitForTimeout(300);
+  const novoL = await page.evaluate(() => { const c = JSON.parse(localStorage.getItem('nexus-safe-demo-v6')).candidatos.find(x => x.nome === 'Carlos Eduardo Lima'); return { tk: c.token, ok: new Date(c.expiraEm) > new Date(Date.now() + 6 * 864e5), h: c.historico.map(x => x.txt).join('|') }; });
+  ok(novoL.tk !== velho.tk && novoL.ok && /Novo link da ficha gerado/.test(novoL.h) && await page.locator('[data-link-expirado]').count() === 0 && await page.locator('.link-ficha').count() === 1, '"Gerar novo link" troca o token, renova a validade e registra no histórico');
+  const ant = await ctx.newPage(); await ant.goto(B + 'crm/ficha.html?t=' + velho.tk); await ant.waitForTimeout(250);
+  ok(await ant.locator('[name=nascimento]').count() === 0, 'o link anterior deixa de abrir a ficha');
+  await ant.close();
+  await page.click('[data-fechar]'); await page.waitForTimeout(300);
   ok(/Parado há 3 dias/.test(await page.locator('.card:has-text("Diego Santos Pereira")').innerText()) && await page.locator('.card:has-text("Ana Beatriz Moreira") [data-parado]').count() === 0, 'cartão parado há mais de 2 dias na etapa mostra o aviso em âmbar');
-  ok(await page.evaluate(() => JSON.parse(localStorage.getItem('nexus-safe-demo-v5')).candidatos.every(c => !!c.etapaDesde)), 'todo atendimento guarda etapaDesde');
+  ok(await page.evaluate(() => JSON.parse(localStorage.getItem('nexus-safe-demo-v6')).candidatos.every(c => !!c.etapaDesde)), 'todo atendimento guarda etapaDesde');
 
   // atendimento com ficha: visão médica x empresa
   await page.click('text=Lucas Henrique Souza'); await page.waitForTimeout(350);

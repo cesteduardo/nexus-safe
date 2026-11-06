@@ -93,6 +93,21 @@ ok((await chamar('/api/ficha/' + 'x'.repeat(43))).status === 404, 'link inventad
 ok((await chamar(`/api/ficha/${tkAna}/rascunho`, { corpo: { rascunho: { passo: 1, ficha: { pessoais: { endereco: 'Rua B, 2' } } } }, origem: 'https://outro-site.example' })).status === 403, 'rascunho vindo de outro site é barrado');
 ok((await chamar(`/api/ficha/${tkAna}/rascunho`, { corpo: { rascunho: { passo: 1, ficha: { pessoais: { endereco: 'Rua B, 2' } } } } })).status === 200, 'rascunho é salvo no servidor');
 ok((await chamar('/api/ficha/' + tkAna)).j.estado.candidatos[0].rascunho.ficha.pessoais.endereco === 'Rua B, 2', 'rascunho volta ao reabrir o link');
+// novo link: invalida o anterior, vale 7 dias, só a clínica gera
+const tkCarlos = LINKS['Carlos Eduardo Lima'];
+const carlos = (await estado(recepcao)).candidatos.find(c => c.nome === 'Carlos Eduardo Lima');
+ok(carlos.token === tkCarlos && Math.abs(new Date(carlos.expiraEm) - Date.now() - 7 * 864e5) < 864e5, 'atendimento com link aberto mostra o token e expiraEm de 7 dias');
+ok((await acao(rh, 'novoLink', carlos.id)).status === 403, 'RH da empresa não gera novo link');
+const nl = await acao(recepcao, 'novoLink', carlos.id);
+const carlos2 = nl.j.estado.candidatos.find(c => c.id === carlos.id);
+ok(nl.status === 200 && carlos2.token && carlos2.token !== tkCarlos && /Novo link da ficha gerado/.test(carlos2.historico.map(h => h.txt).join('|')), 'clínica gera novo link e o histórico registra');
+ok((await chamar('/api/ficha/' + tkCarlos)).status === 404 && (await chamar('/api/ficha/' + carlos2.token)).status === 200, 'o link anterior para de abrir e o novo abre a ficha');
+sql(`UPDATE links SET expira_em = '2020-01-01T00:00:00.000Z' WHERE atendimento_id = '${carlos.id}' AND revogado = 0`);
+ok((await chamar('/api/ficha/' + carlos2.token)).status === 410, 'link vencido responde 410 "Link expirado"');
+const carlos3 = (await estado(recepcao)).candidatos.find(c => c.id === carlos.id);
+ok(!carlos3.token && new Date(carlos3.expiraEm) < new Date(), 'estado da clínica marca o link vencido, sem token');
+const nl2 = await acao(recepcao, 'novoLink', carlos.id);
+ok((await chamar('/api/ficha/' + nl2.j.estado.candidatos.find(c => c.id === carlos.id).token)).status === 200, 'novo link depois de vencer volta a funcionar');
 ok((await chamar(`/api/ficha/${tkAna}/enviar`, { corpo: { ficha: { pessoais: {} } } })).status === 400, 'ficha incompleta é recusada');
 const fichaOk = { pessoais: { nascimento: '1990-01-01', sexo: 'Feminino', estado_civil: 'Solteiro(a)', escolaridade: 'Superior completo', endereco: 'Rua B, 2', emergencia_nome: 'Rosa Moreira', emergencia_parentesco: 'Mãe', emergencia_tel: '(17) 99888-7777' }, saude: { pressao: { sim: true, detalhe: 'Controlada' } }, aceite: true };
 ok((await chamar(`/api/ficha/${tkAna}/enviar`, { corpo: { ficha: fichaOk } })).status === 200, 'ficha completa é enviada');

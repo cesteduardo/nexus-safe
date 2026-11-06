@@ -51,7 +51,7 @@ e por último o texto e as imagens do plano.
 - [x] Quadro: filtro por tipo de exame (admissional, periódico, retorno, mudança de riscos, demissional).
 
 ## Mostrar o que o plano promete
-- [ ] Link da ficha com validade de 7 dias: guardar `expiraEm`, mostrar "Link expirado, peça outro à clínica" e, no CRM, botão "Gerar novo link" que invalida o anterior.
+- [x] Link da ficha com validade de 7 dias: guardar `expiraEm`, mostrar "Link expirado, peça outro à clínica" e, no CRM, botão "Gerar novo link" que invalida o anterior.
 - [x] Trilha de acesso simulada: registrar no histórico quando a visão médica abre a ficha ("Ficha aberta por Dra. Camila Rocha") e mostrar isso na visão médica.
 - [x] Visão do RH da empresa cliente: página `crm/empresa.html?e=ID` listando só os atendimentos daquela empresa, com etapa e botão do ASO, sem nenhum dado de saúde. Também pede exame.
 - [ ] Agenda do dia: aba "Agenda" com os exames agendados por horário e o preparo de cada um.

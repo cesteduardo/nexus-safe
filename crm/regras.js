@@ -53,6 +53,10 @@
   function preparos(f) { var out = []; (f.exames || []).forEach(function (x) { var p = CATALOGO[x] && CATALOGO[x].preparo; if (p && out.indexOf(p) < 0) out.push(p); }); return out; }
   function textoLink(ctx, c) { return 'Oi, ' + primeiroNome(c.nome) + '! Aqui é da ' + ctx.clinica + '. Antes do seu exame ' + nomeTipo(c.tipoExame).toLowerCase() + ', preencha a ficha neste link (leva uns 10 minutos): ' + ctx.linkFicha(c); }
 
+  /* O link da ficha vale 7 dias. Quem já enviou a ficha não precisa mais dele. */
+  var LINK_DIAS = 7;
+  function linkExpirado(c, agora) { return !!c.expiraEm && !c.ficha && new Date(c.expiraEm) < new Date(agora || Date.now()); }
+
   function registrar(c, ctx, txt) { (c.historico = c.historico || []).push({ em: ctx.agora, txt: txt }); }
 
   /* ---------- ações ---------- */
@@ -139,6 +143,15 @@
     return { mensagens: [{ automacao: 'agenda', para: c.nome, texto: 'Oi, ' + primeiroNome(c.nome) + '! Lembrete: seu exame ' + nomeTipo(c.tipoExame).toLowerCase() + ' é ' + quandoExame(c) + ' na ' + ctx.clinica + '. Você consegue vir? Responda SIM para confirmar. Leve RG e carteira de trabalho' + (ori.length ? '; ' + ori.join('; ') : '') + '.', alvo: c, sempre: true }] };
   };
 
+  /* Gera um link novo e invalida o anterior (link vencido ou perdido). */
+  ACOES.novoLink = function (ctx, c) {
+    exigirClinica(ctx);
+    if (c.etapa !== 'enviado' && c.etapa !== 'preenchendo') throw Erro('A ficha deste atendimento já chegou.');
+    ctx.prepararLink(c);
+    registrar(c, ctx, 'Novo link da ficha gerado (o anterior deixou de valer).');
+    return { novoLink: true, mensagens: [] };
+  };
+
   ACOES.guia = function (ctx, c) { registrar(c, ctx, 'Guia de encaminhamento emitida.'); return { mensagens: [] }; };
 
   ACOES.abrirFicha = function (ctx, c) { exigirMedico(ctx); registrar(c, ctx, 'Ficha aberta por ' + ctx.usuario.nome + '.'); return { mensagens: [] }; };
@@ -184,7 +197,7 @@
   raiz.NexusRegras = {
     ACOES: ACOES, SEM_ALVO: SEM_ALVO, TIPOS: TIPOS, Erro: Erro,
     nomeValido: nomeValido, telValido: telValido, cpfValido: cpfValido, mascaraCpf: mascaraCpf, mascaraTel: mascaraTel, digitos: digitos, texto: texto,
-    quandoExame: quandoExame, prazoS2220: prazoS2220, somarMeses: somarMeses, nomeTipo: nomeTipo, textoLink: textoLink, conferirFicha: conferirFicha
+    quandoExame: quandoExame, prazoS2220: prazoS2220, somarMeses: somarMeses, nomeTipo: nomeTipo, textoLink: textoLink, conferirFicha: conferirFicha, LINK_DIAS: LINK_DIAS, linkExpirado: linkExpirado
   , CATALOGO: CATALOGO
   };
 })(typeof window !== 'undefined' ? window : globalThis);

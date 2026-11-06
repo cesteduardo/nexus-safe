@@ -13,6 +13,11 @@ window.Nexus.pronto(function () {
     return;
   }
 
+  if (window.NexusRegras.linkExpirado(c)) {
+    raiz.innerHTML = '<div class="ficha__corpo final"><h1>Link expirado</h1><p style="color:var(--apoio)">Link expirado, peça outro à clínica. Ele vale por 7 dias.</p></div>';
+    return;
+  }
+
   var empresa = N.empresa(c.empresaId), funcao = N.funcao(c.funcaoId);
   var SELO = '<p class="selo-ns">Ficha protegida por <svg class="ns" viewBox="15 15 70 70" aria-hidden="true"><path class="ns__a" d="M22 64V34a12 12 0 0 1 12-12h30"/><path class="ns__b" d="M78 36v30a12 12 0 0 1-12 12H36"/><rect class="ns__c" x="42" y="42" width="16" height="16" rx="4"/></svg><b>Nexus Safe</b></p>';
   var primeiro = N.primeiroNome(c.nome);

@@ -3,7 +3,7 @@
 (function () {
   'use strict';
 
-  var CHAVE = 'nexus-safe-demo-v5';
+  var CHAVE = 'nexus-safe-demo-v6';
 
   var ETAPAS = [
     { id: 'enviado', nome: 'Link enviado' },
@@ -163,6 +163,7 @@
 
     function cand(o) {
       var c = Object.assign({ id: uid(), token: token(), tipoExame: 'admissional', criadoEm: agoraMenos(3), agendadoPara: '', ficha: null, rascunho: null, aso: null, historico: [] }, o);
+      if (!c.expiraEm) c.expiraEm = new Date(new Date(c.criadoEm).getTime() + 7 * 864e5).toISOString();
       if (!c.etapaDesde) c.etapaDesde = (c.historico.length ? c.historico[c.historico.length - 1].em : c.criadoEm);
       return c;
     }
@@ -218,7 +219,7 @@
       { em: agoraMenos(0, 8), automacao: 'link', para: 'Ana Beatriz Moreira', texto: 'Oi, Ana! Aqui é da Clínica Vida Ocupacional. Antes do seu exame admissional, preencha a ficha neste link (leva uns 10 minutos).' }
     ];
 
-    return { versao: 5, clinica: 'Clínica Vida Ocupacional', endereco: 'Rua das Palmeiras, 450, Centro (endereço fictício)', horario: 'Segunda a sexta, das 7h às 17h. Exames de sangue até as 10h.', pcmso: { coordenador: 'Dr. Ricardo Alves', crm: 'CRM-SP 654321', aprovadoEm: agoraMenos(60, 10) }, empresas: empresas, funcoes: funcoes, candidatos: candidatos, automacoes: automacoes, mensagens: mensagens };
+    return { versao: 6, clinica: 'Clínica Vida Ocupacional', endereco: 'Rua das Palmeiras, 450, Centro (endereço fictício)', horario: 'Segunda a sexta, das 7h às 17h. Exames de sangue até as 10h.', pcmso: { coordenador: 'Dr. Ricardo Alves', crm: 'CRM-SP 654321', aprovadoEm: agoraMenos(60, 10) }, empresas: empresas, funcoes: funcoes, candidatos: candidatos, automacoes: automacoes, mensagens: mensagens };
   }
 
   /* ---------- armazenamento ---------- */
@@ -234,7 +235,7 @@
     if (SERVIDOR) return memoria || { candidatos: [], empresas: [], funcoes: [], automacoes: [], mensagens: [], pcmso: {}, clinica: '' };
     if (memoria) return memoria;
     try { var t = localStorage.getItem(CHAVE); if (t) memoria = JSON.parse(t); } catch (e) { memoria = null; }
-    if (!memoria || memoria.versao !== 5) { memoria = seed(); salvar(); }
+    if (!memoria || memoria.versao !== 6) { memoria = seed(); salvar(); }
     return memoria;
   }
   function salvar() {
@@ -283,7 +284,7 @@
     return {
       agora: new Date().toISOString(), clinica: d.clinica, empresa: empresa, funcao: funcao, novoId: uid,
       usuario: { tipo: p.tipo || '', papel: p.papel || '', empresaId: p.empresaId || '', nome: p.nome || '' },
-      prepararLink: function (c) { c.token = token(); },
+      prepararLink: function (c) { c.token = token(); c.expiraEm = new Date(Date.now() + 7 * 864e5).toISOString(); },
       linkFicha: function (c) { return new URL('ficha.html?t=' + c.token, location.href).href; }
     };
   }

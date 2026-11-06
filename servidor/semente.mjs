@@ -46,7 +46,7 @@ for (const [login, u] of Object.entries(USUARIOS)) {
 
 const abertos = [];
 for (const c of demo.candidatos) {
-  const { id, etapa, token: _t, ficha, rascunho, versao: _v, ...resto } = c;
+  const { id, etapa, token: _t, ficha, rascunho, versao: _v, expiraEm: _x, ...resto } = c;
   inserir('atendimentos', { id, agencia_id: AG, empresa_id: c.empresaId, funcao_id: c.funcaoId, etapa, criado_em: c.criadoEm, atualizado_em: agora, dados: JSON.stringify(resto) });
   const tk = b64url(aleatorio(32));
   const aberto = etapa === 'enviado' || etapa === 'preenchendo';

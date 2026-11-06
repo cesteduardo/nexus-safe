@@ -272,11 +272,15 @@
 
   function acoesHtml(c, f, medico) {
     var h = '<div class="bloco"><h3>Próximo passo</h3>';
-    if (c.etapa === 'enviado' || c.etapa === 'preenchendo') {
+    if ((c.etapa === 'enviado' || c.etapa === 'preenchendo') && window.NexusRegras.linkExpirado(c)) {
+      h += '<p data-link-expirado style="margin-bottom:10px">O link da ficha venceu em ' + new Date(c.expiraEm).toLocaleDateString('pt-BR') + '. Gere um novo: o anterior deixa de valer.</p>' +
+        '<div class="acoes-linha"><button class="botao" type="button" data-novo-link>Gerar novo link</button></div>';
+    } else if (c.etapa === 'enviado' || c.etapa === 'preenchendo') {
       h += '<div class="link-ficha"><input class="entrada" readonly value="' + esc(linkFicha(c)) + '" aria-label="Link da ficha"><button class="botao botao--claro botao--pequeno" type="button" data-copiar>Copiar</button></div>' +
         '<div class="acoes-linha"><a class="botao botao--pequeno" target="_blank" rel="noopener" href="' + esc(waLink(c, textoLink(c))) + '">Mandar no WhatsApp</a>' +
         '<a class="botao botao--claro botao--pequeno" target="_blank" rel="noopener" href="' + esc(linkFicha(c)) + '">Abrir a ficha como o candidato</a></div>' +
-        '<p style="margin-top:10px;font-size:13.5px">Dica: abra a ficha, preencha no lugar do candidato e volte aqui. O cartão muda de coluna sozinho.</p>';
+        '<div class="acoes-linha" style="margin-top:8px"><button class="botao botao--claro botao--pequeno" type="button" data-novo-link>Gerar novo link</button></div>' +
+        '<p style="margin-top:10px;font-size:13.5px">O link vale até ' + new Date(c.expiraEm).toLocaleDateString('pt-BR') + '. Dica: abra a ficha, preencha no lugar do candidato e volte aqui. O cartão muda de coluna sozinho.</p>';
     } else if (c.etapa === 'recebida') {
       var sug = new Date(); sug.setDate(sug.getDate() + 1); sug.setHours(8, 0, 0, 0);
       var v = new Date(sug.getTime() - sug.getTimezoneOffset() * 6e4).toISOString().slice(0, 16);
@@ -458,6 +462,7 @@
       var v = $('[data-agenda]').value; if (!v) return;
       fazer('agendar', c.id, { quando: new Date(v).toISOString(), modo: $('[data-agenda-modo]').value }, 'Exame agendado');
     }
+    else if (t.matches('[data-novo-link]') && c) fazer('novoLink', c.id, {}, 'Novo link gerado');
     else if (t.matches('[data-confirmar]') && c) fazer('confirmar', c.id, {}, 'Confirmação na fila de mensagens');
     else if (t.matches('[data-atendido]') && c) fazer('atendido', c.id, {}, 'Marcado como atendido');
     else if (t.matches('[data-emitir]') && c) {

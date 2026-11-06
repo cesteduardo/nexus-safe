@@ -172,7 +172,7 @@ function contextoServidor(u, ag, extras = {}) {
     agora: new Date().toISOString(), clinica: ag.a.nome, empresa: e, funcao: f,
     usuario: { tipo: u.tipo, papel: u.papel || '', empresaId: u.empresa_id || '', nome: u.nome, crm: u.crm || '' },
     novoId: () => b64url(aleatorio(9)),
-    prepararLink: c => { c.token = b64url(aleatorio(32)); },
+    prepararLink: c => { c.token = b64url(aleatorio(32)); c.expiraEm = new Date(Date.now() + LINK_DIAS * 86400000).toISOString(); },
     linkFicha: c => `${extras.origem}/crm/ficha.html?t=${c.token}`
   };
 }
@@ -184,18 +184,21 @@ async function estadoPara(env, u) {
   const ag = await agenciaDados(env, agId);
   const medico = u.tipo === 'clinica' && u.papel === 'medico';
   const filtro = u.tipo === 'rh' ? 'a.empresa_id = ?2' : '?2 = ?2';
-  const linhas = (await env.DB.prepare(`SELECT a.id, a.etapa, a.dados, a.atualizado_em, f.ficha, f.enviado_em, f.assinatura_ip, l.token_cifrado
+  const linhas = (await env.DB.prepare(`SELECT a.id, a.etapa, a.dados, a.atualizado_em, f.ficha, f.enviado_em, f.assinatura_ip, l.token_cifrado, l.expira_em
       FROM atendimentos a
       LEFT JOIN fichas f ON f.atendimento_id = a.id
-      LEFT JOIN links l ON l.atendimento_id = a.id AND l.revogado = 0 AND l.usado_em IS NULL AND l.expira_em > ?3
+      LEFT JOIN links l ON l.atendimento_id = a.id AND l.revogado = 0 AND l.usado_em IS NULL
       WHERE a.agencia_id = ?1 AND ${filtro} ORDER BY a.criado_em DESC LIMIT 2000`)
-    .bind(agId, u.tipo === 'rh' ? u.empresa_id : 1, new Date().toISOString()).all()).results;
+    .bind(agId, u.tipo === 'rh' ? u.empresa_id : 1).all()).results;
   const candidatos = [];
   for (const l of linhas) {
     const c = parse(l.dados, {});
     c.id = l.id; c.etapa = l.etapa; c.versao = l.atualizado_em;
     c.ficha = null; c.rascunho = null;
-    if (l.token_cifrado && (c.etapa === 'enviado' || c.etapa === 'preenchendo')) c.token = (await decifrar(env, l.token_cifrado, 'token:' + l.id)).t;
+    if (l.token_cifrado && (c.etapa === 'enviado' || c.etapa === 'preenchendo')) {
+      c.expiraEm = l.expira_em;
+      if (l.expira_em > new Date().toISOString()) c.token = (await decifrar(env, l.token_cifrado, 'token:' + l.id)).t;
+    }
     /* a ficha só sai para a equipe médica, e só enquanto o exame está em andamento */
     if (medico && l.ficha && ['recebida', 'agendado', 'atendido'].includes(c.etapa)) {
       c.ficha = await decifrar(env, l.ficha, 'ficha:' + l.id);
@@ -206,7 +209,7 @@ async function estadoPara(env, u) {
     candidatos.push(c);
   }
   const estado = {
-    versao: 5, clinica: ag.a.nome, endereco: ag.a.endereco, horario: ag.a.horario, pcmso: parse(ag.a.pcmso, {}),
+    versao: 6, clinica: ag.a.nome, endereco: ag.a.endereco, horario: ag.a.horario, pcmso: parse(ag.a.pcmso, {}),
     empresas: u.tipo === 'rh' ? ag.empresas.filter(e => e.id === u.empresa_id) : ag.empresas,
     funcoes: u.tipo === 'rh' ? ag.funcoes.filter(f => f.empresaId === u.empresa_id) : ag.funcoes,
     candidatos, automacoes: [], mensagens: []
@@ -319,17 +322,23 @@ async function acao(env, req, u) {
     grava.push(env.DB.prepare('INSERT INTO mensagens (agencia_id, em, automacao, para, texto) VALUES (?1, ?2, ?3, ?4, ?5)').bind(agId, ctx.agora, m.automacao, m.para, m.texto));
     if (m.aoEnviar) m.alvo.historico.push({ em: ctx.agora, txt: m.aoEnviar });
   }
-  const salvarAtendimento = c => { const { id, etapa, token, ficha, rascunho, versao, ...resto } = c; return [id, etapa, JSON.stringify(resto)]; };
+  const salvarAtendimento = c => { const { id, etapa, token, ficha, rascunho, versao, expiraEm, ...resto } = c; return [id, etapa, JSON.stringify(resto)]; };
   if (alvo) {
     const [id, etapa, dados] = salvarAtendimento(alvo);
     /* trava otimista: se alguém mudou o atendimento no meio, não sobrescreve */
     grava.unshift(env.DB.prepare('UPDATE atendimentos SET etapa = ?1, dados = ?2, atualizado_em = ?3 WHERE id = ?4 AND atualizado_em = ?5').bind(etapa, dados, ctx.agora, id, linhaAlvo.atualizado_em));
   }
+  const inserirLink = async (c, id) => env.DB.prepare('INSERT INTO links (token_hash, atendimento_id, token_cifrado, criado_em, expira_em) VALUES (?1, ?2, ?3, ?4, ?5)')
+    .bind(await sha256(c.token), id, await cifrar(env, { t: c.token }, 'token:' + id), ctx.agora, c.expiraEm);
+  if (r.novoLink) {
+    /* o link antigo deixa de valer; o novo entra junto com a mudança do atendimento */
+    grava.push(env.DB.prepare('UPDATE links SET revogado = 1 WHERE atendimento_id = ?1 AND revogado = 0').bind(alvo.id));
+    grava.push(await inserirLink(alvo, alvo.id));
+  }
   if (r.novo) {
     const c = r.novo, [id, etapa, dados] = salvarAtendimento(c);
     grava.push(env.DB.prepare('INSERT INTO atendimentos (id, agencia_id, empresa_id, funcao_id, etapa, criado_em, atualizado_em, dados) VALUES (?1, ?2, ?3, ?4, ?5, ?6, ?6, ?7)').bind(id, agId, c.empresaId, c.funcaoId, etapa, ctx.agora, dados));
-    grava.push(env.DB.prepare('INSERT INTO links (token_hash, atendimento_id, token_cifrado, criado_em, expira_em) VALUES (?1, ?2, ?3, ?4, ?5)')
-      .bind(await sha256(c.token), id, await cifrar(env, { t: c.token }, 'token:' + id), ctx.agora, new Date(Date.now() + LINK_DIAS * 86400000).toISOString()));
+    grava.push(await inserirLink(c, id));
   }
   const res = await env.DB.batch(grava);
   if (alvo && res[0].meta.changes === 0) throw R.Erro('Este atendimento mudou enquanto você mexia. A tela foi atualizada; confira e tente de novo.', 409);
@@ -356,7 +365,7 @@ async function ficha(env, req, token, parte) {
     const e = ag.empresas.find(x => x.id === l.empresa_id), f = ag.funcoes.find(x => x.id === l.funcao_id);
     const rasc = reg && reg.rascunho && !reg.enviado_em ? await decifrar(env, reg.rascunho, 'rascunho:' + c.id) : null;
     return json({ estado: {
-      versao: 5, clinica: ag.a.nome, empresas: [{ id: e.id, nome: e.nome }], funcoes: [f], automacoes: [], mensagens: [],
+      versao: 6, clinica: ag.a.nome, empresas: [{ id: e.id, nome: e.nome }], funcoes: [f], automacoes: [], mensagens: [],
       candidatos: [{ id: c.id, token, nome: c.nome, cpf: c.cpf, tipoExame: c.tipoExame, empresaId: e.id, funcaoId: f.id, etapa: c.etapa, historico: [], ficha: reg && reg.enviado_em ? { enviadoEm: reg.enviado_em } : null, rascunho: rasc }]
     } });
   }
