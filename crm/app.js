@@ -5,7 +5,7 @@
   var vista = $('#vista');
   var painel = $('[data-painel]');
   var veu = $('[data-veu]');
-  var filtro = { empresa: '', busca: '', tarefa: '', etapa: '' };
+  var filtro = { empresa: '', busca: '', tarefa: '', etapa: '', tipo: '' };
 
   function esc(s) { return String(s == null ? '' : s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); }
   function data(iso, comHora) {
@@ -88,6 +88,7 @@
     var ativa = tarefa(filtro.tarefa);
     var lista = daEmpresa.filter(function (c) {
       if (ativa && !ativa.teste(c)) return false;
+      if (filtro.tipo && c.tipoExame !== filtro.tipo) return false;
       if (filtro.busca) { var b = filtro.busca.toLowerCase(); if ((c.nome + ' ' + c.cpf).toLowerCase().indexOf(b) < 0) return false; }
       return true;
     });
@@ -97,6 +98,7 @@
         '<b>' + n + '</b><span>' + esc(t.nome) + '<small>' + esc(n ? t.dica : 'Nada pendente') + '</small></span></button>';
     }).join('') + '</div>';
     var opts = '<option value="">Todas as empresas</option>' + d.empresas.map(function (e) { return '<option value="' + e.id + '"' + (filtro.empresa === e.id ? ' selected' : '') + '>' + esc(e.nome) + '</option>'; }).join('');
+    var optsTipo = '<option value="">Todos os tipos de exame</option>' + N.TIPOS_EXAME.map(function (t) { return '<option value="' + t[0] + '"' + (filtro.tipo === t[0] ? ' selected' : '') + '>' + esc(t[1]) + '</option>'; }).join('');
     var etapaAtiva = filtro.etapa;
     if (!N.ETAPAS.some(function (et) { return et.id === etapaAtiva; })) {
       var prim = N.ETAPAS.filter(function (et) { return lista.some(function (c) { return c.etapa === et.id; }); })[0];
@@ -117,6 +119,7 @@
       agora +
       (ativa ? '<p class="agora__filtro">Mostrando só: <b>' + esc(ativa.nome) + '</b> <button type="button" class="link" data-tarefa="">Ver todos</button></p>' : '') +
       '<div class="filtros"><select class="entrada" data-filtro-empresa aria-label="Filtrar por empresa">' + opts + '</select>' +
+      '<select class="entrada" data-filtro-tipo aria-label="Filtrar por tipo de exame">' + optsTipo + '</select>' +
       '<input class="entrada" type="search" placeholder="Buscar por nome ou CPF" value="' + esc(filtro.busca) + '" data-filtro-busca aria-label="Buscar"></div>' +
       abas + '<div class="quadro">' + colunas + '</div>';
   }
@@ -469,12 +472,13 @@
     else if (t.matches('[data-convocar]')) fazer('convocar', t.dataset.convocar, {}, 'Periódico convocado. Link enviado.');
     else if (t.matches('[data-fechar-aso]')) $('[data-modal-aso]').close();
     else if (t.matches('[data-imprimir]')) window.print();
-    else if (t.matches('[data-restaurar]') && !N.SERVIDOR) { if (confirm('Voltar a demonstração ao estado inicial? O que você fez aqui será apagado.')) { N.restaurar(); if (window.Contas) window.Contas.restaurar(); filtro = { empresa: '', busca: '', tarefa: '' }; location.hash = '#/quadro'; rota(); toast('Demonstração restaurada'); } }
+    else if (t.matches('[data-restaurar]') && !N.SERVIDOR) { if (confirm('Voltar a demonstração ao estado inicial? O que você fez aqui será apagado.')) { N.restaurar(); if (window.Contas) window.Contas.restaurar(); filtro = { empresa: '', busca: '', tarefa: '', etapa: '', tipo: '' }; location.hash = '#/quadro'; rota(); toast('Demonstração restaurada'); } }
   });
 
   document.addEventListener('change', function (ev) {
     var t = ev.target;
     if (t.matches('[data-filtro-empresa]')) { filtro.empresa = t.value; renderQuadro(); }
+    else if (t.matches('[data-filtro-tipo]')) { filtro.tipo = t.value; renderQuadro(); }
     else if (t.matches('[data-sel-tipo]')) mostrarAdmissao();
     else if (t.matches('[data-sel-empresa]')) atualizarFuncoes();
     else if (t.matches('[data-sel-funcao]')) mostrarRiscos();

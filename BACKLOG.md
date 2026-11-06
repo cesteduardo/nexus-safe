@@ -48,7 +48,7 @@ e por último o texto e as imagens do plano.
 - [x] Botão "Cobrar no WhatsApp" no próprio cartão de quem está na tarefa "Cobrar a ficha", com a mensagem "falta terminar sua ficha" pronta. Ao clicar, registra no histórico e entra na fila de mensagens.
 - [x] No painel, "Próximo passo" de quem está agendado para hoje ou amanhã: botão "Confirmar presença no WhatsApp" com o horário e o preparo.
 - [x] No celular (até 600 px), o quadro vira uma lista por etapa com abas no topo (Link enviado, Preenchendo...), sem rolagem lateral dentro do quadro.
-- [ ] Quadro: filtro por tipo de exame (admissional, periódico, retorno, mudança de riscos, demissional).
+- [x] Quadro: filtro por tipo de exame (admissional, periódico, retorno, mudança de riscos, demissional).
 
 ## Mostrar o que o plano promete
 - [ ] Link da ficha com validade de 7 dias: guardar `expiraEm`, mostrar "Link expirado, peça outro à clínica" e, no CRM, botão "Gerar novo link" que invalida o anterior.

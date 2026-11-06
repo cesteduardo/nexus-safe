@@ -98,6 +98,10 @@ try {
   ok(dep.n === antes + 1 && dep.m.automacao === 'falta' && /falta terminar sua ficha|Falta terminar sua ficha/.test(dep.m.texto) && dep.h.length === 1 && /Cobrança da ficha enviada/.test(dep.h[0]), 'cobrar no WhatsApp entra na fila de mensagens e no histórico');
   await page.click('.agora__filtro [data-tarefa=""]'); await page.waitForTimeout(150);
   ok(await page.locator('.card').count() >= 8, 'ver todos devolve o quadro inteiro');
+  await page.selectOption('[data-filtro-tipo]', 'demissional'); await page.waitForTimeout(150);
+  ok((await page.locator('.card b').allInnerTexts()).join() === 'Valter Gomes Silva', 'filtro por tipo de exame mostra só os demissionais');
+  await page.selectOption('[data-filtro-tipo]', ''); await page.waitForTimeout(150);
+  ok(await page.locator('.card').count() >= 8, 'tipo "todos" devolve o quadro inteiro');
   await page.click('.card:has-text("Renata Alves Costa") >> nth=0'); await page.waitForTimeout(350);
   ok(await page.locator('[data-confirmar]').count() === 1 && /Preparo/.test(await page.locator('[data-painel]').innerText()), 'agendado para amanhã mostra "Confirmar presença no WhatsApp" com horário e preparo');
   const antesC = await page.evaluate(() => JSON.parse(localStorage.getItem('nexus-safe-demo-v5')).mensagens.length);

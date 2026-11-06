@@ -2,6 +2,7 @@
 
 Uma linha por rodada, a mais recente em cima: data e hora (America/Sao_Paulo), o que mudou, resultado do `npm test`.
 
+- 05/11/2026 22:40 · Quadro ganhou o filtro por tipo de exame (admissional, periódico, retorno, mudança de riscos, demissional), ao lado do filtro de empresa. Teste: 112 verificações ok (rodado com TZ=America/Sao_Paulo). Não mexeu em regras nem servidor.
 - 05/11/2026 21:43 · No celular (até 600 px) o quadro vira uma lista por etapa, com abas no topo (Link enviado, Preenchendo...) e contagem em cada uma; só a coluna escolhida aparece e não há rolagem lateral no quadro. Teste: 110 verificações ok (rodado com TZ=America/Sao_Paulo, porque o dado fictício 'parado há 3 dias' falha quando o relógio do container em UTC está antes das 9h). Não mexeu em regras nem servidor.
 - 05/11/2026 20:46 · Botão "Confirmar presença no WhatsApp" no painel de quem está agendado para hoje ou amanhã, com horário e preparo: ação `confirmar` em `crm/regras.js` (só a clínica) registra no histórico e põe o lembrete na fila. Teste: 107 verificações ok. O teste do servidor (wrangler dev local) cai de novo por conexão fechada depois de 48 ok, igual às rodadas anteriores.
 - 05/11/2026 19:43 · Botão "Cobrar no WhatsApp" no cartão de quem está na tarefa "Cobrar a ficha": ação `cobrar` em `crm/regras.js` (só a clínica, só com a ficha pendente) registra no histórico e põe a mensagem "falta terminar sua ficha" na fila. Teste: 105 verificações ok. O teste do servidor (wrangler dev local) cai de novo por conexão fechada depois de 48 ok, igual às rodadas anteriores.
