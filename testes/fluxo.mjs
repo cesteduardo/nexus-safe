@@ -109,6 +109,17 @@ try {
   const depC = await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('nexus-safe-demo-v6')); return { n: d.mensagens.length, m: d.mensagens[0].texto, h: d.candidatos.find(c => c.nome === 'Renata Alves Costa').historico.map(x => x.txt).join('|') }; });
   ok(depC.n === antesC + 1 && /Responda SIM/.test(depC.m) && /Presença confirmada/.test(depC.h), 'confirmar presença entra na fila de mensagens e no histórico');
   await page.click('[data-fechar]'); await page.waitForTimeout(300);
+  // rodar automações agora: véspera (exame amanhã) e periódico vencendo em 30 dias
+  await page.evaluate(() => { const k = 'nexus-safe-demo-v6', d = JSON.parse(localStorage.getItem(k)); d.candidatos.forEach(c => { if (c.nome === 'Renata Alves Costa') delete c.confirmadoEm; if (c.aso) delete c.avisoRhEm; }); localStorage.setItem(k, JSON.stringify(d)); });
+  await page.evaluate(() => { location.hash = '#/automacoes'; location.reload(); }); await page.waitForTimeout(500);
+  const antesA = await page.evaluate(() => JSON.parse(localStorage.getItem('nexus-safe-demo-v6')).mensagens.length);
+  ok(await page.locator('[data-rodar-autos]').count() === 1 && /lembrete/.test(await page.locator('[data-rodar-resumo]').innerText()), 'automações mostram o botão "Rodar automações agora" com o resumo do que será gerado');
+  await page.click('[data-rodar-autos]'); await page.waitForTimeout(500);
+  const depA = await page.evaluate(() => { const d = JSON.parse(localStorage.getItem('nexus-safe-demo-v6')); return { n: d.mensagens.length, t: d.mensagens.slice(0, 6).map(m => m.texto).join('|') }; });
+  ok(depA.n > antesA && /Responda SIM/.test(depA.t) && /vence em/.test(depA.t), 'rodar automações gera a véspera e o aviso de periódico na fila');
+  await page.click('[data-rodar-autos]'); await page.waitForTimeout(300);
+  ok(await page.evaluate(() => JSON.parse(localStorage.getItem('nexus-safe-demo-v6')).mensagens.length) === depA.n, 'rodar de novo não repete as mensagens');
+  await page.evaluate(() => { location.hash = '#/quadro'; location.reload(); }); await page.waitForTimeout(400);
   // link da ficha vale 7 dias: vencido pede novo link e o antigo deixa de valer
   const velho = await page.evaluate(() => { const k = 'nexus-safe-demo-v6', d = JSON.parse(localStorage.getItem(k)); const c = d.candidatos.find(x => x.nome === 'Carlos Eduardo Lima'); const dias = Math.round((new Date(c.expiraEm) - new Date(c.criadoEm)) / 864e5); const tk = c.token; c.expiraEm = new Date(Date.now() - 864e5).toISOString(); localStorage.setItem(k, JSON.stringify(d)); return { tk, dias }; });
   ok(velho.dias === 7, 'todo link de ficha guarda expiraEm de 7 dias');

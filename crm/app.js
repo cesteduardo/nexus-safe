@@ -347,10 +347,37 @@
   }
 
   /* ---------- automações ---------- */
+  /* Quem tem exame amanhã (sem lembrete) e quem tem ASO vencendo em até 30 dias (sem aviso ao RH nem convocação). */
+  function pendentesAutomacao() {
+    var d = N.carregar(), hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    var amanha = new Date(hoje); amanha.setDate(amanha.getDate() + 1);
+    var vesperas = d.candidatos.filter(function (c) {
+      if (c.etapa !== 'agendado' || !c.agendadoPara || c.confirmadoEm) return false;
+      var dia = new Date(c.agendadoPara); dia.setHours(0, 0, 0, 0);
+      return dia.getTime() === amanha.getTime();
+    });
+    var periodicos = d.candidatos.filter(function (c) {
+      if (!c.aso || !c.aso.validade || c.avisoRhEm || c.convocadoEm) return false;
+      var dias = Math.round((new Date(c.aso.validade) - hoje) / 864e5);
+      return dias >= 0 && dias <= 30;
+    });
+    return { vesperas: vesperas, periodicos: periodicos };
+  }
+  function rodarAutomacoes() {
+    var p = pendentesAutomacao(), tarefas = [];
+    p.vesperas.forEach(function (c) { tarefas.push(['confirmar', c.id]); });
+    p.periodicos.forEach(function (c) { tarefas.push(['avisarRh', c.id]); });
+    if (!tarefas.length) { toast('Nada a gerar agora'); return; }
+    var seq = Promise.resolve();
+    tarefas.forEach(function (t) { seq = seq.then(function () { return N.acao(t[0], t[1], {}); }); });
+    seq.then(function () { redesenhar(); toast(tarefas.length + ' mensagem(ns) na fila'); }, falhou);
+  }
   function renderAutomacoes() {
     var d = N.carregar();
     var h = '<div class="cab"><div><h1>Automações</h1><p>Mensagens que saem sozinhas quando algo acontece no quadro.</p></div></div>';
     h += '<p class="aviso-demo">No modelo, nada é enviado de verdade: as mensagens caem na fila ao lado para você ver o que sairia. Na versão real, elas vão pela API oficial do WhatsApp.</p>';
+    var pend = pendentesAutomacao();
+    h += '<div class="acoes-linha" style="margin:12px 0"><button class="botao" type="button" data-rodar-autos>Rodar automações agora</button><span data-rodar-resumo>' + (pend.vesperas.length + pend.periodicos.length ? pend.vesperas.length + ' lembrete(s) da véspera e ' + pend.periodicos.length + ' aviso(s) de periódico a gerar.' : 'Nada a gerar agora.') + '</span></div>';
     h += '<div class="duas-col"><div><div class="lista-autos">' + d.automacoes.map(function (a) {
       return '<div class="auto"><div><b>' + esc(a.nome) + '</b><span>' + esc(a.quando) + ' · para ' + esc(a.para) + '</span></div><label class="chave"><input type="checkbox" data-auto="' + a.id + '"' + (a.ativo ? ' checked' : '') + ' aria-label="Ativar ' + esc(a.nome) + '"><span></span></label></div>';
     }).join('') + '</div></div>';
@@ -501,6 +528,7 @@
     else if (t.matches('[data-guia]') && c) { $('[data-aso-conteudo]').innerHTML = N.guiaHtml(c); $('[data-modal-aso]').showModal(); fazer('guia', c.id, {}, '', null, true); }
     else if (t.matches('[data-xml]') && c) { N.baixar(N.nomeArquivo(c), N.s2220Xml(c)); toast('XML do S-2220 baixado'); }
     else if (t.matches('[data-cobrar]')) fazer('cobrar', t.dataset.cobrar, {}, 'Cobrança na fila de mensagens');
+    else if (t.matches('[data-rodar-autos]')) rodarAutomacoes();
     else if (t.matches('[data-avisar-rh]')) fazer('avisarRh', t.dataset.avisarRh, {}, 'Aviso enviado ao RH');
     else if (t.matches('[data-convocar]')) fazer('convocar', t.dataset.convocar, {}, 'Periódico convocado. Link enviado.');
     else if (t.matches('[data-imprimir-ficha]') && c && ehMedico()) { $('[data-aso-conteudo]').innerHTML = N.fichaImpressaHtml(c); $('[data-modal-aso]').showModal(); }
