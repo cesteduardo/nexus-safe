@@ -2,6 +2,7 @@
 
 Uma linha por rodada, a mais recente em cima: data e hora (America/Sao_Paulo), o que mudou, resultado do `npm test`.
 
+- 06/11/2026 05:43 · Revisão do texto do plano: frases longas divididas, NR-7, anamnese e HTTPS explicados, VPS e ERP trocados por termos claros. Teste: 134 verificações ok.
 - 06/11/2026 04:42 · Plano ganhou "Veja por dentro" na seção da plataforma, com 3 capturas do modelo (quadro, ficha no celular, ASO) em assets/telas/, geradas por testes/telas.mjs. Teste: 133 verificações ok.
 - 06/11/2026 03:48 · Cadastros: a clínica cria empresa (recepção) e função com riscos, protocolo do PCMSO e periodicidade (só a equipe médica), guardadas no localStorage; regras em CADASTROS de regras.js, fora de ACOES (o servidor ainda não grava). Teste do servidor: o wrangler dev derruba a conexão depois do cadastro do piloto no ambiente (55 ok antes; o mesmo acontece sem esta mudança). Teste: 132 verificações ok.
 - 06/11/2026 02:41 · Automações: botão "Rodar automações agora" gera na fila o lembrete da véspera (exame amanhã) e o aviso de periódico (ASO vencendo em 30 dias), usando as ações confirmar e avisarRh; não repete quem já recebeu. Só app.js mudou, teste do servidor dispensado. Teste: 125 verificações ok.
