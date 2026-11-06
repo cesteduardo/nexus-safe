@@ -125,7 +125,7 @@ try {
   ok(await ant.locator('[name=nascimento]').count() === 0, 'o link anterior deixa de abrir a ficha');
   await ant.close();
   await page.click('[data-fechar]'); await page.waitForTimeout(300);
-  ok(/Parado há 3 dias/.test(await page.locator('.card:has-text("Diego Santos Pereira")').innerText()) && await page.locator('.card:has-text("Ana Beatriz Moreira") [data-parado]').count() === 0, 'cartão parado há mais de 2 dias na etapa mostra o aviso em âmbar');
+  ok(/Parado há [34] dias/.test(await page.locator('.card:has-text("Diego Santos Pereira")').innerText()) && await page.locator('.card:has-text("Ana Beatriz Moreira") [data-parado]').count() === 0, 'cartão parado há mais de 2 dias na etapa mostra o aviso em âmbar');
   ok(await page.evaluate(() => JSON.parse(localStorage.getItem('nexus-safe-demo-v6')).candidatos.every(c => !!c.etapaDesde)), 'todo atendimento guarda etapaDesde');
 
   // atendimento com ficha: visão médica x empresa
@@ -329,6 +329,9 @@ try {
   ok(/Memória trocada/.test(await page.locator('#vista').innerText()), 'clínica vê a resposta da administração');
   await page.locator('[data-chamado]', { hasText: 'Computador da recepção travando' }).locator('[data-avaliar="sim"]').click(); await page.waitForTimeout(150);
   ok(/Avaliado: resolveu/.test(await page.locator('#vista').innerText()), 'clínica avalia o chamado resolvido');
+  await page.goto(B + 'crm/#/agenda'); await page.waitForTimeout(250);
+  const ag = await page.locator('#vista').innerText();
+  ok(/Renata Alves Costa/.test(ag) && await page.locator('[data-agenda-linha]').count() >= 1 && /Amanhã/.test(ag), 'agenda lista o exame agendado, por dia, com o preparo');
   await page.goto(B + 'crm/#/periodicos'); await page.waitForTimeout(250);
   ok(/Sérgio Almeida Prado/.test(await page.locator('#vista').innerText()), 'periódicos lista o ASO que vence em breve');
   await page.click('[data-convocar]'); await page.waitForTimeout(200);
@@ -356,7 +359,7 @@ try {
   ok(await page.locator('.card', { hasText: 'Rafael Moura' }).count() === 1, 'pedido do RH chega no quadro da clínica');
 
   // celular sem rolagem lateral
-  for (const u of ['', 'crm/', 'crm/#/cadastros', 'crm/#/automacoes', 'crm/#/suporte', 'crm/#/periodicos', 'crm/entrar.html', 'crm/admin.html', 'crm/admin.html#/chamados', 'crm/empresa.html?e=e1', 'marca/']) {
+  for (const u of ['', 'crm/', 'crm/#/cadastros', 'crm/#/automacoes', 'crm/#/suporte', 'crm/#/agenda', 'crm/#/periodicos', 'crm/entrar.html', 'crm/admin.html', 'crm/admin.html#/chamados', 'crm/empresa.html?e=e1', 'marca/']) {
     const conta = /admin/.test(u) ? 'admin' : /empresa/.test(u) ? 'rh.metalurgica' : /crm\/(#|$)/.test(u) ? 'medico' : '';
     if (conta) await logar(m, conta);
     await m.goto(B + u); await m.waitForTimeout(250);

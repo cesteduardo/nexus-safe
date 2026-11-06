@@ -56,6 +56,7 @@
     else if (base === 'automacoes') { fecharPainel(true); renderAutomacoes(); }
     else if (base === 'suporte') { fecharPainel(true); renderSuporte(); }
     else if (base === 'periodicos') { fecharPainel(true); renderPeriodicos(); }
+    else if (base === 'agenda') { fecharPainel(true); renderAgenda(); }
     else {
       renderQuadro();
       if (base === 'c' && partes[1]) abrirPainel(partes[1]); else fecharPainel(true);
@@ -357,6 +358,33 @@
       var a = d.automacoes.filter(function (x) { return x.id === m.automacao; })[0];
       return '<div class="msg"><div class="msg__cab"><span>Para <b>' + esc(m.para) + '</b></span><span>' + data(m.em, true) + '</span></div><p>' + esc(m.texto) + '</p><div style="margin-top:8px"><span class="selo">' + esc(a ? a.nome : m.automacao) + '</span></div></div>';
     }).join('') : '<p class="aviso-demo">Nenhuma mensagem ainda.</p>') + '</div></div></div>';
+    vista.innerHTML = h;
+  }
+
+  /* ---------- agenda: exames agendados por dia e horário, com o preparo ---------- */
+  function renderAgenda() {
+    var d = N.carregar(), hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+    var lista = d.candidatos.filter(function (c) { return c.etapa === 'agendado' && c.agendadoPara; })
+      .sort(function (a, b) { return new Date(a.agendadoPara) - new Date(b.agendadoPara); });
+    var h = '<div class="cab"><div><h1>Agenda</h1><p>Exames agendados por dia e horário, com o preparo que cada pessoa precisa seguir.</p></div></div>';
+    if (!lista.length) { vista.innerHTML = h + '<p class="aviso-demo" data-agenda-vazia>Nenhum exame agendado.</p>'; return; }
+    var dias = [];
+    lista.forEach(function (c) {
+      var k = new Date(c.agendadoPara); k.setHours(0, 0, 0, 0);
+      var g = dias.filter(function (x) { return x.k.getTime() === k.getTime(); })[0];
+      if (!g) { g = { k: k, itens: [] }; dias.push(g); }
+      g.itens.push(c);
+    });
+    dias.forEach(function (g) {
+      var diff = Math.round((g.k - hoje) / 864e5);
+      var rot = diff === 0 ? 'Hoje' : diff === 1 ? 'Amanhã' : diff < 0 ? 'Atrasado' : g.k.toLocaleDateString('pt-BR', { weekday: 'long' });
+      h += '<h2 class="titulo-secao" data-agenda-dia>' + rot + ', ' + g.k.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit' }) + '</h2>';
+      h += '<div class="rolagem"><table class="tabela"><thead><tr><th>Horário</th><th>Pessoa</th><th>Exame</th><th>Preparo</th></tr></thead><tbody>' + g.itens.map(function (c) {
+        var f = N.funcao(c.funcaoId), e = N.empresa(c.empresaId), prep = f ? N.preparos(f) : [];
+        var hora = c.agendadoModo === 'chegada' ? 'Ordem de chegada<br><span style="color:var(--apoio)">7h às 11h</span>' : new Date(c.agendadoPara).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' });
+        return '<tr data-agenda-linha><td><b>' + hora + '</b></td><td><a href="#/c/' + c.id + '"><b>' + esc(c.nome) + '</b></a><br><span style="color:var(--apoio)">' + esc(e ? e.nome : '') + '</span></td><td>' + esc(N.nomeTipo(c.tipoExame)) + '</td><td>' + (prep.length ? esc(prep.join('; ')) : '<span style="color:var(--apoio)">Sem preparo</span>') + '</td></tr>';
+      }).join('') + '</tbody></table></div>';
+    });
     vista.innerHTML = h;
   }
 

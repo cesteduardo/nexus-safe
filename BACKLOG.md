@@ -54,7 +54,7 @@ e por último o texto e as imagens do plano.
 - [x] Link da ficha com validade de 7 dias: guardar `expiraEm`, mostrar "Link expirado, peça outro à clínica" e, no CRM, botão "Gerar novo link" que invalida o anterior.
 - [x] Trilha de acesso simulada: registrar no histórico quando a visão médica abre a ficha ("Ficha aberta por Dra. Camila Rocha") e mostrar isso na visão médica.
 - [x] Visão do RH da empresa cliente: página `crm/empresa.html?e=ID` listando só os atendimentos daquela empresa, com etapa e botão do ASO, sem nenhum dado de saúde. Também pede exame.
-- [ ] Agenda do dia: aba "Agenda" com os exames agendados por horário e o preparo de cada um.
+- [x] Agenda do dia: aba "Agenda" com os exames agendados por horário e o preparo de cada um.
 - [ ] Versão para imprimir da ficha preenchida (só na visão médica), no mesmo padrão do ASO.
 - [ ] Automações: botão "Rodar automações agora" que gera na fila o lembrete da véspera para quem tem exame amanhã e o aviso de periódico para ASO vencendo em 30 dias.
 - [ ] Cadastros: permitir criar empresa e função (com riscos e protocolo de exames) no modelo, guardando no localStorage.
