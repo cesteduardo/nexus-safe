@@ -37,6 +37,8 @@ try {
   await page.goto(B); await page.waitForTimeout(300);
   ok(await page.locator('h1').count() > 0, 'plano abre com título');
   ok(await page.locator('#perfis').count() === 1 && await page.locator('#plataforma a[href="crm/entrar.html"]').count() === 1, 'plano tem a seção "Três perfis" ligando para a entrada');
+  const telas = await page.evaluate(async () => { const im = [...document.querySelectorAll('#veja-por-dentro ~ .telas img')]; im.forEach(x => { x.loading = 'eager'; }); await Promise.all(im.map(x => x.complete ? 0 : new Promise(r => { x.onload = x.onerror = r; }))); return im.map(x => x.naturalWidth); });
+  ok(telas.length === 3 && telas.every(w => w > 300), 'plano tem "Veja por dentro" com 3 capturas de tela que carregam');
 
   // login: sem conta não entra; senha errada avisa; cada usuário cai no próprio perfil
   const logar = async (pg, usuario, senha = '123') => {
