@@ -117,12 +117,20 @@ systemctl --user daemon-reload && systemctl --user enable --now nexus-backup.tim
 
 Isso grava no computador. Para ficar **fora** dele também, a pasta `~/Backups/Nexus Safe` precisa ir para um segundo lugar (HD externo, outro serviço de nuvem). Essa escolha é sua.
 
+## Troca da chave das fichas
+
+Cada ficha, rascunho e token guarda o número da chave que o cifrou (`v2:NUMERO:...`). A chave atual é `FICHA_CHAVE` (número em `FICHA_CHAVE_NUM`, padrão 1). Na troca, a anterior fica em `FICHA_CHAVE_ANTIGA` (número em `FICHA_CHAVE_ANTIGA_NUM`, padrão o da atual menos 1), só para abrir o que ainda não foi recifrado. Registros no formato antigo (`v1:`) abrem com qualquer uma das duas.
+
+1. `node servidor/chave.mjs nova` imprime a chave nova. Guarde-a fora do computador, como a primeira.
+2. No servidor: `wrangler secret put FICHA_CHAVE_ANTIGA` (a que estava em uso) e `wrangler secret put FICHA_CHAVE` (a nova); ponha `FICHA_CHAVE_NUM=2` e `FICHA_CHAVE_ANTIGA_NUM=1` nas variáveis do `wrangler.jsonc` e rode `npx wrangler deploy`. Daqui em diante tudo que for gravado já usa a chave nova.
+3. No computador, com as mesmas quatro variáveis no ambiente: `node servidor/chave.mjs recifrar --remote`. Ele abre cada registro com a chave certa e grava com a nova. Se algum não abrir, nada é alterado.
+4. Abra uma ficha na tela para conferir. Só então apague `FICHA_CHAVE_ANTIGA` do servidor e guarde a antiga por mais um tempo junto dos backups antigos (eles ainda dependem dela).
+
 ## O que ainda falta antes de dado real
 
 1. **Onde o backup fica fora do computador** e quem testa a restauração todo mês (o script já faz backup e teste; falta escolher o segundo lugar e ligar o temporizador).
 2. **A pessoa trocar a própria senha** pela tela. Hoje a troca é pelo `conta.mjs senha`, feita pela Nexus Safe.
 3. **Guarda de 20 anos (NR-7).** Nada é apagado hoje, mas falta a regra de arquivamento e de quem acessa a ficha arquivada depois do ASO.
 4. **WhatsApp de verdade.** As mensagens só entram na fila da tabela `mensagens`. Nada é enviado.
-5. **Troca da chave das fichas** (rotação), sem perder as fichas antigas.
-6. **Domínio próprio e HTTPS**: a Cloudflare dá o HTTPS, mas o domínio ainda não existe.
+5. **Domínio próprio e HTTPS**: a Cloudflare dá o HTTPS, mas o domínio ainda não existe.
 7. Revisão do texto da LGPD e do questionário pelo médico do trabalho da agência piloto (decisão em aberto nº 3 do plano).

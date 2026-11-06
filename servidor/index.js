@@ -53,26 +53,47 @@ async function conferirSenha(senha, guardada) {
 }
 const SENHA_FALSA = 'pbkdf2$100000$AAAAAAAAAAAAAAAAAAAAAA==$AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=';
 
-let chaveCache = null;
-async function chaveFicha(env) {
-  if (chaveCache) return chaveCache;
-  if (!env.FICHA_CHAVE) throw new Error('FICHA_CHAVE não configurada.');
-  const bruta = deB64(env.FICHA_CHAVE);
-  if (bruta.length !== 32) throw new Error('FICHA_CHAVE precisa ter 32 bytes em base64.');
-  chaveCache = await crypto.subtle.importKey('raw', bruta, 'AES-GCM', false, ['encrypt', 'decrypt']);
-  return chaveCache;
+/* Chaves das fichas. A atual (FICHA_CHAVE, número FICHA_CHAVE_NUM, padrão 1) cifra tudo que é gravado.
+   Na troca, a anterior (FICHA_CHAVE_ANTIGA, número FICHA_CHAVE_ANTIGA_NUM, padrão atual - 1) continua só para abrir.
+   A cifra grava o número da chave: "v2:NUMERO:iv:dados". O formato antigo "v1:" abre com qualquer uma das duas. */
+const chavesCache = {};
+async function importarChave(texto, nome) {
+  if (!texto) throw new Error(nome + ' não configurada.');
+  if (chavesCache[texto]) return chavesCache[texto];
+  const bruta = deB64(texto);
+  if (bruta.length !== 32) throw new Error(nome + ' precisa ter 32 bytes em base64.');
+  return (chavesCache[texto] = await crypto.subtle.importKey('raw', bruta, 'AES-GCM', false, ['encrypt', 'decrypt']));
 }
+const numChaveAtual = env => Number(env.FICHA_CHAVE_NUM) || 1;
+const numChaveAntiga = env => Number(env.FICHA_CHAVE_ANTIGA_NUM) || numChaveAtual(env) - 1;
 async function cifrar(env, obj, ad) {
   const iv = aleatorio(12);
-  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: enc.encode(ad) }, await chaveFicha(env), enc.encode(JSON.stringify(obj)));
-  return `v1:${b64(iv)}:${b64(ct)}`;
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: enc.encode(ad) }, await importarChave(env.FICHA_CHAVE, 'FICHA_CHAVE'), enc.encode(JSON.stringify(obj)));
+  return `v2:${numChaveAtual(env)}:${b64(iv)}:${b64(ct)}`;
 }
 async function decifrar(env, txt, ad) {
   if (!txt) return null;
-  const [v, iv, ct] = txt.split(':');
-  if (v !== 'v1') throw new Error('Formato de cifra desconhecido.');
-  const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: deB64(iv), additionalData: enc.encode(ad) }, await chaveFicha(env), deB64(ct));
-  return JSON.parse(dec.decode(pt));
+  const p = txt.split(':');
+  let candidatas;
+  if (p[0] === 'v2' && p.length === 4) {
+    const n = Number(p[1]);
+    if (n === numChaveAtual(env)) candidatas = [[env.FICHA_CHAVE, 'FICHA_CHAVE']];
+    else if (n === numChaveAntiga(env) && env.FICHA_CHAVE_ANTIGA) candidatas = [[env.FICHA_CHAVE_ANTIGA, 'FICHA_CHAVE_ANTIGA']];
+    else throw new Error('Sem a chave de número ' + n + ' para abrir este registro.');
+    p.splice(0, 2);
+  } else if (p[0] === 'v1' && p.length === 3) {
+    candidatas = [[env.FICHA_CHAVE, 'FICHA_CHAVE']];
+    if (env.FICHA_CHAVE_ANTIGA) candidatas.push([env.FICHA_CHAVE_ANTIGA, 'FICHA_CHAVE_ANTIGA']);
+    p.splice(0, 1);
+  } else throw new Error('Formato de cifra desconhecido.');
+  let erro;
+  for (const [t, nome] of candidatas) {
+    try {
+      const pt = await crypto.subtle.decrypt({ name: 'AES-GCM', iv: deB64(p[0]), additionalData: enc.encode(ad) }, await importarChave(t, nome), deB64(p[1]));
+      return JSON.parse(dec.decode(pt));
+    } catch (e) { erro = e; }
+  }
+  throw erro;
 }
 
 /* ---------- pedido ---------- */

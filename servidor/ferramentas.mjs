@@ -41,21 +41,49 @@ export function senhaAleatoria(n = 16) {
   return s;
 }
 
-export function lerChaveFicha() {
-  if (process.env.FICHA_CHAVE) return process.env.FICHA_CHAVE.trim();
-  try { const m = readFileSync(join(RAIZ, '.dev.vars'), 'utf8').match(/^FICHA_CHAVE=(.+)$/m); if (m) return m[1].trim(); } catch { /* sem arquivo */ }
-  throw new Error('Defina FICHA_CHAVE ou crie o .dev.vars (veja SEGURANCA.md).');
+/* nome: FICHA_CHAVE (atual), FICHA_CHAVE_ANTIGA, FICHA_CHAVE_NUM, FICHA_CHAVE_ANTIGA_NUM. Vem do ambiente ou do .dev.vars. */
+export function lerVar(nome, obrigatoria = true) {
+  if (process.env[nome]) return process.env[nome].trim();
+  try { const m = readFileSync(join(RAIZ, '.dev.vars'), 'utf8').match(new RegExp('^' + nome + '=(.+)$', 'm')); if (m) return m[1].trim(); } catch { /* sem arquivo */ }
+  if (obrigatoria) throw new Error(`Defina ${nome} ou crie o .dev.vars (veja SEGURANCA.md).`);
+  return '';
 }
-let chaveCache = null;
-export async function cifrar(obj, ad) {
-  if (!chaveCache) {
-    const bruta = Buffer.from(lerChaveFicha(), 'base64');
-    if (bruta.length !== 32) throw new Error('FICHA_CHAVE precisa ter 32 bytes em base64.');
-    chaveCache = await crypto.subtle.importKey('raw', bruta, 'AES-GCM', false, ['encrypt']);
+export const lerChaveFicha = () => lerVar('FICHA_CHAVE');
+export const numChaveAtual = () => Number(lerVar('FICHA_CHAVE_NUM', false)) || 1;
+export const numChaveAntiga = () => Number(lerVar('FICHA_CHAVE_ANTIGA_NUM', false)) || numChaveAtual() - 1;
+const chaves = {};
+async function chaveDe(texto) {
+  if (!chaves[texto]) {
+    const bruta = Buffer.from(texto, 'base64');
+    if (bruta.length !== 32) throw new Error('A chave precisa ter 32 bytes em base64.');
+    chaves[texto] = await crypto.subtle.importKey('raw', bruta, 'AES-GCM', false, ['encrypt', 'decrypt']);
   }
+  return chaves[texto];
+}
+export async function cifrar(obj, ad) {
   const iv = aleatorio(12);
-  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: enc.encode(ad) }, chaveCache, enc.encode(JSON.stringify(obj)));
-  return `v1:${b64(iv)}:${b64(ct)}`;
+  const ct = await crypto.subtle.encrypt({ name: 'AES-GCM', iv, additionalData: enc.encode(ad) }, await chaveDe(lerChaveFicha()), enc.encode(JSON.stringify(obj)));
+  return `v2:${numChaveAtual()}:${b64(iv)}:${b64(ct)}`;
+}
+/* Abre um registro cifrado com a chave atual ou com a antiga (mesmas regras do servidor/index.js). */
+export async function decifrar(txt, ad) {
+  const p = txt.split(':');
+  let tentativas;
+  const atual = lerChaveFicha(), antiga = lerVar('FICHA_CHAVE_ANTIGA', false);
+  if (p[0] === 'v2' && p.length === 4) {
+    const n = Number(p[1]);
+    if (n === numChaveAtual()) tentativas = [atual];
+    else if (n === numChaveAntiga() && antiga) tentativas = [antiga];
+    else throw new Error('Sem a chave de número ' + n + '.');
+    p.splice(0, 2);
+  } else if (p[0] === 'v1' && p.length === 3) { tentativas = [atual].concat(antiga ? [antiga] : []); p.splice(0, 1); }
+  else throw new Error('Formato de cifra desconhecido.');
+  let erro;
+  for (const t of tentativas) {
+    try { return JSON.parse(Buffer.from(await crypto.subtle.decrypt({ name: 'AES-GCM', iv: Buffer.from(p[0], 'base64'), additionalData: enc.encode(ad) }, await chaveDe(t), Buffer.from(p[1], 'base64'))).toString('utf8')); }
+    catch (e) { erro = e; }
+  }
+  throw erro;
 }
 
 /* ---------- SQL ---------- */

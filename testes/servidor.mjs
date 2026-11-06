@@ -113,7 +113,7 @@ const fichaOk = { pessoais: { nascimento: '1990-01-01', sexo: 'Feminino', estado
 ok((await chamar(`/api/ficha/${tkAna}/enviar`, { corpo: { ficha: fichaOk } })).status === 200, 'ficha completa é enviada');
 ok((await chamar(`/api/ficha/${tkAna}/enviar`, { corpo: { ficha: fichaOk } })).status === 409, 'a mesma ficha não é enviada duas vezes');
 const guardada = sql(`SELECT f.ficha FROM fichas f JOIN atendimentos a ON a.id = f.atendimento_id WHERE a.dados LIKE '%Ana Beatriz%'`)[0].ficha;
-ok(/^v1:/.test(guardada) && !/Rua B|pressao|Controlada/.test(guardada), 'ficha fica cifrada no banco');
+ok(/^v2:1:/.test(guardada) && !/Rua B|pressao|Controlada/.test(guardada), 'ficha fica cifrada no banco');
 const ass = sql(`SELECT f.assinatura_ip, f.assinatura_agente, f.enviado_em FROM fichas f JOIN atendimentos a ON a.id = f.atendimento_id WHERE a.dados LIKE '%Ana Beatriz%'`)[0];
 ok(ass.assinatura_ip && ass.enviado_em && ass.assinatura_agente !== null, 'assinatura da ficha grava data, hora, IP e navegador');
 const anaMed = (await estado(medico)).candidatos.find(c => c.nome === 'Ana Beatriz Moreira');
@@ -273,6 +273,27 @@ try {
 } finally {
   ok(erros.length === 0, 'nenhum erro de JS' + (erros.length ? ': ' + erros.join(' | ') : ''));
   await b.close();
+}
+
+// troca da chave das fichas: recifra para a chave 2, confere, e volta para a 1 para o servidor seguir abrindo
+{
+  const velha = readFileSync(join(RAIZ, '.dev.vars'), 'utf8').match(/^FICHA_CHAVE=(.+)$/m)[1].trim();
+  const nova = sh('node', ['servidor/chave.mjs', 'nova']).trim();
+  const conta = pref => sql(`SELECT (SELECT COUNT(*) FROM fichas WHERE ficha LIKE '${pref}%') + (SELECT COUNT(*) FROM fichas WHERE rascunho LIKE '${pref}%') + (SELECT COUNT(*) FROM links WHERE token_cifrado LIKE '${pref}%') AS n`)[0].n;
+  const total = sql("SELECT (SELECT COUNT(*) FROM fichas WHERE ficha IS NOT NULL) + (SELECT COUNT(*) FROM fichas WHERE rascunho IS NOT NULL) + (SELECT COUNT(*) FROM links) AS n")[0].n;
+  const paraNova = { FICHA_CHAVE: nova, FICHA_CHAVE_NUM: '2', FICHA_CHAVE_ANTIGA: velha, FICHA_CHAVE_ANTIGA_NUM: '1' };
+  const paraVelha = { FICHA_CHAVE: velha, FICHA_CHAVE_NUM: '1', FICHA_CHAVE_ANTIGA: nova, FICHA_CHAVE_ANTIGA_NUM: '2' };
+  ok(nova.length === 44 && nova !== velha, 'chave.mjs nova gera uma chave de 32 bytes');
+  sh('node', ['servidor/chave.mjs', 'recifrar'], paraNova);
+  ok(total > 0 && conta('v2:2:') === total, 'recifrar: fichas, rascunhos e tokens passam para a chave 2 (v2:2:)');
+  ok(/Recifrados com a chave 2: 0\./.test(sh('node', ['servidor/chave.mjs', 'recifrar'], paraNova)), 'recifrar de novo não refaz o que já está na chave nova');
+  ok(sh('node', ['servidor/chave.mjs', 'recifrar'], { FICHA_CHAVE: nova, FICHA_CHAVE_NUM: '2', FICHA_CHAVE_ANTIGA: '', FICHA_CHAVE_ANTIGA_NUM: '' }).includes('Recifrados com a chave 2: 0'), 'sem a chave antiga, tudo continua abrindo com a nova');
+  const erro = shFalha('node', ['servidor/chave.mjs', 'recifrar'], { ...paraVelha, FICHA_CHAVE_ANTIGA: '', FICHA_CHAVE_ANTIGA_NUM: '' });
+  ok(/Nada foi alterado/.test(erro) && conta('v2:2:') === total, 'registro de uma chave que falta não abre e nada é alterado');
+  sh('node', ['servidor/chave.mjs', 'recifrar'], paraVelha);
+  ok(conta('v2:1:') === total, 'volta para a chave 1 usando a 2 como antiga');
+  const lucasDepois = (await estado(medico)).candidatos.find(c => c.nome && c.nome.startsWith('Lucas'));
+  ok(lucasDepois && lucasDepois.ficha && lucasDepois.ficha.saude, 'o servidor abre a ficha depois da troca (cifra v2)');
 }
 
 console.log(falhas.length ? `\n${falhas.length} falha(s).` : '\nTudo certo.');
